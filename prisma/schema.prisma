@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  farms     Farm[]
+}
+
+model Farm {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  latitude    Float?
+  longitude   Float?
+  userId      String
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  fields      Field[]
+  crops       Crop[]
+  tasks       Task[]
+  workRecords WorkRecord[]
+}
+
+model Field {
+  id          String   @id @default(cuid())
+  name        String
+  area        Float?   // 面積（平方メートル）
+  farmId      String
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  crops       Crop[]
+}
+
+model Crop {
+  id              String       @id @default(cuid())
+  name            String
+  variety         String?      // 品種
+  plantingDate    DateTime?
+  harvestDate     DateTime?
+  status          String       @default("growing") // growing, harvested, completed
+  baseTemperature Float?       @default(10.0) // GDD計算用の基準温度
+  farmId          String
+  farm            Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  fieldId         String?
+  field           Field?       @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  harvests        Harvest[]
+  tasks           Task[]
+  workRecords     WorkRecord[]
+}
+
+model Harvest {
+  id          String   @id @default(cuid())
+  date        DateTime
+  quantity    Float    // 収穫量
+  unit        String   @default("kg") // kg, 個, etc.
+  notes       String?
+  cropId      String
+  crop        Crop     @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Task {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  status      String       @default("pending") // pending, in_progress, completed
+  priority    String       @default("medium") // low, medium, high
+  dueDate     DateTime?
+  farmId      String
+  farm        Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  cropId      String?
+  crop        Crop?        @relation(fields: [cropId], references: [id], onDelete: SetNull)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  workRecords WorkRecord[]
+}
+
+model WorkRecord {
+  id          String   @id @default(cuid())
+  date        DateTime
+  taskType   String   // 作業種別（植え付け、追肥、防除など）
+  description String?
+  notes       String?
+  farmId      String
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  cropId      String?
+  crop        Crop?    @relation(fields: [cropId], references: [id], onDelete: SetNull)
+  taskId      String?
+  task        Task?    @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WeatherData {
+  id          String   @id @default(cuid())
+  date        DateTime
+  latitude    Float
+  longitude   Float
+  temperature Float?   // 平均気温
+  maxTemp     Float?   // 最高気温
+  minTemp     Float?   // 最低気温
+  precipitation Float? // 降水量
+  windSpeed   Float?   // 風速
+  humidity    Float?   // 湿度
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([date, latitude, longitude])
+  @@index([date])
+  @@index([latitude, longitude])
+}

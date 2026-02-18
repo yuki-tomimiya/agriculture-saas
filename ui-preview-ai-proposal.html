@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>農業SaaS - 今日の提案プレビュー</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body>
+    <div class="min-h-screen bg-gray-50">
+        <nav class="bg-white shadow-md fixed top-0 left-0 right-0 z-30 h-16 border-b border-gray-200">
+            <div class="flex items-center justify-between h-full px-6">
+                <a href="#" class="text-xl font-bold text-green-600">農業SaaS</a>
+                <div class="flex items-center gap-4">
+                    <a href="#" class="text-sm text-gray-600 hover:text-gray-900">ログアウト</a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="flex pt-16">
+            <aside class="w-64 bg-white border-r border-gray-200 h-[calc(100vh-4rem)] sticky top-16 overflow-y-auto">
+                <nav class="p-4 space-y-1">
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg bg-violet-100 text-violet-900 font-semibold border border-violet-300">
+                        <span class="text-xl">✨</span>
+                        <span class="text-sm">AIが今日の作業を提案</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <span class="text-xl">📊</span>
+                        <span class="text-sm">ダッシュボード</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <span class="text-xl">🏡</span>
+                        <span class="text-sm">農場</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <span class="text-xl">🌾</span>
+                        <span class="text-sm">作物</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <span class="text-xl">📦</span>
+                        <span class="text-sm">収穫記録</span>
+                    </a>
+                    <a href="#" class="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50">
+                        <span class="text-xl">📋</span>
+                        <span class="text-sm">タスク</span>
+                    </a>
+                </nav>
+            </aside>
+
+            <main class="flex-1 ml-64 px-6 py-8">
+                <div class="max-w-2xl">
+                    <h1 class="text-3xl font-bold mb-2">今日の提案</h1>
+                    <p class="text-gray-600 mb-8">
+                        気象・GDD・タスク・栽培スケジュールをもとに、今日やるといい作業を提案しています。
+                    </p>
+
+                    <!-- 提案カード（サンプル3件） -->
+                    <ul class="space-y-4">
+                        <li>
+                            <article class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden border-l-4 border-l-orange-500">
+                                <div class="p-5">
+                                    <div class="flex items-start gap-3">
+                                        <span class="text-2xl shrink-0">📋</span>
+                                        <div class="min-w-0 flex-1">
+                                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">タスク</span>
+                                            <h2 class="text-lg font-semibold text-gray-900 mt-0.5">今日が期限のタスクがあります</h2>
+                                            <p class="text-gray-600 text-sm mt-1">「トマトの初回追肥」（農場A / トマト）</p>
+                                            <a href="#" class="inline-block mt-3 text-sm font-medium text-violet-600 hover:text-violet-700">タスクを見る →</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        </li>
+                        <li>
+                            <article class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden border-l-4 border-l-violet-500">
+                                <div class="p-5">
+                                    <div class="flex items-start gap-3">
+                                        <span class="text-2xl shrink-0">🌾</span>
+                                        <div class="min-w-0 flex-1">
+                                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">栽培スケジュール</span>
+                                            <h2 class="text-lg font-semibold text-gray-900 mt-0.5">活着確認のタイミングです</h2>
+                                            <p class="text-gray-600 text-sm mt-1">レタス（農場B）は植え付けから7日目。株の状態を確認しましょう。</p>
+                                            <a href="#" class="inline-block mt-3 text-sm font-medium text-violet-600 hover:text-violet-700">作物を見る →</a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        </li>
+                        <li>
+                            <article class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden border-l-4 border-l-gray-400">
+                                <div class="p-5">
+                                    <div class="flex items-start gap-3">
+                                        <span class="text-2xl shrink-0">🌤</span>
+                                        <div class="min-w-0 flex-1">
+                                            <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">気象</span>
+                                            <h2 class="text-lg font-semibold text-gray-900 mt-0.5">気象を踏まえた作業のタイミング</h2>
+                                            <p class="text-gray-600 text-sm mt-1">今週の天候を確認し、雨の前にできる作業を優先すると効率的です。</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </article>
+                        </li>
+                    </ul>
+
+                    <p class="text-sm text-gray-500 mt-8">
+                        <a href="#" class="text-violet-600 hover:underline">← ダッシュボードに戻る</a>
+                    </p>
+                </div>
+            </main>
+        </div>
+    </div>
+</body>
+</html>

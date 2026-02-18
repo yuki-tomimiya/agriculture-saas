@@ -1,0 +1,11 @@
+---
+description: 作業再開時にプロジェクトの続きができるよう、コンテキストを読み込む
+alwaysApply: true
+---
+
+# プロジェクトコンテキスト
+
+このプロジェクトは **農業SaaS**（Next.js + Prisma + Tailwind）です。圃場・作物・作業・収穫・気象を一元管理し、**AIが今日の作業を提案**する機能を前面に出しています。
+
+- **続きから作業するとき**: ルートの **`PROJECT_CONTEXT.md`** を読むと、構成・現在のUI・デザインの約束・注意点がまとまっています。新規作業や大きな変更の前に参照すること。
+- **主要な場所**: ホーム `app/page.tsx`、ダッシュボード `app/dashboard/page.tsx`、左サイドバー `components/Sidebar.tsx`（先頭に「AIが今日の作業を提案」）。プレビュー用は `ui-preview-home.html` / `ui-preview-dashboard.html`。本番とプレビューの変更は揃えること。
