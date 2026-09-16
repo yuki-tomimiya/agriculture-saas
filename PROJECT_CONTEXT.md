@@ -1,130 +1,114 @@
-# プロジェクトコンテキスト（次回作業用）
+# プロジェクトコンテキスト（実装再開用）
 
-このファイルは、作業を再開するときにプロジェクトの全体像と現在地を把握するためのメモです。
+**このファイルの役割**: コードベースの地図と作業再開手順。  
+**方針・決定・ロードマップの正本**: `docs/議事録/minutes-content.json`（→ `Tillto_開発議事録.docx`）
 
----
-
-## 続きから作業するとき（AIに読み込ませる方法）
-
-**新しいチャットを開いたら、最初に次のどれかで依頼するだけです。**
-
-- 「**PROJECT_CONTEXT.md を読んで、このプロジェクトの続きの作業をして**」
-- 「**@PROJECT_CONTEXT.md を参照して** [やりたいこと]」
-- 「**PROJECT_CONTEXT.md の内容を前提に** [質問や依頼]」
-
-ファイルを `@` で指定すると、その内容が会話に含まれるので確実です。読んだうえで、続きの実装や修正ができます。
+*議事録と同期: 2026-08-28*
 
 ---
 
-## プロジェクト概要
+## 作業再開（AIへの依頼例）
 
-- **名前**: 農業SaaS（agriculture-saas）
-- **対象**: 中小規模の農家・新規就農者
-- **提供価値**: 圃場管理 × 作業記録 × 気象データ × 収支管理をひとつの画面で。気象・GDD・栽培スケジュールをもとに **AIが今日の作業を提案** する機能を前面に出す方針。
+- 「**@docs/SESSION_HANDOFF.md** **@PROJECT_CONTEXT.md** **@docs/議事録/minutes-content.json** を読んで続きを」
+- **チャット引き継ぎ** → `docs/SESSION_HANDOFF.md`（直近の合意・未着手）
+- 方針・優先順 → 議事録
+- コードの地図 → このファイル
+
+---
+
+## 一言
+
+**Tillto**（決定済み）— 一般 × 地域 × あなた → **今日の一手**。  
+3層の説明・Phase・完了/未着手の全文は議事録 ›「プロダクト趣旨・ポジション」「次にやること」。
+
+---
+
+## 次にやること（要約のみ）
+
+1. 分析・振り返りの**入口化**（比較・地域など2階層へ）
+2. ダッシュボード / 今日の提案 ↔ 分析・生育ナビの**導線強化**
+3. AI提案に**昨年同時期の作業**（カレンダー昨年との接続）
+
+→ 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**
 
 ---
 
 ## 技術スタック
 
-- **フレームワーク**: Next.js 14（App Router）
-- **言語**: TypeScript
-- **スタイル**: Tailwind CSS
-- **DB / ORM**: Prisma
-- **認証**: 自前（cookie + bcryptjs、`lib/auth.ts`）
+Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma / 自前認証（`lib/auth.ts`） / 気象 Open-Meteo（`lib/weather-forecast.ts`）
+
+内部名: `package.json` の `agriculture-saas`（ユーザー向け表示には使わない）
 
 ---
 
-## ディレクトリ構成（主要）
+## 画面とルート
+
+| パス | 役割 |
+|------|------|
+| `/dashboard/ai-proposal` | 今日の一手（3層提案） |
+| `/gdd` | 生育ナビ・栽培中 |
+| `/gdd/past` | 過去作付けの生育データ一覧（2階層目） |
+| `/gdd?cropId=…` | 作付け別グラフ（過去時はバナー） |
+| `/insights` | 分析・振り返り（比較・地域・一般） |
+| `/calendar` | 作業カレンダー（昨年オーバーレイ） |
+| `/weather` | 気象ナビ |
+
+階層方針: 1階層＝入口、2階層＝詳細・過去。生育ナビで確立、分析は未入口化。
+
+---
+
+## 主要ファイル（触るときの早見）
+
+| 領域 | パス |
+|------|------|
+| 今日の提案 | `lib/ai-proposal.ts`, `lib/ai-proposal-context.ts`, `app/dashboard/ai-proposal/` |
+| 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
+| 地域（降水量） | `lib/insights/regional-context.ts` |
+| 一般目安 | `lib/benchmarks/crops.ts` |
+| 生育ナビ | `app/gdd/`, `app/gdd/past/`, `components/GDDCropList.tsx`, `lib/gdd.ts` |
+| カレンダー昨年 | `components/WorkCalendar.tsx` |
+| サイドバー | `components/Sidebar.tsx` |
+| 議事録 | `docs/議事録/minutes-content.json`, `generate-minutes.mjs` |
+| **引き継ぎ** | `docs/SESSION_HANDOFF.md`（次チャット用・直近の文脈） |
 
 ```
-app/
-  page.tsx           # ホーム（未ログイン用ランディング）
-  layout.tsx
-  auth/signin, signup/
-  dashboard/page.tsx # ダッシュボード（ログイン後）
-  farms/, farms/[id]/   # 農場一覧・農場詳細
-  crops/, crops/[id]/   # 作物一覧・作物詳細
-  tasks/, tasks/[id]/   # タスク一覧・タスク詳細
-  harvests/, harvests/[id]/  # 収穫一覧・収穫詳細
-  api/auth/signin, signup/           # 認証API
-components/
-  Sidebar.tsx        # 左サイドバー（ダッシュボード等で表示）
-  Navbar.tsx
-  WeatherNav.tsx     # 今週の気象ナビ
-  WeatherForecast.tsx# 今後2週間の気象
-  WorkCalendar.tsx   # 作業カレンダー（提案と実績）
-  GDDChart.tsx       # 積算温度グラフ
-lib/
-  auth.ts, prisma.ts, utils.ts
-prisma/
-  schema.prisma      # Farm, Crop, Task, Harvest 等
+app/  dashboard/, dashboard/ai-proposal/, insights/, gdd/, gdd/past/,
+      calendar/, weather/, farms/, crops/, tasks/,
+      work-records/, fertilizers/, pesticides/, harvests/, sales/, faq/, data/
+lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth.ts, prisma.ts
 ```
 
-**プレビュー用HTML**（スタイル確認用、本番とは別）:
-- `ui-preview-index.html` … **プレビュー一覧**（全プレビューへのリンク）
-- `ui-preview-home.html` … ホーム
-- `ui-preview-dashboard.html` … ダッシュボード
-- `ui-preview-ai-proposal.html` … 今日の提案
-- `ui-preview-farms.html` / `ui-preview-farm-detail.html` … 農場一覧・詳細
-- `ui-preview-crops.html` / `ui-preview-crop-detail.html` … 作物一覧・詳細
-- `ui-preview-tasks.html` / `ui-preview-task-detail.html` … タスク一覧・詳細
-- `ui-preview-harvests.html` / `ui-preview-harvest-detail.html` … 収穫一覧・詳細
+---
+
+## サイドバー（`Sidebar.tsx`）
+
+AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ → 生育ナビ → 農場 → 作物 → 作業管理 → 農薬 → 収穫 → 販売 → **分析・振り返り** → タスク → 外部連携 → FAQ
 
 ---
 
-## 現在のUI・機能の状態
+## デザイン（コード作業用）
 
-### ホーム（`app/page.tsx`, `ui-preview-home.html`）
-
-- 上: キャッチコピー・説明・CTA（無料ではじめる / すでにアカウントをお持ちの方）
-- 下: 「このサービスでできること」の **4枚のカード**（2列グリッド）
-  - 農場管理、作物・作業管理、データ分析・収支、気象データ連携
-- ※ AI提案は **ホームには出さず、ダッシュボードの左メニューに集約** 済み
-
-### ダッシュボード（`app/dashboard/page.tsx`）
-
-- **左**: サイドバー（`components/Sidebar.tsx`）
-  - **1行目**: 「✨ AIが今日の作業を提案」（紫ハイライト、/dashboard/ai-proposal へ）
-  - 2行目: ダッシュボード、農場、作物、収穫記録、タスク
-- **メイン**: タイトル → サマリー4枚（農場数・作物数・未完了タスク・最近の収穫）→ 最近の作物/収穫 → 今週の気象ナビ → 3列（気象予報 / 作業カレンダー / 積算温度グラフ）
-- **「今日の提案」専用ページ**: `/dashboard/ai-proposal`。サイドバー「AIが今日の作業を提案」から遷移。ルールベースで1〜3件表示（タスク期限・栽培スケジュール・気象）。ロジックは `lib/ai-proposal.ts` の `getTodayProposals(userId)`。
-
-### サイドバー（`components/Sidebar.tsx`）
-
-- ホーム・認証ページでは非表示
-- `highlight: true` の項目は紫スタイル（AI提案）
-- 同じ `href` で複数ラベルがある場合は `key={item.label}` で一意化
+- 緑: 通常UI / 紫: AI提案メニューのみ
+- 3層タグ: `.insights-layer-tag`（あなた / 地域 / 一般 / 今日の一手）
 
 ---
 
-## デザイン・スタイルの約束
+## ドキュメントの更新ルール
 
-- メインカラー: 緑（green）… ボタン・アクティブメニュー
-- AI関連: 紫（violet）… 「AIが今日の作業を提案」のみ
-- カード: `rounded-xl`, `border`, ホバー時は背景を少し濃く
-
----
-
-## 次回作業でやりたいことの例
-
-- サービス名の決定・反映（現在は「農業SaaS」などの仮名）
-- ~~「AIが今日の作業を提案」の専用ページ・モーダル実装~~ → 済（/dashboard/ai-proposal + ルールベース提案）
-- ホームのカード文言・並びの調整
-- 気象・GDD・タスクデータに基づく「今日の提案」ロジックの実装
+| 変えたこと | 更新するもの |
+|------------|--------------|
+| 方針・優先順・Phase・決定 | **議事録**（json → `node docs/議事録/generate-minutes.mjs`） |
+| パス・画面・lib・Sidebar | **PROJECT_CONTEXT.md**（このファイル） |
+| 大きなリリース前 | 要約3行が議事録とズレていないか確認 |
 
 ---
 
-## 公開までに用意するとよいもの
+## 開発時の注意
 
-- **RELEASE_CHECKLIST.md** に「何をダウンロードするか」「公開までの手順」をまとめてある
-- 最低限: **Node.js**（実行用）、**Git**（バージョン管理・デプロイ連携用）
-- ルートの **.gitignore** で `.env` と `node_modules` をコミット対象外にしている（秘密情報・ビルド成果物の除外）
-
-## 注意事項
-
-- プレビュー用HTML（`ui-preview-*.html`）と本番（`app/*`, `components/*`）の両方を触ることがあるので、**変更時はどちらも揃える**とよい
-- 認証は cookie ベース。`getCurrentUser()` で未ログイン時は `redirect('/auth/signin')`
+- 未ログイン: `getCurrentUser()` → `redirect('/auth/signin')`
+- 起動: `npm run dev` または `アプリを起動.bat`
+- `.env` / `node_modules` はコミットしない
 
 ---
 
-*最終更新: プロジェクトコンテキスト初版（サイドバーにAI提案追加済みの状態を反映）*
+*最終更新: 2026-08-28 — 議事録との重複を解消し、実装索引に特化。*

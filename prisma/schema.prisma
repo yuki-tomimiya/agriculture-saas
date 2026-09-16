@@ -11,13 +11,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  farms     Farm[]
+  id                 String              @id @default(cuid())
+  email              String              @unique
+  password           String
+  name               String?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  farms              Farm[]
+  crops              Crop[]   // 農場に紐づけない作物（作物だけで登録した分）
+  pesticideRecords   PesticideRecord[]
+  fertilizerRecords  FertilizerRecord[]
+  sales              Sale[]
 }
 
 model Farm {
@@ -32,8 +36,11 @@ model Farm {
   updatedAt   DateTime     @updatedAt
   fields      Field[]
   crops       Crop[]
-  tasks       Task[]
-  workRecords WorkRecord[]
+  tasks             Task[]
+  workRecords       WorkRecord[]
+  pesticideRecords  PesticideRecord[]
+  fertilizerRecords FertilizerRecord[]
+  sales             Sale[]
 }
 
 model Field {
@@ -55,15 +62,20 @@ model Crop {
   harvestDate     DateTime?
   status          String       @default("growing") // growing, harvested, completed
   baseTemperature Float?       @default(10.0) // GDD計算用の基準温度
-  farmId          String
-  farm            Farm         @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  userId          String?      // 農場に紐づけない場合の所有者
+  user            User?        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farmId          String?      // 任意：農場に紐づける場合
+  farm            Farm?        @relation(fields: [farmId], references: [id], onDelete: Cascade)
   fieldId         String?
   field           Field?       @relation(fields: [fieldId], references: [id], onDelete: SetNull)
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
-  harvests        Harvest[]
-  tasks           Task[]
-  workRecords     WorkRecord[]
+  harvests          Harvest[]
+  tasks             Task[]
+  workRecords       WorkRecord[]
+  pesticideRecords  PesticideRecord[]
+  fertilizerRecords FertilizerRecord[]
+  sales             Sale[]
 }
 
 model Harvest {
@@ -110,6 +122,44 @@ model WorkRecord {
   updatedAt   DateTime @updatedAt
 }
 
+model PesticideRecord {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appliedAt         DateTime // 散布日
+  productName       String   // 農薬名
+  amount            Float?   // 使用量
+  amountUnit        String?  // 単位（L, g, mL など）
+  dilution          String?  // 希釈倍率（例: 1000倍）
+  applicationCount  Int?     // 使用回数（この作付けで何回目か）
+  daysBeforeHarvest Int?    // 収穫前日数
+  cropId            String?
+  crop              Crop?    @relation(fields: [cropId], references: [id], onDelete: SetNull)
+  farmId            String?
+  farm              Farm?    @relation(fields: [farmId], references: [id], onDelete: SetNull)
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model FertilizerRecord {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appliedAt      DateTime // 施肥日
+  productName    String   // 肥料名
+  amount         Float    // 使用量
+  amountUnit     String   @default("kg") // kg, g, L など
+  componentInfo  String?  // 成分（N-P-K など）
+  cropId         String?
+  crop           Crop?    @relation(fields: [cropId], references: [id], onDelete: SetNull)
+  farmId         String?
+  farm           Farm?    @relation(fields: [farmId], references: [id], onDelete: SetNull)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
 model WeatherData {
   id          String   @id @default(cuid())
   date        DateTime
@@ -127,4 +177,24 @@ model WeatherData {
   @@unique([date, latitude, longitude])
   @@index([date])
   @@index([latitude, longitude])
+}
+
+model Sale {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  date         DateTime
+  cropId       String?
+  crop         Crop?    @relation(fields: [cropId], references: [id], onDelete: SetNull)
+  farmId       String?
+  farm         Farm?    @relation(fields: [farmId], references: [id], onDelete: SetNull)
+  quantity     Float
+  unit         String   @default("kg")
+  unitPrice    Int      // 単価（円）
+  amount       Int      // 売上金額（円）
+  customerName String   // 販売先
+  channel      String?  // 販売チャネル（直売所、市場、JA など）
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

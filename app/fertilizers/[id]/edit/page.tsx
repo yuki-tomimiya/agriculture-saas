@@ -1,0 +1,66 @@
+import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { redirect, notFound } from 'next/navigation'
+import FertilizerEditForm from './FertilizerEditForm'
+
+export default async function FertilizerEditPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const user = await getCurrentUser()
+  if (!user) redirect('/auth/signin')
+
+  const { id } = await params
+
+  const record = await prisma.fertilizerRecord.findFirst({
+    where: { id, userId: user.id },
+    include: { crop: true, farm: true },
+  })
+  if (!record) notFound()
+
+  const crops = await prisma.crop.findMany({
+    where: {
+      OR: [{ userId: user.id }, { farm: { userId: user.id } }],
+    },
+    include: { farm: true },
+    orderBy: { name: 'asc' },
+  }).catch(() =>
+    prisma.crop.findMany({
+      where: { farm: { userId: user.id } },
+      include: { farm: true },
+      orderBy: { name: 'asc' },
+    })
+  )
+  const farms = await prisma.farm.findMany({
+    where: { userId: user.id },
+    orderBy: { name: 'asc' },
+  })
+
+  const recordForForm = {
+    id: record.id,
+    appliedAt: record.appliedAt.toISOString().slice(0, 10),
+    productName: record.productName,
+    amount: record.amount,
+    amountUnit: record.amountUnit,
+    componentInfo: record.componentInfo ?? '',
+    cropId: record.cropId ?? '',
+    farmId: record.farmId ?? '',
+    notes: record.notes ?? '',
+  }
+  const cropsForSelect = crops.map((c) => ({
+    id: c.id,
+    name: c.name,
+    variety: c.variety,
+    farmName: c.farm?.name ?? null,
+  }))
+  const farmsForSelect = farms.map((f) => ({ id: f.id, name: f.name }))
+
+  return (
+    <FertilizerEditForm
+      record={recordForForm}
+      crops={cropsForSelect}
+      farms={farmsForSelect}
+    />
+  )
+}

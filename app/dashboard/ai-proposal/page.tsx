@@ -16,10 +16,39 @@ const typeIcon: Record<ProposalType, string> = {
   weather: '🌤',
 }
 
-const priorityBorder: Record<Proposal['priority'], string> = {
-  high: 'border-l-orange-500',
-  medium: 'border-l-violet-500',
-  low: 'border-l-gray-400',
+const priorityBorderClass: Record<Proposal['priority'], string> = {
+  high: 'ai-proposal-card--high',
+  medium: 'ai-proposal-card--medium',
+  low: 'ai-proposal-card--low',
+}
+
+function ProposalLayersBlock({ layers }: { layers: Proposal['layers'] }) {
+  return (
+    <div className="ai-proposal-layers">
+      {layers.personal && (
+        <p>
+          <span className="insights-layer-tag">あなた</span>
+          {layers.personal}
+        </p>
+      )}
+      {layers.regional && (
+        <p>
+          <span className="insights-layer-tag">地域</span>
+          {layers.regional}
+        </p>
+      )}
+      {layers.general && (
+        <p>
+          <span className="insights-layer-tag">一般</span>
+          {layers.general}
+        </p>
+      )}
+      <p className="ai-proposal-conclusion">
+        <span className="insights-layer-tag insights-layer-tag--conclusion">今日の一手</span>
+        {layers.conclusion}
+      </p>
+    </div>
+  )
 }
 
 export default async function AiProposalPage() {
@@ -29,67 +58,59 @@ export default async function AiProposalPage() {
   const proposals = await getTodayProposals(user.id)
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="flex-1 ml-64 px-6 py-8">
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-bold mb-2">今日の提案</h1>
-          <p className="text-gray-600 mb-8">
-            気象・GDD・タスク・栽培スケジュールをもとに、今日やるといい作業を提案しています。
+      <main className="dashboard-main">
+        <div className="ai-proposal-wrap">
+          <h1 className="ai-proposal-title">今日の提案</h1>
+          <p className="ai-proposal-desc">
+            【あなた】【地域】【一般】の根拠を重ねて、今日の一手を提案します。
           </p>
 
           {proposals.length === 0 ? (
-            <div className="bg-white rounded-xl border border-gray-200 shadow p-8 text-center">
-              <p className="text-gray-600 mb-4">
+            <div className="ai-proposal-empty">
+              <p className="ai-proposal-empty-text">
                 今日の提案はありません。タスクの期限や作物の植え付け日を登録すると、ここに表示されます。
               </p>
-              <div className="flex gap-3 justify-center">
-                <Link
-                  href="/tasks"
-                  className="inline-flex items-center justify-center bg-violet-600 text-white px-4 py-2 rounded-lg hover:bg-violet-700 text-sm font-medium"
-                >
+              <div className="ai-proposal-empty-actions">
+                <Link href="/tasks" className="ai-proposal-btn-primary">
                   タスクを確認
                 </Link>
-                <Link
-                  href="/crops"
-                  className="inline-flex items-center justify-center border border-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 text-sm font-medium"
-                >
+                <Link href="/crops" className="ai-proposal-btn-primary">
                   作物を確認
                 </Link>
               </div>
             </div>
           ) : (
-            <ul className="space-y-4">
+            <ul className="ai-proposal-list">
               {proposals.map((p) => (
                 <li key={p.id}>
-                  <article
-                    className={`bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden border-l-4 ${priorityBorder[p.priority]}`}
-                  >
-                    <div className="p-5">
-                      <div className="flex items-start gap-3">
-                        <span className="text-2xl shrink-0">{typeIcon[p.type]}</span>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                            {typeLabel[p.type]}
-                          </span>
-                          <h2 className="text-lg font-semibold text-gray-900 mt-0.5">
-                            {p.title}
-                          </h2>
-                          <p className="text-gray-600 text-sm mt-1">{p.description}</p>
+                  <article className={`ai-proposal-card ${priorityBorderClass[p.priority]}`}>
+                    <div className="ai-proposal-card-inner">
+                      <span className="ai-proposal-card-icon">{typeIcon[p.type]}</span>
+                      <div className="ai-proposal-card-body">
+                        <span className="ai-proposal-card-type">{typeLabel[p.type]}</span>
+                        <h2 className="ai-proposal-card-title">{p.title}</h2>
+                        <ProposalLayersBlock layers={p.layers} />
+                        <div className="ai-proposal-card-links">
                           {p.relatedTaskId && (
-                            <Link
-                              href={`/tasks`}
-                              className="inline-block mt-3 text-sm font-medium text-violet-600 hover:text-violet-700"
-                            >
+                            <Link href="/tasks" className="ai-proposal-card-link">
                               タスクを見る →
                             </Link>
                           )}
                           {p.relatedCropId && (
-                            <Link
-                              href={`/crops`}
-                              className="inline-block mt-3 text-sm font-medium text-violet-600 hover:text-violet-700"
-                            >
+                            <Link href={`/crops/${p.relatedCropId}`} className="ai-proposal-card-link">
                               作物を見る →
+                            </Link>
+                          )}
+                          {p.relatedCropId && (
+                            <Link href="/insights" className="ai-proposal-card-link">
+                              分析・振り返り →
+                            </Link>
+                          )}
+                          {p.type === 'weather' && (
+                            <Link href="/weather" className="ai-proposal-card-link">
+                              気象ナビ →
                             </Link>
                           )}
                         </div>
@@ -101,8 +122,8 @@ export default async function AiProposalPage() {
             </ul>
           )}
 
-          <p className="text-sm text-gray-500 mt-8">
-            <Link href="/dashboard" className="text-violet-600 hover:underline">
+          <p className="ai-proposal-back">
+            <Link href="/dashboard" className="ai-proposal-back-link">
               ← ダッシュボードに戻る
             </Link>
           </p>

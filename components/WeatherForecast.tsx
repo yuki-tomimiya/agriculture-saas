@@ -1,69 +1,91 @@
-export default function WeatherForecast() {
-  const forecastData = [
-    { day: '本日', weather: '晴れ 時々 くもり', max: 18, min: 8, precipitation: 10, wind: null },
-    { day: '1日後', weather: 'くもり のち 雨', max: 15, min: 7, precipitation: 80, wind: null },
-    { day: '2日後', weather: '雨 一時 強風', max: 13, min: 6, precipitation: null, wind: 12 },
-    { day: '3日後', weather: 'くもり', max: 14, min: 5, precipitation: 20, wind: null },
-    { day: '4日後', weather: '晴れ', max: 17, min: 7, precipitation: 10, wind: null },
-    { day: '5日後', weather: '晴れ 時々 くもり', max: 19, min: 9, precipitation: 20, wind: null },
-    { day: '6日後', weather: 'くもり 一時 雨', max: 16, min: 8, precipitation: 60, wind: null },
-    { day: '7日後', weather: '晴れ 時々 くもり', max: 20, min: 10, precipitation: 20, wind: null },
-    { day: '8日後', weather: 'くもり', max: 18, min: 9, precipitation: 30, wind: null },
-    { day: '9日後', weather: '雨', max: 17, min: 8, precipitation: 70, wind: null },
-    { day: '10日後', weather: '雨 のち くもり', max: 18, min: 9, precipitation: 60, wind: null },
-    { day: '11日後', weather: 'くもり', max: 19, min: 9, precipitation: 30, wind: null },
-    { day: '12日後', weather: '晴れ', max: 21, min: 11, precipitation: 10, wind: null },
-    { day: '13日後', weather: '晴れ 時々 くもり', max: 22, min: 12, precipitation: 10, wind: null },
-  ]
+import Link from 'next/link'
+import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
+
+type Props = {
+  farmName?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  farmId?: string | null
+  emptyState?: 'no-farms'
+}
+
+export default async function WeatherForecast({
+  farmName,
+  latitude,
+  longitude,
+  farmId,
+  emptyState,
+}: Props) {
+  if (emptyState === 'no-farms') {
+    return (
+      <section className="dashboard-card">
+        <h2 className="dashboard-section-title">今後2週間の気象情報</h2>
+        <div className="dashboard-empty" style={{ padding: '1rem 0' }}>
+          <p className="dashboard-empty-text">農場を登録し、地点を入力すると予報が表示されます。</p>
+          <Link href="/farms/new" className="btn btn-primary">
+            農場を追加
+          </Link>
+        </div>
+      </section>
+    )
+  }
+
+  if (!hasWeatherCoordinates({ latitude, longitude })) {
+    return (
+      <section className="dashboard-card">
+        <h2 className="dashboard-section-title">今後2週間の気象情報</h2>
+        <p className="dashboard-section-sub">
+          拠点：{farmName ?? '—'}（地点未登録）
+        </p>
+        <div className="dashboard-empty" style={{ padding: '1rem 0' }}>
+          <p className="dashboard-empty-text">
+            緯度・経度が登録されると、この農場の地点に基づく2週間予報を表示します。
+          </p>
+          {farmId ? (
+            <Link href={`/farms/${farmId}/edit`} className="btn btn-primary">
+              農場の地点を登録
+            </Link>
+          ) : null}
+        </div>
+      </section>
+    )
+  }
+
+  const forecastData = await getForecastDays({ latitude: latitude!, longitude: longitude! })
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-1">今後2週間の気象情報</h2>
-      <p className="text-sm text-gray-500 mb-4">
-        拠点：農場A（北緯 43.0 / 東経 141.0）／ 本日から14日先までの日ごとの予報
+    <section className="dashboard-card">
+      <h2 className="dashboard-section-title">今後2週間の気象情報</h2>
+      <p className="dashboard-section-sub">
+        拠点：{farmName ?? '未選択'}（北緯 {Number(latitude).toFixed(4)} / 東経 {Number(longitude).toFixed(4)}） ／ 本日から14日先までの日ごとの予報
       </p>
-      <div className="grid grid-cols-2 gap-2 text-sm">
-        <ul className="space-y-1">
-          {forecastData.slice(0, 7).map((item, idx) => (
-            <li key={idx} className="flex justify-between items-center border-b pb-1.5">
-              <div>
-                <p className="font-medium">{item.day}</p>
-                <p className="text-xs text-gray-500">{item.weather}</p>
+      {forecastData.length === 0 ? (
+        <div className="dashboard-empty" style={{ padding: '1rem 0' }}>
+          <p className="dashboard-empty-text">
+            気象予報の取得に失敗しました。しばらくしてから再度お試しください。
+          </p>
+        </div>
+      ) : (
+        <ul className="dashboard-forecast-list dashboard-forecast-list--flow">
+          {forecastData.slice(0, 14).map((item, idx) => (
+            <li key={`${item.dayLabel}-${idx}`} className="dashboard-forecast-item">
+              <div className="dashboard-forecast-main">
+                <p className="dashboard-forecast-day">{item.dayLabel}</p>
+                <p className="dashboard-forecast-weather">{item.weather}</p>
               </div>
-              <div className="text-right text-xs text-gray-600">
-                <p>{item.max}℃ / {item.min}℃</p>
-                {item.precipitation !== null ? (
-                  <p className={item.precipitation >= 60 ? 'text-red-500' : ''}>
-                    降水 {item.precipitation}%
-                  </p>
-                ) : (
-                  <p className="text-red-500">風速 {item.wind}m/s</p>
+              <div className="dashboard-forecast-meta">
+                <p>{item.maxTemp}℃ / {item.minTemp}℃</p>
+                <p className={item.precipitation >= 60 ? 'dashboard-forecast-alert' : ''}>
+                  降水 {item.precipitation}%
+                </p>
+                {item.wind >= 10 && (
+                  <p className="dashboard-forecast-alert">風速 {item.wind}m/s</p>
                 )}
               </div>
             </li>
           ))}
         </ul>
-        <ul className="space-y-1">
-          {forecastData.slice(7, 14).map((item, idx) => (
-            <li key={idx + 7} className="flex justify-between items-center border-b pb-1.5">
-              <div>
-                <p className="font-medium">{item.day}</p>
-                <p className="text-xs text-gray-500">{item.weather}</p>
-              </div>
-              <div className="text-right text-xs text-gray-600">
-                <p>{item.max}℃ / {item.min}℃</p>
-                {item.precipitation !== null ? (
-                  <p className={item.precipitation >= 60 ? 'text-red-500' : ''}>
-                    降水 {item.precipitation}%
-                  </p>
-                ) : (
-                  <p className="text-red-500">風速 {item.wind}m/s</p>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      )}
+    </section>
   )
 }

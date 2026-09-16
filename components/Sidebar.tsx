@@ -3,52 +3,124 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
+type MenuItem = {
+  href: string
+  label: string
+  icon: string
+  highlight?: boolean
+  matchPaths?: string[]
+}
+
+type MenuSection = {
+  title?: string
+  items: MenuItem[]
+}
+
+const listPages = [
+  '/pesticides',
+  '/fertilizers',
+  '/work-records',
+  '/harvests',
+  '/sales',
+  '/insights',
+  '/crops',
+  '/farms',
+  '/tasks',
+  '/faq',
+  '/data',
+]
+
 export default function Sidebar() {
   const pathname = usePathname()
 
   const isAuthPage = pathname?.startsWith('/auth')
   const isHomePage = pathname === '/'
 
-  // ホームページと認証ページではサイドバーを表示しない
   if (isAuthPage || isHomePage) {
     return null
   }
 
-  const menuItems = [
-    { href: '/dashboard/ai-proposal', label: 'AIが今日の作業を提案', icon: '✨', highlight: true },
-    { href: '/dashboard', label: 'ダッシュボード', icon: '📊' },
-    { href: '/farms', label: '農場', icon: '🏡' },
-    { href: '/crops', label: '作物', icon: '🌾' },
-    { href: '/harvests', label: '収穫記録', icon: '📦' },
-    { href: '/tasks', label: 'タスク', icon: '📋' },
+  const menuSections: MenuSection[] = [
+    {
+      items: [
+        { href: '/dashboard/ai-proposal', label: 'AIが今日の作業を提案', icon: '✨', highlight: true },
+        { href: '/dashboard', label: 'ダッシュボード', icon: '📊' },
+        { href: '/calendar', label: 'カレンダー', icon: '📅', matchPaths: ['/calendar'] },
+        { href: '/weather', label: '気象ナビ', icon: '🌤️' },
+        { href: '/gdd', label: '生育ナビ', icon: '🌡️', matchPaths: ['/gdd'] },
+        { href: '/farms', label: '農場管理', icon: '🏡' },
+        { href: '/crops', label: '作物管理', icon: '🌾' },
+        {
+          href: '/work-records',
+          label: '作業管理',
+          icon: '🛠️',
+          matchPaths: ['/work-records', '/fertilizers', '/work'],
+        },
+        { href: '/pesticides', label: '農薬管理', icon: '🧪' },
+        { href: '/harvests', label: '収穫管理', icon: '📦' },
+        { href: '/sales', label: '販売管理', icon: '💰' },
+        { href: '/insights', label: '分析・振り返り', icon: '📈' },
+        { href: '/tasks', label: 'タスク', icon: '📋' },
+        { href: '/data', label: '外部連携', icon: '🔁' },
+        { href: '/faq', label: 'よくある質問', icon: '❓' },
+      ],
+    },
   ]
 
+  const isItemActive = (item: MenuItem) => {
+    const isAiProposal = 'highlight' in item && item.highlight
+
+    if (isAiProposal) {
+      return pathname === '/dashboard/ai-proposal'
+    }
+
+    if (item.matchPaths) {
+      return item.matchPaths.some(
+        (path) => pathname === path || (pathname?.startsWith(path + '/') ?? false)
+      )
+    }
+
+    const isListPage = listPages.includes(item.href)
+    if (isListPage) {
+      return pathname === item.href || (pathname?.startsWith(item.href + '/') ?? false)
+    }
+
+    return pathname === item.href
+  }
+
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 h-[calc(100vh-4rem)] fixed left-0 top-16 z-20 overflow-y-auto">
-      <nav className="p-4 space-y-1">
-        {menuItems.map((item) => {
-          const isAiProposal = 'highlight' in item && item.highlight
-          const isActive = isAiProposal
-            ? pathname === '/dashboard/ai-proposal'
-            : pathname === item.href
-          const linkClass = isAiProposal
-            ? isActive
-              ? 'bg-violet-100 text-violet-900 font-semibold border border-violet-300'
-              : 'bg-violet-50 text-violet-800 font-semibold border border-violet-200 hover:bg-violet-100'
-            : isActive
-              ? 'bg-green-50 text-green-700 font-semibold border border-green-200'
-              : 'text-gray-700 hover:bg-gray-50'
-          return (
-            <Link
-              key={item.label}
-              href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${linkClass}`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-sm">{item.label}</span>
-            </Link>
-          )
-        })}
+    <aside className="app-sidebar">
+      <nav className="app-sidebar-nav">
+        {menuSections.map((section, sectionIndex) => (
+          <div key={section.title ?? `section-${sectionIndex}`}>
+            {section.title && (
+              <p className="app-sidebar-section-title">{section.title}</p>
+            )}
+            {section.items.map((item) => {
+              const isActive = isItemActive(item)
+              const isAiProposal = 'highlight' in item && item.highlight
+              const baseClass = 'app-sidebar-link'
+              let stateClass = ''
+
+              if (isAiProposal) {
+                stateClass = isActive ? 'app-sidebar-link--ai-active' : 'app-sidebar-link--ai'
+              } else if (isActive) {
+                stateClass = 'app-sidebar-link--active'
+              }
+
+              return (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  className={`${baseClass} ${stateClass}`.trim()}
+                >
+                  <span className="app-sidebar-icon">{item.icon}</span>
+                  <span className="app-sidebar-label">{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+        ))}
       </nav>
     </aside>
   )

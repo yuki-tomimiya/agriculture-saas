@@ -84,7 +84,7 @@ export default async function TaskDetailPage({
             <div>
               <dt className="text-sm text-gray-500">農場</dt>
               <dd>
-                <Link href={`/farms/${task.farm.id}`} className="text-primary-600 hover:underline">
+                <Link href={`/farms/${task.farm.id}`} className="text-green-600 hover:underline">
                   {task.farm.name}
                 </Link>
               </dd>
@@ -93,7 +93,7 @@ export default async function TaskDetailPage({
               <div>
                 <dt className="text-sm text-gray-500">関連作物</dt>
                 <dd>
-                  <Link href={`/crops/${task.crop.id}`} className="text-primary-600 hover:underline">
+                  <Link href={`/crops/${task.crop.id}`} className="text-green-600 hover:underline">
                     {task.crop.name}
                   </Link>
                 </dd>

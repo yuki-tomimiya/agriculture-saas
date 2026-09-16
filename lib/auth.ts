@@ -3,18 +3,23 @@ import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
 
 export async function getCurrentUser() {
-  const cookieStore = await cookies()
-  const userId = cookieStore.get('userId')?.value
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('userId')?.value
 
-  if (!userId) {
+    if (!userId) {
+      return null
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    })
+
+    return user
+  } catch (e) {
+    console.error('getCurrentUser:', e)
     return null
   }
-
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  })
-
-  return user
 }
 
 export async function hashPassword(password: string): Promise<string> {

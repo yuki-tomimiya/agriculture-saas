@@ -36,7 +36,7 @@ if errorlevel 1 (
 
 echo.
 echo === 初回コミット ===
-git commit -m "Initial commit: 農業SaaS プロジェクト"
+git commit -m "Initial commit: Tillto プロジェクト"
 if errorlevel 1 (
     echo.
     echo コミットに失敗しました。考えられる原因:

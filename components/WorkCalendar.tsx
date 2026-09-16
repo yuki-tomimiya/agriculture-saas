@@ -1,131 +1,441 @@
-export default function WorkCalendar() {
-  // 4月のカレンダーデータ（サンプル）
-  const calendarDays = [
-    // 1週目（空白〜6日）
-    ...Array(4).fill(null),
-    { day: 1 },
-    { day: 2 },
-    { day: 3 },
-    // 2週目（4〜10日）
-    { day: 4 },
-    { day: 5 },
-    { day: 6 },
-    { day: 7 },
-    { day: 8 },
-    { day: 9 },
-    { day: 10, proposals: ['植え付け'], records: ['植え付け'] },
-    // 3週目（11〜17日）
-    { day: 11 },
-    { day: 12 },
-    { day: 13, proposals: ['活着確認'] },
-    { day: 14 },
-    { day: 15, proposals: ['初回追肥'] },
-    { day: 16, records: ['初回追肥'] },
-    { day: 17 },
-    // 4週目（18〜24日）
-    { day: 18 },
-    { day: 19, proposals: ['防除'] },
-    { day: 20, records: ['防除'] },
-    { day: 21 },
-    { day: 22 },
-    { day: 23 },
-    { day: 24 },
-    // 5週目（25〜30日＋空白）
-    { day: 25 },
-    { day: 26 },
-    { day: 27 },
-    { day: 28 },
-    { day: 29 },
-    { day: 30 },
-    null,
-  ]
+import Link from 'next/link'
+import { prisma } from '@/lib/prisma'
+import { getTodayProposals } from '@/lib/ai-proposal'
+
+type DayEvents = {
+  proposalCount: number
+  proposalTitles: string[]
+  recordCount: number
+  recordLabels: string[]
+  lastYearCount: number
+  lastYearLabels: string[]
+}
+
+type CalendarDay = null | { day: number; dateKey: string; events: DayEvents }
+
+export type WorkCalendarVariant = 'upcoming' | 'history'
+
+const emptyDayEvents = (): DayEvents => ({
+  proposalCount: 0,
+  proposalTitles: [],
+  recordCount: 0,
+  recordLabels: [],
+  lastYearCount: 0,
+  lastYearLabels: [],
+})
+
+function toYmd(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
+  const d = new Date(year, month - 1 + delta, 1)
+  return { year: d.getFullYear(), month: d.getMonth() + 1 }
+}
+
+function getMonthCalendarDays(
+  year: number,
+  month: number,
+  eventsByDate: Map<string, DayEvents>
+): CalendarDay[] {
+  const first = new Date(year, month - 1, 1)
+  const last = new Date(year, month, 0)
+  const firstWeekday = first.getDay()
+  const daysInMonth = last.getDate()
+
+  const leadingBlanks = Array(firstWeekday).fill(null)
+  const days = Array.from({ length: daysInMonth }, (_, i) => {
+    const d = i + 1
+    const dateKey = toYmd(new Date(year, month - 1, d))
+    return {
+      day: d,
+      dateKey,
+      events: eventsByDate.get(dateKey) ?? emptyDayEvents(),
+    }
+  })
+  return [...leadingBlanks, ...days]
+}
+
+function CalendarDayCell({
+  item,
+  showProposals,
+  showLastYear,
+}: {
+  item: Exclude<CalendarDay, null>
+  showProposals: boolean
+  showLastYear: boolean
+}) {
+  const {
+    proposalCount,
+    proposalTitles,
+    recordCount,
+    recordLabels,
+    lastYearCount,
+    lastYearLabels,
+  } = item.events
+  const hasProposals = showProposals && proposalCount > 0
+  const hasRecords = recordCount > 0
+  const hasLastYear = showLastYear && lastYearCount > 0
+  const hasHighlight = hasProposals || hasRecords || hasLastYear
 
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-1">作業カレンダー（4月：提案と実績）</h2>
-      <p className="text-sm text-gray-500 mb-3">
-        一般的な月間カレンダー形式で、植え付け〜初回追肥までのスケジュールと実績を確認します。
+    <div
+      className={`dashboard-calendar-cell${hasHighlight ? ' dashboard-calendar-cell--highlight' : ''}`}
+    >
+      <Link href={`/work-records/new?date=${item.dateKey}`} className="dashboard-calendar-day-link">
+        <span className="dashboard-calendar-day">{item.day}</span>
+      </Link>
+      {hasProposals && (
+        <Link
+          href="/dashboard/ai-proposal"
+          className="dashboard-calendar-badge dashboard-calendar-badge--proposal dashboard-calendar-badge--compact"
+          title={proposalTitles.join('\n')}
+        >
+          提案{proposalCount > 1 ? ` ${proposalCount}件` : ''}
+        </Link>
+      )}
+      {hasRecords && (
+        <Link
+          href="/work-records"
+          className="dashboard-calendar-badge dashboard-calendar-badge--record dashboard-calendar-badge--compact"
+          title={recordLabels.join('\n')}
+        >
+          実績{recordCount > 1 ? ` ${recordCount}件` : ''}
+        </Link>
+      )}
+      {hasLastYear && (
+        <span
+          className="dashboard-calendar-badge dashboard-calendar-badge--lastyear dashboard-calendar-badge--compact"
+          title={`昨年同日:\n${lastYearLabels.join('\n')}`}
+        >
+          昨年{lastYearCount > 1 ? ` ${lastYearCount}件` : ''}
+        </span>
+      )}
+    </div>
+  )
+}
+
+function MonthBlock({
+  year,
+  month,
+  calendarDays,
+  title,
+  showProposals,
+  showLastYear,
+}: {
+  year: number
+  month: number
+  calendarDays: CalendarDay[]
+  title?: string
+  showProposals: boolean
+  showLastYear: boolean
+}) {
+  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+  return (
+    <div className="dashboard-calendar-frame">
+      <div className="dashboard-calendar-header">
+        <div className="dashboard-calendar-title">
+          {title ?? `${year}年 ${monthNames[month - 1]}`}
+        </div>
+        <div className="dashboard-calendar-legend">
+          {showProposals && (
+            <>
+              <span className="dashboard-calendar-dot dashboard-calendar-dot--proposal"></span>提案
+            </>
+          )}
+          <span className="dashboard-calendar-dot dashboard-calendar-dot--record"></span>実績
+          {showLastYear && (
+            <>
+              <span className="dashboard-calendar-dot dashboard-calendar-dot--lastyear"></span>昨年
+            </>
+          )}
+        </div>
+      </div>
+      <div className="dashboard-calendar-weekdays">
+        <div className="dashboard-calendar-weekday dashboard-calendar-weekday--sun">日</div>
+        <div className="dashboard-calendar-weekday">月</div>
+        <div className="dashboard-calendar-weekday">火</div>
+        <div className="dashboard-calendar-weekday">水</div>
+        <div className="dashboard-calendar-weekday">木</div>
+        <div className="dashboard-calendar-weekday">金</div>
+        <div className="dashboard-calendar-weekday dashboard-calendar-weekday--sat">土</div>
+      </div>
+      <div className="dashboard-calendar-grid">
+        {calendarDays.map((item, idx) => {
+          if (item === null) {
+            return <div key={idx} className="dashboard-calendar-cell dashboard-calendar-cell--empty"></div>
+          }
+          return (
+            <CalendarDayCell
+              key={idx}
+              item={item}
+              showProposals={showProposals}
+              showLastYear={showLastYear}
+            />
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default async function WorkCalendar({
+  months = 1,
+  userId,
+  startYear,
+  startMonth,
+  variant = 'upcoming',
+}: {
+  months?: number
+  userId: string
+  /** 表示開始の年（未指定なら今日の月を起点） */
+  startYear?: number
+  /** 表示開始の月 1–12 */
+  startMonth?: number
+  /** upcoming: 今月起点の予定寄り / history: 過去実績の閲覧 */
+  variant?: WorkCalendarVariant
+}) {
+  const today = new Date()
+  const todayYear = today.getFullYear()
+  const todayMonth = today.getMonth() + 1
+  const monthCount = months >= 6 ? 6 : months >= 3 ? 3 : 1
+  const showProposals = variant !== 'history'
+  const showLastYear = variant === 'upcoming'
+
+  const anchorYear = startYear ?? todayYear
+  const anchorMonth = startMonth ?? todayMonth
+  // upcoming の3か月は「今月・来月・再来月」。history は指定月から3か月
+  const startOffset = 0
+
+  const firstMonth = shiftMonth(anchorYear, anchorMonth, startOffset)
+  const lastMonth = shiftMonth(firstMonth.year, firstMonth.month, monthCount - 1)
+  const rangeStart = new Date(firstMonth.year, firstMonth.month - 1, 1)
+  const rangeEnd = new Date(lastMonth.year, lastMonth.month, 0, 23, 59, 59, 999)
+
+  // 前年同月レンジ（表示月の「日」に重ねる）
+  const lastYearRangeStart = new Date(firstMonth.year - 1, firstMonth.month - 1, 1)
+  const lastYearRangeEnd = new Date(lastMonth.year - 1, lastMonth.month, 0, 23, 59, 59, 999)
+
+  const [workRecords, fertilizerRecords, proposals, lastYearWorks, lastYearFertilizers] =
+    await Promise.all([
+      prisma.workRecord.findMany({
+        where: { farm: { userId }, date: { gte: rangeStart, lte: rangeEnd } },
+        include: { crop: true },
+        orderBy: { date: 'asc' },
+      }),
+      prisma.fertilizerRecord.findMany({
+        where: { userId, appliedAt: { gte: rangeStart, lte: rangeEnd } },
+        orderBy: { appliedAt: 'asc' },
+      }),
+      showProposals ? getTodayProposals(userId) : Promise.resolve([]),
+      showLastYear
+        ? prisma.workRecord.findMany({
+            where: {
+              farm: { userId },
+              date: { gte: lastYearRangeStart, lte: lastYearRangeEnd },
+            },
+            include: { crop: true },
+            orderBy: { date: 'asc' },
+          })
+        : Promise.resolve([]),
+      showLastYear
+        ? prisma.fertilizerRecord.findMany({
+            where: {
+              userId,
+              appliedAt: { gte: lastYearRangeStart, lte: lastYearRangeEnd },
+            },
+            orderBy: { appliedAt: 'asc' },
+          })
+        : Promise.resolve([]),
+    ])
+
+  const eventsByDate = new Map<string, DayEvents>()
+
+  const getDay = (key: string) => {
+    const existing = eventsByDate.get(key)
+    if (existing) return existing
+    const fresh = emptyDayEvents()
+    eventsByDate.set(key, fresh)
+    return fresh
+  }
+
+  for (const rec of workRecords) {
+    const key = toYmd(rec.date)
+    const day = getDay(key)
+    const crop = rec.crop?.name ? `（${rec.crop.name}）` : ''
+    const label = `${rec.taskType}${crop}`
+    if (!day.recordLabels.includes(label)) {
+      day.recordLabels.push(label)
+      day.recordCount += 1
+    }
+  }
+  for (const rec of fertilizerRecords) {
+    const key = toYmd(rec.appliedAt)
+    const day = getDay(key)
+    const label = `施肥：${rec.productName}`
+    if (!day.recordLabels.includes(label)) {
+      day.recordLabels.push(label)
+      day.recordCount += 1
+    }
+  }
+  if (showProposals) {
+    for (const p of proposals) {
+      const key = toYmd(p.suggestedDate ?? today)
+      const day = getDay(key)
+      if (!day.proposalTitles.includes(p.title)) {
+        day.proposalTitles.push(p.title)
+        day.proposalCount += 1
+      }
+    }
+  }
+
+  /** 昨年の記録を「今年の同じ月日」キーにマッピング */
+  const mapLastYearToThisYear = (date: Date): string => {
+    const thisYear = date.getFullYear() + 1
+    const month = date.getMonth()
+    const day = date.getDate()
+    const probe = new Date(thisYear, month, day)
+    if (probe.getMonth() !== month) return ''
+    return toYmd(probe)
+  }
+
+  if (showLastYear) {
+    for (const rec of lastYearWorks) {
+      const key = mapLastYearToThisYear(rec.date)
+      if (!key) continue
+      const day = getDay(key)
+      const crop = rec.crop?.name ? `（${rec.crop.name}）` : ''
+      const label = `${rec.taskType}${crop}`
+      if (!day.lastYearLabels.includes(label)) {
+        day.lastYearLabels.push(label)
+        day.lastYearCount += 1
+      }
+    }
+    for (const rec of lastYearFertilizers) {
+      const key = mapLastYearToThisYear(rec.appliedAt)
+      if (!key) continue
+      const day = getDay(key)
+      const label = `施肥：${rec.productName}`
+      if (!day.lastYearLabels.includes(label)) {
+        day.lastYearLabels.push(label)
+        day.lastYearCount += 1
+      }
+    }
+  }
+
+  const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+
+  if (months >= 3) {
+    const count = months >= 6 ? 6 : 3
+    const monthConfigs: { year: number; month: number }[] = []
+    for (let i = 0; i < count; i++) {
+      monthConfigs.push(shiftMonth(firstMonth.year, firstMonth.month, i))
+    }
+
+    const gridClass = count === 6 ? 'work-calendar-six-months' : 'work-calendar-three-months'
+    const sectionTitle = variant === 'history' ? '過去の実績' : 'カレンダー'
+    const sectionSub =
+      variant === 'history'
+        ? '過去の作業記録・施肥をカレンダーで確認できます。月を移動して期間を変えられます。'
+        : '今月・来月・再来月の提案と実績です。薄い「昨年」は前年同日の作業・施肥です。もっと前は「過去の実績」から。'
+
+    return (
+      <section className="dashboard-card">
+        <h2 className="dashboard-section-title">{sectionTitle}</h2>
+        <p className="dashboard-section-sub">{sectionSub}</p>
+        <div className={gridClass}>
+          {monthConfigs.map(({ year, month }) => (
+            <MonthBlock
+              key={`${year}-${month}`}
+              year={year}
+              month={month}
+              calendarDays={getMonthCalendarDays(year, month, eventsByDate)}
+              title={`${year}年 ${monthNames[month - 1]}`}
+              showProposals={showProposals}
+              showLastYear={showLastYear}
+            />
+          ))}
+        </div>
+        <p className="dashboard-calendar-note">
+          {variant === 'history'
+            ? '※ 実績バッジにマウスを乗せると内容の概要を表示します。日付クリックで作業記録を登録できます。'
+            : '※ 「昨年」は前年同日の実績です。提案・実績は件数バッジのみ。詳細は過去の実績ページでも確認できます。'}
+        </p>
+      </section>
+    )
+  }
+
+  const calendarDays = getMonthCalendarDays(todayYear, todayMonth, eventsByDate)
+  const proposalDays = calendarDays.filter((item) => item !== null && item.events.proposalCount > 0).length
+  const recordDays = calendarDays.filter((item) => item !== null && item.events.recordCount > 0).length
+  const lastYearDays = calendarDays.filter((item) => item !== null && item.events.lastYearCount > 0).length
+
+  return (
+    <section className="dashboard-card">
+      <h2 className="dashboard-section-title">作業カレンダー（{todayMonth}月）</h2>
+      <p className="dashboard-section-sub">
+        提案（AI）と実績（作業・施肥）、昨年同日の記録をひと目で確認できます。
       </p>
-      {/* 月間カレンダー */}
-      <div className="border border-gray-200 rounded-lg mb-3">
-        <div className="flex justify-between items-center px-3 py-2 border-b">
-          <div className="text-xs text-gray-700 font-semibold">
-            2026年 4月 ／ A圃場 トマト
+      <div className="dashboard-calendar-frame">
+        <div className="dashboard-calendar-header">
+          <div className="dashboard-calendar-title">
+            {todayYear}年 {monthNames[todayMonth - 1]}
           </div>
-          <div className="flex gap-2 text-[10px] text-gray-500">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-green-500"></span>提案
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-blue-500"></span>実績
-            </span>
+          <div className="dashboard-calendar-legend">
+            <span className="dashboard-calendar-dot dashboard-calendar-dot--proposal"></span>提案
+            <span className="dashboard-calendar-dot dashboard-calendar-dot--record"></span>実績
+            <span className="dashboard-calendar-dot dashboard-calendar-dot--lastyear"></span>昨年
           </div>
         </div>
-        {/* 曜日ヘッダー */}
-        <div className="grid grid-cols-7 text-center text-[10px] bg-gray-50 border-b">
-          <div className="py-1 text-red-500 font-semibold">日</div>
-          <div className="py-1 text-gray-600 font-semibold">月</div>
-          <div className="py-1 text-gray-600 font-semibold">火</div>
-          <div className="py-1 text-gray-600 font-semibold">水</div>
-          <div className="py-1 text-gray-600 font-semibold">木</div>
-          <div className="py-1 text-gray-600 font-semibold">金</div>
-          <div className="py-1 text-blue-500 font-semibold">土</div>
+        <div className="dashboard-calendar-weekdays">
+          <div className="dashboard-calendar-weekday dashboard-calendar-weekday--sun">日</div>
+          <div className="dashboard-calendar-weekday">月</div>
+          <div className="dashboard-calendar-weekday">火</div>
+          <div className="dashboard-calendar-weekday">水</div>
+          <div className="dashboard-calendar-weekday">木</div>
+          <div className="dashboard-calendar-weekday">金</div>
+          <div className="dashboard-calendar-weekday dashboard-calendar-weekday--sat">土</div>
         </div>
-        {/* 日付セル */}
-        <div className="grid grid-cols-7 text-[11px]">
+        <div className="dashboard-calendar-grid">
           {calendarDays.map((item, idx) => {
             if (item === null) {
-              return <div key={idx} className="h-16 border-r border-b bg-gray-50"></div>
+              return <div key={idx} className="dashboard-calendar-cell dashboard-calendar-cell--empty"></div>
             }
-            const hasProposals = item.proposals && item.proposals.length > 0
-            const hasRecords = item.records && item.records.length > 0
-            const bgColor = hasProposals || hasRecords ? 'bg-green-50/40' : ''
-
             return (
-              <div
-                key={idx}
-                className={`h-16 border-r border-b flex flex-col items-start p-1 ${bgColor}`}
-              >
-                <span className="text-xs text-gray-700 mb-0.5">{item.day}</span>
-                {hasProposals && item.proposals.map((prop, pIdx) => (
-                  <span
-                    key={pIdx}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 text-[9px] mb-0.5"
-                  >
-                    提案：{prop}
-                  </span>
-                ))}
-                {hasRecords && item.records.map((rec, rIdx) => (
-                  <span
-                    key={rIdx}
-                    className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[9px]"
-                  >
-                    実績：{rec}
-                  </span>
-                ))}
-              </div>
+              <CalendarDayCell key={idx} item={item} showProposals showLastYear />
             )
           })}
         </div>
       </div>
-      {/* 振り返りと今後の提案 */}
-      <div className="text-xs mb-2">
-        <p className="font-semibold text-gray-700 mb-1">4月の振り返りと、これからの提案</p>
-        <ul className="list-disc list-inside space-y-1 text-gray-700">
+      <div className="dashboard-calendar-review">
+        <p className="dashboard-calendar-review-title">今月の状況サマリー</p>
+        <ul className="dashboard-calendar-review-list">
           <li>
-            植え付けは提案どおり10日に実施できています。今後も、<span className="font-semibold">植え付け日を基準にした積算温度の管理</span>が重要です。
+            AI提案がある日は <span className="font-semibold">{proposalDays}日</span>、実績がある日は{' '}
+            <span className="font-semibold">{recordDays}日</span>
+            {lastYearDays > 0 && (
+              <>
+                、昨年同日に記録がある日は <span className="font-semibold">{lastYearDays}日</span>
+              </>
+            )}{' '}
+            です。
           </li>
           <li>
-            初回追肥は提案（15日）より1日遅れの16日に実施。生育に大きな問題はありませんが、来週以降の気温推移によっては、<span className="font-semibold">2回目追肥をやや前倒し</span>する提案を行います。
-          </li>
-          <li>
-            防除は提案（19日）と実績（20日）が1日ずれているため、降雨予報が強い週は、<span className="font-semibold">事前にリマインド</span>を出すと安心です。
+            作付け単位の比較は{' '}
+            <Link href="/insights" className="text-green-600 hover:underline">
+              分析・振り返り
+            </Link>
+            、詳細な過去履歴は{' '}
+            <Link href="/calendar/history" className="text-green-600 hover:underline">
+              過去の実績
+            </Link>
+            から確認できます。
           </li>
         </ul>
       </div>
-      <p className="text-[11px] text-gray-500">
-        ※ 実装時は、このカレンダー上で日付をクリックして作業実績を登録し、提案スケジュールとの差分から「次にいつ・何をすべきか」をAIが再提案するイメージです。
-      </p>
-    </div>
+    </section>
   )
 }

@@ -53,24 +53,29 @@ export default async function FarmDetailPage({
               <p className="text-gray-600 max-w-2xl">{farm.description}</p>
             )}
           </div>
-          <Link href="/farms" className="btn btn-outline">
-            一覧に戻る
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/farms/${farm.id}/edit`} className="btn btn-primary">
+              編集
+            </Link>
+            <Link href="/farms" className="btn btn-outline">
+              一覧に戻る
+            </Link>
+          </div>
         </div>
 
         {/* 基本情報・サマリー */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm text-gray-600 mb-1">作物数</h3>
-            <p className="text-2xl font-bold text-primary-600">{farm._count.crops}</p>
-            <Link href={`/crops?farmId=${farm.id}`} className="text-sm text-primary-600 hover:underline mt-1 inline-block">
+            <p className="text-2xl font-bold text-green-600">{farm._count.crops}</p>
+            <Link href={`/crops?farmId=${farm.id}`} className="text-sm text-green-600 hover:underline mt-1 inline-block">
               作物一覧 →
             </Link>
           </div>
           <div className="bg-white p-6 rounded-lg shadow">
             <h3 className="text-sm text-gray-600 mb-1">タスク数</h3>
             <p className="text-2xl font-bold text-orange-600">{farm._count.tasks}</p>
-            <Link href={`/tasks`} className="text-sm text-primary-600 hover:underline mt-1 inline-block">
+            <Link href={`/tasks`} className="text-sm text-green-600 hover:underline mt-1 inline-block">
               タスク一覧 →
             </Link>
           </div>
@@ -107,7 +112,7 @@ export default async function FarmDetailPage({
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">この農場の作物</h2>
-            <Link href={`/crops?farmId=${farm.id}`} className="text-sm text-primary-600 hover:underline">
+            <Link href={`/crops?farmId=${farm.id}`} className="text-sm text-green-600 hover:underline">
               すべて見る →
             </Link>
           </div>
@@ -139,7 +144,7 @@ export default async function FarmDetailPage({
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">未完了タスク</h2>
-            <Link href="/tasks" className="text-sm text-primary-600 hover:underline">
+            <Link href="/tasks" className="text-sm text-green-600 hover:underline">
               すべて見る →
             </Link>
           </div>

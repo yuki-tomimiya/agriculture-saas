@@ -8,25 +8,1845 @@
   }
 }
 
+/* ===== 共通ヘッダー（プレビューと同じ見た目） ===== */
+.app-header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4rem; /* 64px */
+  background-color: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgb(15 23 42 / 0.08);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+}
+.app-header-inner {
+  width: 100%;
+  padding: 0 1.5rem;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app-header-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #16a34a;
+  text-decoration: none;
+}
+.app-header-logout {
+  font-size: 0.875rem;
+  color: #4b5563;
+  text-decoration: none;
+}
+.app-header-logout:hover {
+  color: #111827;
+}
+
+/* ===== ホームページ：プレビュー完全再現（Tailwindに依存しない通常CSS） ===== */
+.home-page-root {
+  min-height: 100vh;
+  background: linear-gradient(to bottom right, #f0fdf4, #eff6ff);
+}
+.home-page-root .home-inner {
+  width: 100%;
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 4rem 1rem;
+  box-sizing: border-box;
+}
+.home-page-root .home-section {
+  margin-bottom: 4rem;
+}
+.home-page-root .home-section:last-child {
+  margin-bottom: 0;
+}
+.home-page-root .home-text-center {
+  text-align: center;
+}
+.home-page-root .home-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.home-page-root .home-brand-row .home-brand {
+  margin-bottom: 0;
+}
+.home-page-root .home-brand {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #15803d;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.02em;
+}
+.home-page-root .home-title {
+  font-size: 3rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+.home-page-root .home-desc {
+  font-size: 1.125rem;
+  color: #374151;
+  margin-bottom: 1.5rem;
+  line-height: 1.6;
+  max-width: 48rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.home-page-root .home-cta-wrap {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+.home-page-root .home-cta-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: #16a34a;
+  color: #fff;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  transition: background-color 0.2s;
+}
+.home-page-root .home-cta-primary:hover {
+  background-color: #15803d;
+}
+.home-page-root .home-cta-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  background-color: #fff;
+  color: #15803d;
+  text-decoration: none;
+  border: 1px solid #bbf7d0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.home-page-root .home-cta-secondary:hover {
+  background-color: #f9fafb;
+}
+.home-page-root .home-cards-wrap {
+  max-width: 56rem;
+  margin-left: auto;
+  margin-right: auto;
+}
+.home-page-root .home-cards-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+.home-page-root .home-cards-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+.home-page-root .home-card {
+  text-align: left;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  background-color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: default;
+  transition: background-color 0.2s;
+}
+.home-page-root .home-card:hover {
+  background-color: #f9fafb;
+}
+.home-page-root .home-card-first {
+  text-align: left;
+  padding: 1rem;
+  border-radius: 0.75rem;
+  border: 1px solid #bbf7d0;
+  background-color: #f0fdf4;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  cursor: default;
+  transition: background-color 0.2s;
+}
+.home-page-root .home-card-first:hover {
+  background-color: #dcfce7;
+}
+.home-page-root .home-card-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+.home-page-root .home-card-first .home-card-title {
+  color: #166534;
+}
+.home-page-root .home-card-desc {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+.home-page-root .home-note {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 1.5rem;
+  text-align: center;
+}
+.home-page-root .home-link-wrap {
+  font-size: 0.75rem;
+  text-align: center;
+  margin-top: 1rem;
+}
+.home-page-root .home-link-wrap a {
+  color: #16a34a;
+  text-decoration: none;
+}
+.home-page-root .home-link-wrap a:hover {
+  text-decoration: underline;
+}
+
+/* ===== ダッシュボード：プレビューと同じレイアウト ===== */
+.dashboard-page {
+  display: flex;
+  min-height: 100vh;
+  padding-top: 4rem;
+  background-color: #f9fafb;
+}
+.dashboard-main {
+  margin-left: 14rem; /* サイドバー幅と揃える */
+  padding: 1.5rem 1.25rem;
+  max-width: none;
+  flex: 1 1 0;
+  min-width: 0;
+  box-sizing: border-box;
+}
+.dashboard-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1.5rem;
+}
+/* KPI 4カード */
+.dashboard-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+.dashboard-kpi-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.08);
+  padding: 1.5rem;
+  text-decoration: none;
+}
+.dashboard-kpi-title {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+.dashboard-kpi-value {
+  font-size: 1.875rem;
+  font-weight: 700;
+}
+.dashboard-kpi-value--green {
+  color: #16a34a;
+}
+.dashboard-kpi-value--blue {
+  color: #2563eb;
+}
+.dashboard-kpi-value--orange {
+  color: #ea580c;
+}
+.dashboard-kpi-value--purple {
+  color: #7c3aed;
+}
+
+/* 中段2カード（最近の作物・収穫） */
+.dashboard-section-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+.dashboard-section-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.08);
+  padding: 1.5rem;
+}
+.dashboard-section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+.dashboard-section-sub {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin-bottom: 0.75rem;
+}
+.dashboard-empty {
+  text-align: center;
+  padding: 2rem 0;
+  color: #6b7280;
+}
+.dashboard-empty-text {
+  margin-bottom: 1rem;
+}
+.dashboard-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-list-item {
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.4rem 0 0.4rem;
+}
+.dashboard-list-item:last-child {
+  border-bottom: none;
+}
+.dashboard-list-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+.dashboard-list-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.1rem;
+}
+.dashboard-list-label {
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+.dashboard-list-meta {
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.dashboard-list-sub {
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+/* 今週の気象ナビ（カード全体） */
+.dashboard-weather-box {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #bbf7d0;
+  box-shadow: 0 10px 15px -3px rgb(15 118 110 / 0.08);
+  padding: 1.25rem;
+  margin-bottom: 2rem;
+}
+.dashboard-weather-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.dashboard-weather-header h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.dashboard-weather-header p {
+  font-size: 0.875rem;
+  color: #4b5563;
+}
+.dashboard-weather-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+.dashboard-weather-tag-green {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #ecfdf3;
+  border: 1px solid #bbf7d0;
+}
+.dashboard-weather-tag-gray {
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+/* 今週の気象ナビ：3列 */
+.dashboard-weather-nav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+.dashboard-weather-col {
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+}
+.dashboard-weather-col h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+.dashboard-weather-col ul,
+.dashboard-weather-col ol {
+  margin: 0;
+  padding-left: 1rem;
+  color: #374151;
+}
+.dashboard-weather-col--green {
+  background-color: #f0fdf4;
+}
+.dashboard-weather-col--yellow {
+  background-color: #fffbeb;
+}
+.dashboard-weather-col--blue {
+  background-color: #eff6ff;
+}
+/* 下段 2 カード（気象ナビ・積算温度） */
+.dashboard-bottom {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+@media (max-width: 900px) {
+  .dashboard-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ===== 農場一覧（プレビューと同じレイアウト） ===== */
+.farms-page {
+  padding-top: 1.5rem;
+}
+.farms-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.75rem;
+}
+.farms-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.farms-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+}
+.farms-subtitle {
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+.farms-add-button {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+.farms-empty-card {
+  text-align: center;
+  padding-top: 3rem;
+  padding-bottom: 3rem;
+}
+.farms-empty-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+}
+.farms-empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+.farms-empty-text {
+  font-size: 0.95rem;
+  color: #6b7280;
+  margin-bottom: 1.5rem;
+}
+.farms-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+.farms-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 180px;
+}
+.farms-card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #111827;
+  margin-bottom: 0.25rem;
+}
+.farms-card-title-link {
+  color: inherit;
+  text-decoration: none;
+}
+.farms-card-title-link:hover {
+  color: #16a34a;
+}
+.farms-card-desc {
+  font-size: 0.9rem;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}
+.farms-card-meta {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+.farms-card-location {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 0.75rem;
+}
+.farms-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+}
+.farms-card-button {
+  flex: 1 1 0;
+  font-size: 0.85rem;
+  text-align: center;
+}
+.farms-filter-link {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #4b5563;
+  background-color: #f3f4f6;
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+.farms-filter-link:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+.farms-filter-active {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #15803d;
+  background-color: #dcfce7;
+  text-decoration: none;
+}
+.farms-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* 新規農場追加フォーム */
+.farm-new-back {
+  display: inline-block;
+  font-size: 0.875rem;
+  color: #6b7280;
+  text-decoration: none;
+  margin-bottom: 0.5rem;
+}
+.farm-new-back:hover {
+  color: #111827;
+  text-decoration: underline;
+}
+.farm-new-card {
+  max-width: 32rem;
+}
+.farm-new-required {
+  font-size: 0.75rem;
+  color: #dc2626;
+  font-weight: normal;
+}
+.farm-new-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+.farm-new-textarea {
+  resize: vertical;
+  min-height: 4.5rem;
+}
+.farm-new-row {
+  display: flex;
+  gap: 1rem;
+}
+.farm-new-half {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.farm-new-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+.farm-new-submit {
+  min-width: 8rem;
+}
+
+/* ===== 今日の提案（AI提案）ページ：プレビューと同じ ===== */
+.ai-proposal-wrap {
+  max-width: 42rem;
+}
+.ai-proposal-title {
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+.ai-proposal-desc {
+  font-size: 0.95rem;
+  color: #4b5563;
+  margin-bottom: 2rem;
+}
+.ai-proposal-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.ai-proposal-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  overflow: hidden;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+.ai-proposal-card--high {
+  border-left-color: #f97316;
+}
+.ai-proposal-card--medium {
+  border-left-color: #8b5cf6;
+}
+.ai-proposal-card--low {
+  border-left-color: #9ca3af;
+}
+.ai-proposal-card-inner {
+  padding: 1.25rem;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+.ai-proposal-card-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.ai-proposal-card-body {
+  min-width: 0;
+  flex: 1;
+}
+.ai-proposal-card-type {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.ai-proposal-card-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0.25rem 0 0;
+}
+.ai-proposal-card-desc {
+  font-size: 0.875rem;
+  color: #4b5563;
+  margin: 0.25rem 0 0;
+}
+.ai-proposal-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.55;
+}
+.ai-proposal-layers p {
+  margin: 0;
+}
+.ai-proposal-conclusion {
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #f3f4f6;
+  font-weight: 500;
+}
+.insights-layer-tag--conclusion {
+  background-color: #ede9fe;
+  color: #5b21b6;
+}
+.ai-proposal-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-top: 0.75rem;
+}
+.ai-proposal-card-link {
+  display: inline-block;
+  margin-top: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #7c3aed;
+  text-decoration: none;
+}
+.ai-proposal-card-link:hover {
+  color: #6d28d9;
+}
+.ai-proposal-empty {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+  padding: 2rem;
+  text-align: center;
+}
+.ai-proposal-empty-text {
+  font-size: 0.95rem;
+  color: #4b5563;
+  margin-bottom: 1rem;
+}
+.ai-proposal-empty-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.ai-proposal-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background-color: #7c3aed;
+  color: #fff;
+  text-decoration: none;
+}
+.ai-proposal-btn-primary:hover {
+  background-color: #6d28d9;
+}
+.ai-proposal-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  text-decoration: none;
+}
+.ai-proposal-btn-secondary:hover {
+  background-color: #f9fafb;
+}
+.ai-proposal-back {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 2rem;
+}
+.ai-proposal-back-link {
+  color: #7c3aed;
+  text-decoration: none;
+}
+.ai-proposal-back-link:hover {
+  text-decoration: underline;
+}
+
+/* 下段共通カード */
+.dashboard-card {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 15px -3px rgb(15 23 42 / 0.08);
+  padding: 1.5rem;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+/* 今後2週間の気象情報：日付順に左→右→次行へ並べる（週ごとに列分割しない） */
+.dashboard-forecast-list--flow {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 1.5rem;
+  row-gap: 0;
+}
+@media (max-width: 640px) {
+  .dashboard-forecast-list--flow {
+    grid-template-columns: 1fr;
+  }
+}
+.dashboard-forecast-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+.dashboard-forecast-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dashboard-forecast-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.25rem 0;
+}
+.dashboard-forecast-main {
+  max-width: 60%;
+}
+.dashboard-forecast-day {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+.dashboard-forecast-weather {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.dashboard-forecast-meta {
+  text-align: right;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+.dashboard-forecast-alert {
+  color: #dc2626;
+}
+/* カレンダー */
+.work-calendar-three-months {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.work-calendar-three-months .dashboard-calendar-frame {
+  margin-bottom: 0;
+}
+.work-calendar-six-months {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.5rem;
+  width: 100%;
+  min-width: 0;
+}
+.work-calendar-six-months .dashboard-calendar-frame {
+  margin-bottom: 0;
+}
+.calendar-page-content {
+  width: 100%;
+  min-width: 0;
+  margin-top: 0.5rem;
+}
+.calendar-history-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+}
+.calendar-history-nav-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+.dashboard-calendar-frame {
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+}
+.dashboard-calendar-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 0.75rem;
+}
+.dashboard-calendar-title {
+  font-weight: 600;
+  color: #374151;
+}
+.dashboard-calendar-legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+.dashboard-calendar-dot {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 9999px;
+  margin-right: 0.15rem;
+}
+.dashboard-calendar-dot--proposal {
+  background-color: #22c55e;
+}
+.dashboard-calendar-dot--record {
+  background-color: #3b82f6;
+}
+.dashboard-calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  text-align: center;
+  font-size: 0.7rem;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+.dashboard-calendar-weekday {
+  padding: 0.15rem 0;
+  color: #4b5563;
+  font-weight: 600;
+}
+.dashboard-calendar-weekday--sun {
+  color: #ef4444;
+}
+.dashboard-calendar-weekday--sat {
+  color: #2563eb;
+}
+.dashboard-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  font-size: 0.75rem;
+}
+.dashboard-calendar-cell {
+  min-height: 4rem;
+  border-right: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 0.25rem 0.25rem 0.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.dashboard-calendar-cell--empty {
+  background-color: #f9fafb;
+}
+.dashboard-calendar-cell--highlight {
+  background-color: #ecfdf3;
+}
+.dashboard-calendar-day {
+  font-size: 0.7rem;
+  color: #374151;
+  margin-bottom: 0.15rem;
+}
+.dashboard-calendar-day-link {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 0.25rem;
+  padding: 0 0.15rem;
+  margin: 0 -0.15rem 0.1rem;
+}
+.dashboard-calendar-day-link:hover {
+  background-color: rgba(22, 163, 74, 0.08);
+}
+.dashboard-calendar-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1rem 0.35rem;
+  border-radius: 9999px;
+  font-size: 0.55rem;
+  margin-bottom: 0.1rem;
+}
+.dashboard-calendar-badge--proposal {
+  background-color: #dcfce7;
+  color: #166534;
+}
+.dashboard-calendar-badge--compact {
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.dashboard-calendar-badge--compact:hover {
+  filter: brightness(0.95);
+}
+.dashboard-calendar-badge--record.dashboard-calendar-badge--compact:hover {
+  background-color: #bfdbfe;
+}
+.dashboard-calendar-badge--proposal.dashboard-calendar-badge--compact:hover {
+  background-color: #bbf7d0;
+}
+.dashboard-calendar-badge--record {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+}
+.dashboard-calendar-badge--lastyear {
+  background-color: #f3f4f6;
+  color: #4b5563;
+  border: 1px dashed #9ca3af;
+}
+.dashboard-calendar-dot--lastyear {
+  background-color: #9ca3af;
+}
+.dashboard-calendar-review {
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.dashboard-calendar-review-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+.dashboard-calendar-review-list {
+  padding-left: 1rem;
+  margin: 0;
+  color: #374151;
+}
+.dashboard-calendar-note {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+/* GDD カード */
+.dashboard-gdd-graph {
+  margin-bottom: 0.75rem;
+}
+.dashboard-gdd-graph-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+  color: #4b5563;
+}
+.dashboard-gdd-graph-current {
+  font-weight: 600;
+  color: #15803d;
+}
+.dashboard-gdd-graph-body {
+  position: relative;
+  width: 100%;
+  height: 7rem;
+  background-color: #f9fafb;
+  border-radius: 0.5rem;
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+.dashboard-gdd-graph-body--large {
+  height: 280px;
+  min-height: 260px;
+  width: 100%;
+  min-width: min(100%, 1400px);
+  max-width: none;
+}
+.dashboard-gdd-graph-body--large .dashboard-gdd-graph-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 260px;
+}
+.dashboard-gdd-graph-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.dashboard-gdd-graph-marker {
+  position: absolute;
+  right: 0.1rem;
+  top: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 0.6rem;
+}
+.dashboard-gdd-graph-marker-row {
+  display: flex;
+  align-items: center;
+  gap: 0.15rem;
+  margin-bottom: 0.1rem;
+}
+.dashboard-gdd-graph-dot {
+  width: 0.4rem;
+  height: 0.4rem;
+  border-radius: 9999px;
+}
+.dashboard-gdd-graph-dot--current {
+  background-color: #16a34a;
+}
+.dashboard-gdd-graph-dot--standard {
+  background-color: #9ca3af;
+}
+.dashboard-gdd-graph-marker-text {
+  color: #6b7280;
+}
+.dashboard-gdd-graph-marker-text--current {
+  color: #15803d;
+  font-weight: 600;
+}
+.dashboard-gdd-graph-axis {
+  position: absolute;
+  bottom: 0.15rem;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 0.35rem;
+  font-size: 0.6rem;
+  color: #6b7280;
+}
+.dashboard-gdd-summary {
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.dashboard-gdd-summary-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+.dashboard-gdd-summary-text {
+  color: #374151;
+}
+.dashboard-gdd-suggestions {
+  font-size: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+.dashboard-gdd-suggestions-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+.dashboard-gdd-suggestions-list {
+  padding-left: 1rem;
+  margin: 0;
+  color: #374151;
+}
+.dashboard-gdd-note {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+/* 生育ナビページ：説明・参照表・作物一覧 */
+.gdd-page .calendar-page-content {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* FAQ（よくある質問）ページ */
+.faq-page .faq-content {
+  padding: 1.5rem;
+  max-width: 48rem;
+}
+.faq-nav {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.faq-nav-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.5rem;
+}
+.faq-nav-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.faq-nav-list a {
+  color: #15803d;
+  text-decoration: none;
+  font-size: 0.875rem;
+}
+.faq-nav-list a:hover {
+  text-decoration: underline;
+}
+.faq-nav-list li {
+  margin-bottom: 0.35rem;
+}
+.faq-section {
+  margin-bottom: 2rem;
+  scroll-margin-top: 1rem;
+}
+.faq-section:last-child {
+  margin-bottom: 0;
+}
+.faq-section-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.75rem;
+}
+.faq-section-text {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.6;
+  margin-bottom: 0.5rem;
+}
+.faq-section-note {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+.faq-link {
+  color: #15803d;
+  font-weight: 600;
+  text-decoration: none;
+}
+.faq-link:hover {
+  text-decoration: underline;
+}
+.faq-section .gdd-reference-table {
+  margin-top: 0.5rem;
+}
+
+.gdd-reference {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+.gdd-reference-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.25rem;
+}
+.gdd-reference-note {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+.gdd-reference-table {
+  width: 100%;
+  font-size: 0.8rem;
+  border-collapse: collapse;
+}
+.gdd-reference-table th,
+.gdd-reference-table td {
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+}
+.gdd-reference-table th {
+  background-color: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+}
+.gdd-reference-table td {
+  color: #4b5563;
+}
+
+.gdd-section-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+.gdd-crop-list-desc {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+.gdd-empty {
+  padding: 1rem 0;
+  text-align: center;
+}
+.gdd-empty-text {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+.gdd-crop-cards {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.gdd-crop-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+.gdd-crop-card-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.gdd-crop-card-name {
+  font-weight: 600;
+  color: #15803d;
+  text-decoration: none;
+}
+.gdd-crop-card-name:hover {
+  text-decoration: underline;
+}
+.gdd-crop-card-meta {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+.gdd-crop-card-extra {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.75rem;
+  color: #4b5563;
+}
+.gdd-crop-card-base {
+  padding: 0.2rem 0.5rem;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 0.25rem;
+}
+.gdd-crop-card-status {
+  padding: 0.2rem 0.5rem;
+  background: #dcfce7;
+  color: #15803d;
+  border-radius: 0.25rem;
+}
+.gdd-crop-card-status--past {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+.gdd-crop-card--past {
+  background: #fafafa;
+  opacity: 0.95;
+}
+.gdd-crop-list-empty {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  font-size: 0.875rem;
+  color: #4b5563;
+  background: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.5rem;
+  line-height: 1.5;
+}
+.gdd-crop-past {
+  margin: 0.25rem 0 1rem;
+  border-top: 1px solid #e5e7eb;
+  padding-top: 0.75rem;
+}
+.gdd-crop-past-summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #374151;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  user-select: none;
+}
+.gdd-crop-past-summary::-webkit-details-marker {
+  display: none;
+}
+.gdd-crop-past-summary::before {
+  content: '▸';
+  display: inline-block;
+  color: #6b7280;
+  transition: transform 0.15s ease;
+}
+.gdd-crop-past[open] > .gdd-crop-past-summary::before {
+  transform: rotate(90deg);
+}
+.gdd-crop-past-summary-hint {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #9ca3af;
+}
+.gdd-crop-past-desc {
+  margin-top: 0.5rem;
+}
+.gdd-breadcrumb {
+  margin: 0 0 0.35rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.gdd-breadcrumb-link {
+  color: #15803d;
+  text-decoration: none;
+  font-weight: 500;
+}
+.gdd-breadcrumb-link:hover {
+  text-decoration: underline;
+}
+.gdd-breadcrumb-sep {
+  margin: 0 0.35rem;
+  color: #d1d5db;
+}
+.gdd-crop-past-link {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1rem;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid #e5e7eb;
+}
+.gdd-crop-past-link-a {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #15803d;
+  text-decoration: none;
+}
+.gdd-crop-past-link-a:hover {
+  text-decoration: underline;
+}
+.gdd-crop-past-link-hint {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+.gdd-past-banner {
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid #9ca3af;
+}
+.gdd-past-banner-text {
+  margin: 0 0 0.75rem;
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.55;
+}
+.gdd-past-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.insights-past-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.insights-past-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.85rem 1rem;
+}
+.insights-past-item-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+.insights-past-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.insights-past-status {
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  background: #f3f4f6;
+  color: #4b5563;
+  border-radius: 0.25rem;
+}
+.gdd-crop-list-other {
+  padding-top: 0.75rem;
+  border-top: 1px dashed #e5e7eb;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.gdd-crop-list-other-title {
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+.gdd-crop-list-other-list {
+  padding-left: 1.25rem;
+  margin: 0;
+}
+.gdd-crop-list-other-list li {
+  margin-bottom: 0.25rem;
+}
+.gdd-crop-list-other-link {
+  color: #15803d;
+  font-weight: 600;
+  text-decoration: none;
+}
+.gdd-crop-list-other-link:hover {
+  text-decoration: underline;
+}
+
+/* 生育ナビ：予報を元にした今後の見通し */
+.gdd-forecast {
+  padding: 1.25rem 1.5rem;
+}
+.gdd-forecast-title {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.35rem;
+}
+.gdd-forecast-desc {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+.gdd-forecast-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 0.5rem;
+}
+.gdd-forecast-summary-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+.gdd-forecast-summary-row--highlight {
+  width: 100%;
+  margin-top: 0.25rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #bbf7d0;
+  font-weight: 600;
+  color: #15803d;
+}
+.gdd-forecast-label {
+  color: #4b5563;
+}
+.gdd-forecast-value {
+  font-weight: 600;
+  color: #111827;
+}
+.gdd-forecast-value--accent {
+  color: #15803d;
+}
+.gdd-forecast-details {
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+}
+.gdd-forecast-details-summary {
+  cursor: pointer;
+  color: #15803d;
+  font-weight: 600;
+}
+.gdd-forecast-table {
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+  border-collapse: collapse;
+}
+.gdd-forecast-table th,
+.gdd-forecast-table td {
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+  border: 1px solid #e5e7eb;
+}
+.gdd-forecast-table th {
+  background: #f3f4f6;
+  font-weight: 600;
+  color: #374151;
+}
+.gdd-forecast-suggestions {
+  margin-bottom: 0.75rem;
+}
+.gdd-forecast-suggestions-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 0.35rem;
+}
+.gdd-forecast-suggestions-list {
+  padding-left: 1.25rem;
+  margin: 0;
+  color: #374151;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+.gdd-forecast-suggestions-item {
+  margin-bottom: 0.25rem;
+}
+.gdd-forecast-note {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin: 0;
+}
+
+/* ===== サイドバー：プレビューと同じ見た目 ===== */
+.app-sidebar {
+  position: fixed;
+  top: 4rem;
+  left: 0;
+  width: 14rem;
+  height: calc(100vh - 4rem);
+  background-color: #ffffff;
+  border-right: 1px solid #e5e7eb;
+  z-index: 20;
+  overflow-y: auto;
+}
+.app-sidebar-nav {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.app-sidebar-section-title {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #9ca3af;
+  letter-spacing: 0.04em;
+  padding: 0.75rem 0.75rem 0.25rem;
+  margin-top: 0.15rem;
+}
+.work-management-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+  margin-bottom: 0.25rem;
+}
+.work-management-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem;
+  border-radius: 0.625rem;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #4b5563;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+.work-management-tab:hover {
+  background: #f9fafb;
+  color: #111827;
+}
+.work-management-tab--active {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #15803d;
+  font-weight: 600;
+}
+.app-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  font-size: 0.875rem;
+  color: #374151;
+  text-decoration: none;
+  transition: background-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  border: 1px solid transparent;
+}
+.app-sidebar-link:hover {
+  background-color: #f9fafb;
+}
+.app-sidebar-icon {
+  font-size: 1.25rem;
+}
+.app-sidebar-label {
+  font-size: 0.875rem;
+}
+/* AI 提案カード（ハイライト） */
+.app-sidebar-link--ai {
+  background-color: #f5f3ff;
+  color: #5b21b6;
+  border-color: #ddd6fe;
+  font-weight: 600;
+}
+.app-sidebar-link--ai:hover {
+  background-color: #ede9fe;
+}
+.app-sidebar-link--ai-active {
+  background-color: #e0e7ff;
+  color: #4338ca;
+  border-color: #c4b5fd;
+  font-weight: 700;
+}
+/* 通常メニューのアクティブ状態 */
+.app-sidebar-link--active {
+  background-color: #ecfdf3;
+  color: #15803d;
+  border-color: #bbf7d0;
+  font-weight: 600;
+}
+
+/* ===== 認証ページ（サインイン） ===== */
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+  background: radial-gradient(circle at top left, #bbf7d0 0, #ecfdf3 35%, #eef2ff 100%);
+}
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background-color: #ffffff;
+  border-radius: 1.25rem;
+  padding: 2.5rem 2.25rem 2.25rem;
+  box-shadow:
+    0 20px 45px rgba(15, 23, 42, 0.15),
+    0 0 0 1px rgba(148, 163, 184, 0.08);
+}
+.auth-card-header {
+  margin-bottom: 1.5rem;
+}
+.auth-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.75rem;
+}
+.auth-brand {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  color: #16a34a;
+}
+.auth-subtitle {
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+.auth-title {
+  margin-top: 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  text-align: left;
+  color: #111827;
+}
+.auth-error {
+  margin-top: 1rem;
+  margin-bottom: 0.75rem;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  font-size: 0.875rem;
+}
+.auth-form {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+.auth-submit {
+  width: 100%;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+.auth-footer {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+.auth-link {
+  color: #16a34a;
+  font-weight: 500;
+  text-decoration: none;
+}
+.auth-link:hover {
+  text-decoration: underline;
+}
+
 @layer components {
+  /* ボタン：プレビューと同じ色（緑/青）を確実に適用 */
   .btn {
-    @apply px-4 py-2 rounded-lg font-medium transition-colors;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
   }
   
   .btn-primary {
-    @apply bg-primary-600 text-white hover:bg-primary-700;
+    background-color: #16a34a; /* green-600 */
+    color: #fff;
+  }
+  .btn-primary:hover {
+    background-color: #15803d; /* green-700 */
   }
   
   .btn-secondary {
-    @apply bg-secondary-600 text-white hover:bg-secondary-700;
+    background-color: #2563eb; /* blue-600 */
+    color: #fff;
+  }
+  .btn-secondary:hover {
+    background-color: #1d4ed8; /* blue-700 */
   }
   
   .btn-outline {
-    @apply border-2 border-primary-600 text-primary-600 hover:bg-primary-50;
+    background-color: transparent;
+    color: #16a34a; /* green-600 */
+    border: 2px solid #16a34a;
+  }
+  .btn-outline:hover {
+    background-color: #f0fdf4; /* green-50 */
   }
   
+  /* カード：プレビューと同じスタイル */
   .card {
-    @apply bg-white rounded-lg shadow-md p-6;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+    padding: 1.5rem;
   }
   
   .input {
@@ -37,3 +1857,229 @@
     @apply block text-sm font-medium text-gray-700 mb-2;
   }
 }
+
+/* ===== 404 ===== */
+.not-found-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+.not-found-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+.not-found-desc {
+  font-size: 0.9rem;
+  color: #6b7280;
+  margin-bottom: 1.25rem;
+  max-width: 24rem;
+}
+.not-found-link {
+  color: #16a34a;
+  font-weight: 600;
+  text-decoration: none;
+}
+.not-found-link:hover {
+  text-decoration: underline;
+}
+
+/* ===== ローディング表示 ===== */
+.app-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 2rem;
+  color: #6b7280;
+}
+.app-loading-spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #16a34a;
+  border-radius: 50%;
+  animation: app-spin 0.8s linear infinite;
+}
+.app-loading-text {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+@keyframes app-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ===== 分析・振り返り ===== */
+.insights-intro {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+}
+.insights-intro-text {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #4b5563;
+  line-height: 1.6;
+}
+.insights-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+.insights-regional {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.insights-regional-text {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #374151;
+  line-height: 1.6;
+}
+.insights-regional-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.insights-regional-stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.15rem;
+}
+.insights-regional-stat-value {
+  display: block;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
+}
+.insights-regional-meta {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+.insights-regional-link {
+  margin: 0;
+  font-size: 0.875rem;
+}
+.insights-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+@media (max-width: 640px) {
+  .insights-regional-stats {
+    grid-template-columns: 1fr;
+  }
+}
+.insights-layer-tag {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+  margin-right: 0.25rem;
+  background-color: #ecfdf5;
+  color: #166534;
+  vertical-align: middle;
+}
+.insights-section {
+  margin-bottom: 1.25rem;
+  padding: 1rem 1.25rem;
+}
+.insights-section-wrap {
+  margin-top: 0.5rem;
+}
+.insights-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 0.75rem;
+}
+.insights-section-title--page {
+  margin-bottom: 1rem;
+}
+.insights-hint-list {
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.7;
+}
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 22rem), 1fr));
+  gap: 1rem;
+}
+.insights-card {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.insights-card--compared {
+  border-color: #86efac;
+  box-shadow: 0 0 0 1px #bbf7d0;
+}
+.insights-card-header {
+  margin-bottom: 0.25rem;
+}
+.insights-card-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem;
+}
+.insights-card-meta {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+.insights-compare-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-size: 0.8rem;
+}
+.insights-compare-row {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr 1fr 3rem;
+  gap: 0.5rem;
+  align-items: baseline;
+  color: #374151;
+}
+.insights-compare-row--head {
+  font-weight: 600;
+  color: #6b7280;
+  font-size: 0.7rem;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 0.25rem;
+}
+.insights-previous-label {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #4b5563;
+}
+.insights-layers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-size: 0.8rem;
+  color: #374151;
+  line-height: 1.5;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 0.75rem;
+}
+.insights-layers p {
+  margin: 0;
+}
+

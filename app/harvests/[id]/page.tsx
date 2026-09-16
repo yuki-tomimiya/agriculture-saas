@@ -15,15 +15,27 @@ export default async function HarvestDetailPage({
 
   const { id } = await params
 
-  const harvest = await prisma.harvest.findFirst({
+  let harvest = await prisma.harvest.findFirst({
     where: {
       id,
-      crop: { farm: { userId: user.id } },
+      crop: {
+        OR: [
+          { userId: user.id },
+          { farm: { userId: user.id } },
+        ],
+      },
     },
     include: {
       crop: { include: { farm: true } },
     },
-  })
+  }).catch(() => null)
+
+  if (!harvest) {
+    harvest = await prisma.harvest.findFirst({
+      where: { id, crop: { farm: { userId: user.id } } },
+      include: { crop: { include: { farm: true } } },
+    })
+  }
 
   if (!harvest) notFound()
 
@@ -33,14 +45,14 @@ export default async function HarvestDetailPage({
       <main className="flex-1 ml-64 px-6 py-8">
         <div className="mb-6">
           <Link href="/harvests" className="text-sm text-gray-500 hover:text-gray-700">
-            ← 収穫記録一覧
+            ← 収穫管理
           </Link>
         </div>
 
         <div className="flex items-start justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              収穫記録: {harvest.crop.name}
+              収穫: {harvest.crop.name}
             </h1>
             <p className="text-lg text-gray-600">
               {formatDate(harvest.date)} ・ {harvest.quantity} {harvest.unit}
@@ -67,19 +79,21 @@ export default async function HarvestDetailPage({
             <div>
               <dt className="text-sm text-gray-500">作物</dt>
               <dd>
-                <Link href={`/crops/${harvest.crop.id}`} className="text-primary-600 hover:underline">
+                <Link href={`/crops/${harvest.crop.id}`} className="text-green-600 hover:underline">
                   {harvest.crop.name}
                 </Link>
               </dd>
             </div>
-            <div>
-              <dt className="text-sm text-gray-500">農場</dt>
-              <dd>
-                <Link href={`/farms/${harvest.crop.farm.id}`} className="text-primary-600 hover:underline">
-                  {harvest.crop.farm.name}
-                </Link>
-              </dd>
-            </div>
+            {harvest.crop.farm && (
+              <div>
+                <dt className="text-sm text-gray-500">農場</dt>
+                <dd>
+                  <Link href={`/farms/${harvest.crop.farm.id}`} className="text-green-600 hover:underline">
+                    {harvest.crop.farm.name}
+                  </Link>
+                </dd>
+              </div>
+            )}
             {harvest.notes && (
               <div className="sm:col-span-2">
                 <dt className="text-sm text-gray-500">メモ</dt>
@@ -89,7 +103,7 @@ export default async function HarvestDetailPage({
           </dl>
         </div>
 
-        <Link href={`/crops/${harvest.crop.id}`} className="text-sm text-primary-600 hover:underline">
+        <Link href={`/crops/${harvest.crop.id}`} className="text-sm text-green-600 hover:underline">
           「{harvest.crop.name}」の栽培詳細を見る →
         </Link>
       </main>

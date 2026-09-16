@@ -1,0 +1,28 @@
+import { getCurrentUser } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { redirect } from 'next/navigation'
+import TaskNewForm from './TaskNewForm'
+
+export default async function NewTaskPage() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect('/auth/signin')
+  }
+
+  const farms = await prisma.farm.findMany({
+    where: { userId: user.id },
+    include: {
+      crops: { orderBy: { name: 'asc' } },
+    },
+    orderBy: { name: 'asc' },
+  })
+
+  const farmsWithCrops = farms.map((f) => ({
+    id: f.id,
+    name: f.name,
+    crops: f.crops.map((c) => ({ id: c.id, name: c.name })),
+  }))
+
+  return <TaskNewForm farms={farmsWithCrops} />
+}

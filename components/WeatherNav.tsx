@@ -1,48 +1,171 @@
-export default function WeatherNav() {
-  return (
-    <div className="bg-white border border-green-100 rounded-lg shadow mb-8 p-5">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div>
-          <h2 className="text-xl font-semibold mb-1">今週の気象ナビ</h2>
-          <p className="text-sm text-gray-600">
-            過去5年分の同じ作付けシーズン（4〜9月）の気象データと、直近2週間の予報をもとにした、今シーズン向けのアドバイスです。
+import Link from 'next/link'
+import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
+
+type Props = {
+  farmName?: string | null
+  latitude?: number | null
+  longitude?: number | null
+  /** 地点未登録時の「農場を編集」リンク先 */
+  farmId?: string | null
+  /** 農場が1件もないとき */
+  emptyState?: 'no-farms'
+}
+
+function mean(values: number[]): number {
+  if (values.length === 0) return 0
+  return values.reduce((a, b) => a + b, 0) / values.length
+}
+
+export default async function WeatherNav({
+  farmName,
+  latitude,
+  longitude,
+  farmId,
+  emptyState,
+}: Props) {
+  if (emptyState === 'no-farms') {
+    return (
+      <section className="dashboard-weather-box">
+        <div className="dashboard-weather-header">
+          <div className="dashboard-weather-header-text">
+            <h2>今週の気象ナビ</h2>
+            <p>農場を登録し、農場情報で緯度・経度を入力すると、その地点の予報に基づいて表示されます。</p>
+          </div>
+        </div>
+        <div className="dashboard-empty" style={{ padding: '1.25rem' }}>
+          <p className="dashboard-empty-text">農場がまだありません</p>
+          <Link href="/farms/new" className="btn btn-primary">
+            農場を追加
+          </Link>
+        </div>
+      </section>
+    )
+  }
+
+  if (!hasWeatherCoordinates({ latitude, longitude })) {
+    return (
+      <section className="dashboard-weather-box">
+        <div className="dashboard-weather-header">
+          <div className="dashboard-weather-header-text">
+            <h2>今週の気象ナビ</h2>
+            <p>登録した緯度・経度の地点で Open-Meteo の予報を取得しています。</p>
+          </div>
+          <div className="dashboard-weather-tags">
+            <span className="dashboard-weather-tag-gray">拠点：{farmName ?? '—'}（地点未登録）</span>
+          </div>
+        </div>
+        <div className="dashboard-empty" style={{ padding: '1.25rem' }}>
+          <p className="dashboard-empty-text">
+            この農場の緯度・経度がまだ登録されていません。農場の編集画面で地点を入力すると、その地点の気象情報が表示されます。
+          </p>
+          {farmId ? (
+            <Link href={`/farms/${farmId}/edit`} className="btn btn-primary">
+              農場の地点を登録
+            </Link>
+          ) : null}
+        </div>
+      </section>
+    )
+  }
+
+  const forecast = await getForecastDays({ latitude: latitude!, longitude: longitude! })
+  if (forecast.length === 0) {
+    return (
+      <section className="dashboard-weather-box">
+        <div className="dashboard-weather-header">
+          <div className="dashboard-weather-header-text">
+            <h2>今週の気象ナビ</h2>
+            <p>直近7日間の予報（Open-Meteo）をもとに、今週の作業判断に使える要点を表示しています。</p>
+          </div>
+          <div className="dashboard-weather-tags">
+            <span className="dashboard-weather-tag-green">
+              拠点：{farmName ?? '未選択'}（北緯 {Number(latitude).toFixed(4)} / 東経 {Number(longitude).toFixed(4)}）
+            </span>
+          </div>
+        </div>
+        <div className="dashboard-empty" style={{ padding: '1.25rem' }}>
+          <p className="dashboard-empty-text">
+            気象予報の取得に失敗しました。しばらくしてから再度お試しください。
           </p>
         </div>
-        <div className="flex gap-2 text-xs text-gray-600">
-          <span className="px-2 py-1 rounded-full bg-green-50 border border-green-200">
-            対象作付け：A圃場 トマト（4/10 植え付け）
+      </section>
+    )
+  }
+
+  const week = forecast.slice(0, 7)
+  const avgMax = mean(week.map((d) => d.maxTemp))
+  const avgRain = mean(week.map((d) => d.precipitation))
+  // 週内で最も風が強い日（＝週内の最大風速）を注意日にも使う
+  const windiestDay = week.reduce((best, d) => (d.wind > best.wind ? d : best), week[0])
+  const maxWind = windiestDay.wind
+  const heavyRainDay = week
+    .filter((d) => d.precipitation >= 60)
+    .sort((a, b) => b.precipitation - a.precipitation)[0]
+  const strongWindDay = maxWind >= 10 ? windiestDay : null
+
+  const diffLabel =
+    avgMax >= 26 ? '高温傾向' : avgMax <= 12 ? '低温傾向' : '平年並み'
+
+  return (
+    <section className="dashboard-weather-box">
+      <div className="dashboard-weather-header">
+        <div className="dashboard-weather-header-text">
+          <h2>今週の気象ナビ</h2>
+          <p>直近7日間の予報（Open-Meteo）をもとに、今週の作業判断に使える要点を表示しています。</p>
+        </div>
+        <div className="dashboard-weather-tags">
+          <span className="dashboard-weather-tag-green">
+            拠点：{farmName ?? '未選択'}（北緯 {Number(latitude).toFixed(4)} / 東経 {Number(longitude).toFixed(4)}）
           </span>
-          <span className="px-2 py-1 rounded-full bg-gray-50 border border-gray-200">
-            期間：4/10 〜 9/30
+          <span className="dashboard-weather-tag-gray">
+            データ更新：約1時間ごと
           </span>
         </div>
       </div>
-      <div className="grid grid-cols-3 gap-4 text-sm">
-        <div className="bg-green-50 border border-green-100 rounded-md p-3">
-          <p className="text-xs font-semibold text-green-800 mb-1">平年との違い</p>
-          <ul className="space-y-1 text-xs text-gray-700">
-            <li>・今週は平均より <span className="font-semibold text-red-600">+2〜3℃ 高め</span> の予想。</li>
-            <li>・降水量は平年比 <span className="font-semibold text-blue-700">80%</span> で、やや少なめ。</li>
-            <li>・日照時間は平年より長く、乾燥傾向です。</li>
+      <div className="dashboard-weather-nav">
+        <div className="dashboard-weather-col dashboard-weather-col--green">
+          <h3>今週の見通し</h3>
+          <ul>
+            <li>・最高気温の週平均は <span className="font-semibold">{avgMax.toFixed(1)}℃</span> で、{diffLabel} です。</li>
+            <li>・降水確率の週平均は <span className="font-semibold">{avgRain.toFixed(0)}%</span> です。</li>
+            <li>
+              ・週内の最大風速（日最大）は{' '}
+              <span className="font-semibold">{maxWind.toFixed(1)}m/s</span>
+              {windiestDay ? `（${windiestDay.dayLabel}）` : ''} です。
+            </li>
           </ul>
         </div>
-        <div className="bg-yellow-50 border border-yellow-100 rounded-md p-3">
-          <p className="text-xs font-semibold text-yellow-800 mb-1">今週やっておきたいこと</p>
-          <ol className="list-decimal list-inside space-y-1 text-xs text-gray-700">
-            <li>高温＋乾燥対策として、<span className="font-semibold">潅水量を10〜20%増やす</span>計画を検討。</li>
-            <li>日中の高温時間帯（13〜15時）のハウス作業を避け、<span className="font-semibold">早朝・夕方に集中</span>。</li>
-            <li>多雨の翌週に備え、<span className="font-semibold">病害防除のタイミングを1〜2日前倒し</span>。</li>
+        <div className="dashboard-weather-col dashboard-weather-col--yellow">
+          <h3>今週やっておきたいこと</h3>
+          <ol>
+            <li>最高気温が高めの日は、<span className="font-semibold">潅水時間を早朝・夕方に寄せる</span>運用を優先。</li>
+            <li>降水確率が高い日は、<span className="font-semibold">防除・施肥を前倒し</span>にして作業ロスを回避。</li>
+            <li>風が強い予報の日までに、<span className="font-semibold">ハウス・資材の固定確認</span>を実施。</li>
           </ol>
         </div>
-        <div className="bg-blue-50 border border-blue-100 rounded-md p-3">
-          <p className="text-xs font-semibold text-blue-800 mb-1">注意すべき日</p>
-          <ul className="space-y-1 text-xs text-gray-700">
-            <li>・<span className="font-semibold">4日後（木）</span>：強風（最大12m/s）＋雨予報 → ハウス・資材の固定を事前に確認。</li>
-            <li>・<span className="font-semibold">7日後（日）</span>：終日くもり＋高湿度 → 葉面の乾きが悪く病害リスク↑。</li>
-            <li>・その前日までに、<span className="font-semibold">排水路の点検</span>とハウス内の換気計画を確認。</li>
+        <div className="dashboard-weather-col dashboard-weather-col--blue">
+          <h3>注意すべき日</h3>
+          <ul>
+            <li>
+              ・降水警戒：
+              <span className="font-semibold">
+                {heavyRainDay
+                  ? `${heavyRainDay.dayLabel}（降水確率 ${heavyRainDay.precipitation}%）`
+                  : '大雨レベルの日はなし'}
+              </span>
+            </li>
+            <li>
+              ・強風警戒：
+              <span className="font-semibold">
+                {strongWindDay
+                  ? `${strongWindDay.dayLabel}（日最大 ${strongWindDay.wind.toFixed(1)}m/s）`
+                  : '強風レベルの日はなし'}
+              </span>
+            </li>
+            <li>・前日までに、<span className="font-semibold">排水路・換気・作業順序</span>の見直しを推奨。</li>
           </ul>
         </div>
       </div>
-    </div>
+    </section>
   )
 }

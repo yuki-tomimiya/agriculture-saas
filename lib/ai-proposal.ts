@@ -1,4 +1,15 @@
 import { prisma } from '@/lib/prisma'
+import { getForecastDailyTemps } from '@/lib/weather-forecast'
+import { computeGDDProjection, getTargetGDDForCrop } from '@/lib/gdd'
+import {
+  buildGeneralLayer,
+  buildPersonalLayerForCrop,
+  buildPersonalLayerForTask,
+  buildRegionalLayer,
+  layersToDescription,
+  mergeLayers,
+  type ProposalLayers,
+} from '@/lib/ai-proposal-context'
 
 export type ProposalType = 'task_due' | 'schedule' | 'weather'
 
@@ -6,7 +17,10 @@ export type Proposal = {
   id: string
   type: ProposalType
   title: string
+  /** 後方互換：結論テキスト */
   description: string
+  layers: ProposalLayers
+  suggestedDate?: Date
   relatedTaskId?: string
   relatedCropId?: string
   relatedFarmName?: string
@@ -15,14 +29,12 @@ export type Proposal = {
 
 const MAX_PROPOSALS = 3
 
-/** 今日の日付（0時0分） */
 function getTodayStart(): Date {
   const d = new Date()
   d.setHours(0, 0, 0, 0)
   return d
 }
 
-/** 明日の日付（0時0分） */
 function getTomorrowStart(): Date {
   const d = new Date()
   d.setDate(d.getDate() + 1)
@@ -30,7 +42,6 @@ function getTomorrowStart(): Date {
   return d
 }
 
-/** 植え付け日から経過日数を返す */
 function daysSince(date: Date | null): number | null {
   if (!date) return null
   const start = new Date(date)
@@ -40,16 +51,36 @@ function daysSince(date: Date | null): number | null {
   return diff >= 0 ? diff : null
 }
 
+function pushProposal(
+  proposals: Proposal[],
+  item: Omit<Proposal, 'description'> & { description?: string }
+) {
+  proposals.push({
+    ...item,
+    description: item.description ?? layersToDescription(item.layers),
+  })
+}
+
 /**
- * 気象・GDD・タスク・栽培スケジュールを組み合わせた
- * ルールベースの「今日の提案」を1〜3件生成する
+ * 3層（あなた / 地域 / 一般）→ 結論 のルールベース「今日の提案」
  */
 export async function getTodayProposals(userId: string): Promise<Proposal[]> {
   const proposals: Proposal[] = []
   const todayStart = getTodayStart()
   const tomorrowStart = getTomorrowStart()
 
-  // --- 1. タスク: 期限が今日 or 過ぎている未完了タスク（最大2件）---
+  const defaultFarm = await prisma.farm.findFirst({
+    where: { userId, latitude: { not: null }, longitude: { not: null } },
+  })
+  const defaultPoint = defaultFarm
+    ? {
+        latitude: defaultFarm.latitude,
+        longitude: defaultFarm.longitude,
+        farmName: defaultFarm.name,
+      }
+    : undefined
+
+  // --- 1. タスク期限 ---
   const dueTasks = await prisma.task.findMany({
     where: {
       farm: { userId },
@@ -63,97 +94,206 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
 
   for (const task of dueTasks) {
     const isOverdue = task.dueDate && new Date(task.dueDate) < todayStart
-    proposals.push({
+    const point = {
+      latitude: task.farm.latitude,
+      longitude: task.farm.longitude,
+      farmName: task.farm.name,
+    }
+    const [regional, general] = await Promise.all([
+      buildRegionalLayer(point.latitude != null ? point : defaultPoint),
+      Promise.resolve(buildGeneralLayer(task.crop?.name, task.crop?.variety)),
+    ])
+    const personal = buildPersonalLayerForTask({
+      title: task.title,
+      farmName: task.farm.name,
+      cropName: task.crop?.name,
+      isOverdue: !!isOverdue,
+    })
+    const conclusion = isOverdue
+      ? '今日中に対応するか、完了見込みを記録に残しましょう。'
+      : '今日中に着手・完了を目指しましょう。'
+
+    pushProposal(proposals, {
       id: `task-${task.id}`,
       type: 'task_due',
       title: isOverdue ? '期限を過ぎたタスクがあります' : '今日が期限のタスクがあります',
-      description: task.crop?.name
-        ? `「${task.title}」（${task.farm.name} / ${task.crop.name}）`
-        : `「${task.title}」（${task.farm.name}）`,
+      layers: mergeLayers({ personal, regional, general, conclusion }),
+      suggestedDate: task.dueDate ?? todayStart,
       relatedTaskId: task.id,
       relatedFarmName: task.farm.name,
+      relatedCropId: task.cropId ?? undefined,
       priority: isOverdue ? 'high' : 'medium',
     })
   }
 
-  // --- 2. 栽培スケジュール: 植え付け日からの経過日数に基づく提案（最大1件）---
+  // --- 2. 栽培中作物のスケジュール提案 ---
   if (proposals.length < MAX_PROPOSALS) {
     const growingCrops = await prisma.crop.findMany({
       where: {
-        farm: { userId },
+        OR: [{ userId }, { farm: { userId } }],
         status: 'growing',
         plantingDate: { not: null },
       },
       include: { farm: true },
+      orderBy: { plantingDate: 'desc' },
     })
 
     for (const crop of growingCrops) {
+      if (proposals.length >= MAX_PROPOSALS) break
       const days = daysSince(crop.plantingDate)
       if (days === null) continue
+      const farmName = crop.farm?.name ?? '農場未設定'
+      const point = crop.farm
+        ? {
+            latitude: crop.farm.latitude,
+            longitude: crop.farm.longitude,
+            farmName: crop.farm.name,
+          }
+        : defaultPoint
 
       let scheduleTitle: string | null = null
-      let scheduleDesc: string | null = null
+      let conclusion: string | null = null
 
       if (days >= 5 && days <= 9) {
         scheduleTitle = '活着確認のタイミングです'
-        scheduleDesc = `${crop.name}（${crop.farm.name}）は植え付けから${days}日目。株の状態を確認しましょう。`
+        conclusion = '株の状態を確認し、問題があれば作業記録に残しましょう。'
       } else if (days >= 12 && days <= 18) {
         scheduleTitle = '初回追肥のタイミングです'
-        scheduleDesc = `${crop.name}（${crop.farm.name}）は植え付けから${days}日目。追肥の計画を確認しましょう。`
+        conclusion = '追肥の計画を確認し、天候の良い日に実施を検討しましょう。'
       } else if (days >= 25 && days <= 35) {
         scheduleTitle = '防除・管理作業のタイミングです'
-        scheduleDesc = `${crop.name}（${crop.farm.name}）は植え付けから${days}日目。病害防除や誘引などを検討しましょう。`
+        conclusion = '病害防除や誘引など、優先度の高い作業から進めましょう。'
       }
 
-      if (scheduleTitle && scheduleDesc && proposals.length < MAX_PROPOSALS) {
-        proposals.push({
-          id: `schedule-${crop.id}-${days}`,
-          type: 'schedule',
-          title: scheduleTitle,
-          description: scheduleDesc,
-          relatedCropId: crop.id,
-          relatedFarmName: crop.farm.name,
-          priority: 'medium',
+      if (!scheduleTitle || !conclusion) continue
+
+      const [personal, regional, general] = await Promise.all([
+        buildPersonalLayerForCrop({
+          userId,
+          cropId: crop.id,
+          cropName: crop.name,
+          variety: crop.variety,
+          farmId: crop.farmId,
+          plantingDate: crop.plantingDate,
+          farmName,
+        }),
+        buildRegionalLayer(point),
+        Promise.resolve(buildGeneralLayer(crop.name, crop.variety)),
+      ])
+
+      pushProposal(proposals, {
+        id: `schedule-${crop.id}-${days}`,
+        type: 'schedule',
+        title: scheduleTitle,
+        layers: mergeLayers({ personal, regional, general, conclusion }),
+        suggestedDate: todayStart,
+        relatedCropId: crop.id,
+        relatedFarmName: farmName,
+        priority: 'medium',
+      })
+      break
+    }
+
+    // GDD 収穫適期
+    if (proposals.length < MAX_PROPOSALS && growingCrops.length > 0) {
+      const mainCrop = growingCrops[0]
+      const days = daysSince(mainCrop.plantingDate)
+      if (days !== null && days > 0 && mainCrop.farm) {
+        const mainFarmName = mainCrop.farm.name
+        const lat = mainCrop.farm.latitude ?? undefined
+        const lon = mainCrop.farm.longitude ?? undefined
+        const forecastTemps = await getForecastDailyTemps(todayStart, {
+          latitude: lat,
+          longitude: lon,
         })
-        break // 1件だけ採用
+        const baseTemp = mainCrop.baseTemperature ?? 10
+        const targetGDD = getTargetGDDForCrop(mainCrop.name, mainCrop.variety)
+        const approxDailyGDD = 5
+        const currentGDD = days * approxDailyGDD
+        const projection = computeGDDProjection(currentGDD, baseTemp, forecastTemps, targetGDD)
+
+        if (
+          projection.targetReachDate &&
+          projection.daysToTarget !== null &&
+          projection.daysToTarget <= 10
+        ) {
+          const dateStr = projection.targetReachDate.toLocaleDateString('ja-JP', {
+            month: 'long',
+            day: 'numeric',
+          })
+          const isSoon = projection.daysToTarget <= 5
+
+          const [personal, regional, general] = await Promise.all([
+            buildPersonalLayerForCrop({
+              userId,
+              cropId: mainCrop.id,
+              cropName: mainCrop.name,
+              variety: mainCrop.variety,
+              farmId: mainCrop.farmId,
+              plantingDate: mainCrop.plantingDate,
+              farmName: mainFarmName,
+            }),
+            buildRegionalLayer({
+              latitude: mainCrop.farm.latitude,
+              longitude: mainCrop.farm.longitude,
+              farmName: mainFarmName,
+            }),
+            Promise.resolve(buildGeneralLayer(mainCrop.name, mainCrop.variety)),
+          ])
+
+          const gddPersonal =
+            personal ??
+            `${mainCrop.name}は積算温度の予測では ${dateStr} 頃に目標に近づく見込みです（現在おおよそ ${currentGDD}℃日）。`
+
+          pushProposal(proposals, {
+            id: `gdd-${mainCrop.id}-${projection.targetReachDate.toISOString()}`,
+            type: 'schedule',
+            title: 'GDD予測：収穫適期が近づいています',
+            layers: mergeLayers({
+              personal: gddPersonal,
+              regional,
+              general,
+              conclusion:
+                '収穫・出荷準備やパートさんのシフト調整を前倒しで検討しましょう。',
+            }),
+            suggestedDate: projection.targetReachDate,
+            relatedCropId: mainCrop.id,
+            relatedFarmName: mainFarmName,
+            priority: isSoon ? 'high' : 'medium',
+          })
+        }
       }
     }
   }
 
-  // --- 3. 気象: 明日の降水・悪天候を考慮した提案（最大1件、モック可）---
+  // --- 3. 気象ベースの提案 ---
   if (proposals.length < MAX_PROPOSALS) {
-    const farmsWithCoords = await prisma.farm.findFirst({
-      where: { userId, latitude: { not: null }, longitude: { not: null } },
-    })
+    const regional = await buildRegionalLayer(defaultPoint)
+    const general = buildGeneralLayer(null)
+    let conclusion = '今週の天候を確認し、雨や強風の前にできる作業を優先すると効率的です。'
 
-    let weatherSuggestion: string | null = null
-    if (farmsWithCoords?.latitude != null && farmsWithCoords?.longitude != null) {
-      const tomorrowWeather = await prisma.weatherData.findUnique({
-        where: {
-          date_latitude_longitude: {
-            date: tomorrowStart,
-            latitude: farmsWithCoords.latitude,
-            longitude: farmsWithCoords.longitude,
-          },
-        },
-      })
-      if (tomorrowWeather && (tomorrowWeather.precipitation ?? 0) > 5) {
-        weatherSuggestion = '明日は降水予報のため、屋外作業は今日のうちに済ませると安心です。'
-      }
-    }
-    if (!weatherSuggestion) {
-      // モック: 気象データがなくても「今週の作業を前倒し」の一言提案
-      weatherSuggestion = '今週の天候を確認し、雨の前にできる作業を優先すると効率的です。'
+    if (regional?.includes('降水') || regional?.includes('雨')) {
+      conclusion = '晴れ間を活かして、屋外作業を前倒しで進めましょう。'
+    } else if (regional?.includes('風速')) {
+      conclusion = '風が強くなる前に、資材の固定と圃場の点検を済ませましょう。'
     }
 
-    proposals.push({
+    pushProposal(proposals, {
       id: 'weather-today',
       type: 'weather',
       title: '気象を踏まえた作業のタイミング',
-      description: weatherSuggestion,
+      layers: mergeLayers({
+        personal: '直近の作業記録が少ない場合も、天候に合わせた優先順位づけが有効です。',
+        regional,
+        general,
+        conclusion,
+      }),
+      suggestedDate: tomorrowStart,
       priority: proposals.length === 0 ? 'high' : 'low',
     })
   }
 
   return proposals.slice(0, MAX_PROPOSALS)
 }
+
+export type { ProposalLayers } from '@/lib/ai-proposal-context'

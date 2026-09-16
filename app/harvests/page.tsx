@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { getCropWhere, getHarvestWhere } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
@@ -16,111 +17,142 @@ export default async function HarvestsPage({
     redirect('/auth/signin')
   }
 
-  const where = {
+  const include = {
     crop: {
-      farm: {
-        userId: user.id,
-      },
-      ...(searchParams.cropId && { id: searchParams.cropId }),
+      include: { farm: true },
     },
+  } as const
+
+  const { where, whereFallback } = getHarvestWhere(user.id, { cropId: searchParams.cropId })
+
+  let harvests: Awaited<ReturnType<typeof prisma.harvest.findMany>>
+  try {
+    harvests = await prisma.harvest.findMany({
+      where,
+      include,
+      orderBy: { date: 'desc' },
+    })
+  } catch {
+    harvests = await prisma.harvest.findMany({
+      where: whereFallback,
+      include,
+      orderBy: { date: 'desc' },
+    })
   }
 
-  const harvests = await prisma.harvest.findMany({
-    where,
-    include: {
-      crop: {
-        include: {
-          farm: true,
-        },
-      },
-    },
-    orderBy: { date: 'desc' },
-  })
+  const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
+  const cropsForFilter = await prisma.crop.findMany({
+    where: cropWhere,
+    orderBy: { name: 'asc' },
+  }).catch(() =>
+    prisma.crop.findMany({
+      where: cropWhereFallback,
+      orderBy: { name: 'asc' },
+    })
+  )
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="flex-1 ml-64 px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">収穫記録</h1>
-          <p className="text-gray-600">収穫記録の一覧と管理</p>
-        </div>
-        <Link href="/harvests/new" className="btn btn-primary">
-          新規収穫記録を追加
-        </Link>
-      </div>
-
-      {harvests.length === 0 ? (
-        <div className="card text-center py-12">
-          <div className="text-6xl mb-4">🌾</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            収穫記録がありません
-          </h3>
-          <p className="text-gray-600 mb-6">
-            最初の収穫記録を登録しましょう
-          </p>
-          <Link href="/harvests/new" className="btn btn-primary">
-            新規収穫記録を追加
+      <main className="dashboard-main farms-page">
+        <div className="farms-header">
+          <div className="farms-header-text">
+            <h1 className="farms-title">収穫管理</h1>
+            <p className="farms-subtitle">収穫量の一覧と管理</p>
+          </div>
+          <Link href="/harvests/new" className="btn btn-primary farms-add-button">
+            収穫を記録
           </Link>
         </div>
-      ) : (
-        <div className="card">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
-                    日付
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
-                    作物
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
-                    農場
-                  </th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-900">
-                    収穫量
-                  </th>
-                  <th className="text-left py-3 px-4 font-semibold text-gray-900">
-                    メモ
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {harvests.map((harvest) => (
-                  <tr
-                    key={harvest.id}
-                    className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="py-3 px-4">
-                      <Link href={`/harvests/${harvest.id}`} className="text-gray-900 hover:text-primary-600">
-                        {formatDateShort(harvest.date)}
-                      </Link>
-                    </td>
-                    <td className="py-3 px-4">
-                      <Link href={`/crops/${harvest.crop.id}`} className="font-medium text-gray-900 hover:text-primary-600">
-                        {harvest.crop.name}
-                      </Link>
-                    </td>
-                    <td className="py-3 px-4 text-gray-600">
-                      {harvest.crop.farm.name}
-                    </td>
-                    <td className="py-3 px-4 text-right">
-                      <span className="font-semibold text-gray-900">
-                        {harvest.quantity} {harvest.unit}
-                      </span>
-                    </td>
-                    <td className="py-3 px-4 text-gray-600 text-sm">
-                      {harvest.notes || '-'}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+
+        {harvests.length > 0 && cropsForFilter.length > 0 && (
+          <div className="farms-filter-bar">
+            <Link
+              href="/harvests"
+              className={!searchParams.cropId ? 'farms-filter-active' : 'farms-filter-link'}
+            >
+              すべて
+            </Link>
+            {cropsForFilter.map((crop) => (
+              <Link
+                key={crop.id}
+                href={`/harvests?cropId=${crop.id}`}
+                className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
+              >
+                {crop.name}
+              </Link>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+
+        {harvests.length === 0 ? (
+          <div className="card farms-empty-card">
+            <div className="farms-empty-icon">🌾</div>
+            <h3 className="farms-empty-title">収穫がありません</h3>
+            <p className="farms-empty-text">
+              最初の収穫を記録しましょう
+            </p>
+            <Link href="/harvests/new" className="btn btn-primary farms-add-button">
+              収穫を記録
+            </Link>
+          </div>
+        ) : (
+          <div className="card">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                      日付
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                      作物
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                      農場
+                    </th>
+                    <th className="text-right py-3 px-4 font-semibold text-gray-900">
+                      収穫量
+                    </th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">
+                      メモ
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {harvests.map((harvest) => (
+                    <tr
+                      key={harvest.id}
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="py-3 px-4">
+                        <Link href={`/harvests/${harvest.id}`} className="farms-card-title-link">
+                          {formatDateShort(harvest.date)}
+                        </Link>
+                      </td>
+                      <td className="py-3 px-4">
+                        <Link href={`/crops/${harvest.crop.id}`} className="farms-card-title-link">
+                          {harvest.crop.name}
+                        </Link>
+                      </td>
+                      <td className="py-3 px-4 text-gray-600">
+                        {harvest.crop.farm?.name ?? '-'}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <span className="font-semibold text-gray-900">
+                          {harvest.quantity} {harvest.unit}
+                        </span>
+                      </td>
+                      <td className="py-3 px-4 text-gray-600 text-sm">
+                        {harvest.notes || '-'}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   )

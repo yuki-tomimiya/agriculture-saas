@@ -25,77 +25,81 @@ export default async function FarmsPage() {
   })
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="flex-1 ml-64 px-6 py-8">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">農場管理</h1>
-          <p className="text-gray-600">農場の一覧と管理</p>
-        </div>
-        <button className="btn btn-primary">
-          新規農場を追加
-        </button>
-      </div>
-
-      {farms.length === 0 ? (
-        <div className="card text-center py-12">
-          <div className="text-6xl mb-4">🌾</div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">
-            農場が登録されていません
-          </h3>
-          <p className="text-gray-600 mb-6">
-            最初の農場を登録して、農業管理を始めましょう
-          </p>
-          <button className="btn btn-primary">
+      <main className="dashboard-main farms-page">
+        <div className="farms-header">
+          <div className="farms-header-text">
+            <h1 className="farms-title">農場管理</h1>
+            <p className="farms-subtitle">農場の一覧と管理</p>
+          </div>
+          <Link href="/farms/new" className="btn btn-primary farms-add-button">
             新規農場を追加
-          </button>
+          </Link>
         </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {farms.map((farm) => (
-            <div key={farm.id} className="card hover:shadow-lg transition-shadow">
-              <div className="flex items-start justify-between mb-4">
-                <Link href={`/farms/${farm.id}`} className="text-xl font-semibold text-gray-900 hover:text-primary-600">
-                  {farm.name}
-                </Link>
-              </div>
 
-              {farm.description && (
-                <p className="text-gray-600 mb-4 line-clamp-2">
-                  {farm.description}
-                </p>
-              )}
+        {farms.length === 0 ? (
+          <div className="card farms-empty-card">
+            <div className="farms-empty-icon">🌾</div>
+            <h3 className="farms-empty-title">農場が登録されていません</h3>
+            <p className="farms-empty-text">
+              最初の農場を登録して、農業管理を始めましょう
+            </p>
+            <Link href="/farms/new" className="btn btn-primary farms-add-button">
+              新規農場を追加
+            </Link>
+          </div>
+        ) : (
+          <div className="farms-grid">
+            {farms.map((farm) => (
+              <article key={farm.id} className="card farms-card">
+                <h3 className="farms-card-title">
+                  <Link href={`/farms/${farm.id}`} className="farms-card-title-link">
+                    {farm.name}
+                  </Link>
+                </h3>
 
-              <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                <span>🌱 {farm._count.crops} 作物</span>
-                <span>📋 {farm._count.tasks} タスク</span>
-              </div>
+                {farm.description && (
+                  <p className="farms-card-desc">
+                    {farm.description}
+                  </p>
+                )}
 
-              {farm.latitude && farm.longitude && (
-                <div className="text-xs text-gray-500 mb-4">
-                  📍 {farm.latitude.toFixed(4)}, {farm.longitude.toFixed(4)}
+                <div className="farms-card-meta">
+                  <span>🌱 {farm._count.crops} 作物</span>
+                  <span>📋 {farm._count.tasks} タスク</span>
                 </div>
-              )}
 
-              <div className="flex gap-2">
-                <Link
-                  href={`/farms/${farm.id}`}
-                  className="btn btn-outline flex-1 text-sm text-center"
-                >
-                  詳細
-                </Link>
-                <Link
-                  href={`/crops?farmId=${farm.id}`}
-                  className="btn btn-secondary flex-1 text-sm text-center"
-                >
-                  作物を見る
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+                {farm.latitude && farm.longitude && (
+                  <div className="farms-card-location">
+                    📍 {farm.latitude.toFixed(4)}, {farm.longitude.toFixed(4)}
+                  </div>
+                )}
+
+                <div className="farms-card-actions">
+                  <Link
+                    href={`/farms/${farm.id}`}
+                    className="btn btn-outline farms-card-button"
+                  >
+                    詳細
+                  </Link>
+                  <Link
+                    href={`/farms/${farm.id}/edit`}
+                    className="btn btn-outline farms-card-button"
+                  >
+                    編集
+                  </Link>
+                  <Link
+                    href={`/crops?farmId=${farm.id}`}
+                    className="btn btn-secondary farms-card-button"
+                  >
+                    作物を見る
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </main>
     </div>
   )

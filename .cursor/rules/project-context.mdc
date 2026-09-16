@@ -1,11 +1,33 @@
 ---
-description: 作業再開時にプロジェクトの続きができるよう、コンテキストを読み込む
+description: PROJECT_CONTEXT と議事録の役割分担。方針は議事録、実装地図は PROJECT_CONTEXT。
 alwaysApply: true
 ---
 
-# プロジェクトコンテキスト
+# ドキュメントの役割分担
 
-このプロジェクトは **農業SaaS**（Next.js + Prisma + Tailwind）です。圃場・作物・作業・収穫・気象を一元管理し、**AIが今日の作業を提案**する機能を前面に出しています。
+## 正本（方針・決定・ロードマップ）
 
-- **続きから作業するとき**: ルートの **`PROJECT_CONTEXT.md`** を読むと、構成・現在のUI・デザインの約束・注意点がまとまっています。新規作業や大きな変更の前に参照すること。
-- **主要な場所**: ホーム `app/page.tsx`、ダッシュボード `app/dashboard/page.tsx`、左サイドバー `components/Sidebar.tsx`（先頭に「AIが今日の作業を提案」）。プレビュー用は `ui-preview-home.html` / `ui-preview-dashboard.html`。本番とプレビューの変更は揃えること。
+- **`docs/議事録/minutes-content.json`**
+- プロダクト趣旨、3層モデル、Phase、次にやること、決定事項、changelog
+- 更新後は `node docs/議事録/generate-minutes.mjs` で Word 再生成
+- 詳細は `.cursor/rules/meeting-minutes.mdc` に従う
+
+## 実装索引（コードの地図・再開手順）
+
+- **`PROJECT_CONTEXT.md`**
+- 技術スタック、ルート一覧、主要 lib/コンポーネント、Sidebar、開発時の注意
+- 「次にやること」は**要約3行まで**。全文は議事録へ書く
+
+## 重複を書かない
+
+- 同じ説明文を両方に載せない
+- 方針が変わった → 議事録を更新し、PROJECT_CONTEXT の要約が古ければ1〜3行だけ直す
+- 画面・パス・ファイルが変わった → PROJECT_CONTEXT のみ更新
+
+## 作業開始時
+
+実装タスクでは次の順で読む:
+
+1. `docs/SESSION_HANDOFF.md`（直近チャットの文脈）
+2. `PROJECT_CONTEXT.md`（コードの地図）
+3. 必要なら議事録の「次にやること」

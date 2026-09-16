@@ -15,15 +15,30 @@ export default async function CropDetailPage({
 
   const { id } = await params
 
-  const crop = await prisma.crop.findFirst({
-    where: { id, farm: { userId: user.id } },
-    include: {
-      farm: true,
-      field: true,
-      harvests: { orderBy: { date: 'desc' }, take: 20 },
-      tasks: { orderBy: { dueDate: 'asc' } },
+  const include = {
+    farm: true,
+    field: true,
+    harvests: { orderBy: { date: 'desc' as const }, take: 20 },
+    tasks: { orderBy: { dueDate: 'asc' as const } },
+  } as const
+
+  let crop = await prisma.crop.findFirst({
+    where: {
+      id,
+      OR: [
+        { userId: user.id },
+        { farm: { userId: user.id } },
+      ],
     },
-  })
+    include,
+  }).catch(() => null)
+
+  if (!crop) {
+    crop = await prisma.crop.findFirst({
+      where: { id, farm: { userId: user.id } },
+      include,
+    })
+  }
 
   if (!crop) notFound()
 
@@ -53,23 +68,30 @@ export default async function CropDetailPage({
               {statusLabel}
             </span>
           </div>
-          <Link href="/crops" className="btn btn-outline">
-            一覧に戻る
-          </Link>
+          <div className="flex gap-2">
+            <Link href={`/crops/${id}/edit`} className="btn btn-primary">
+              編集
+            </Link>
+            <Link href="/crops" className="btn btn-outline">
+              一覧に戻る
+            </Link>
+          </div>
         </div>
 
         {/* 基本情報 */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <h2 className="text-xl font-semibold mb-4">栽培情報</h2>
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <dt className="text-sm text-gray-500">農場</dt>
-              <dd>
-                <Link href={`/farms/${crop.farm.id}`} className="text-primary-600 hover:underline">
-                  {crop.farm.name}
-                </Link>
-              </dd>
-            </div>
+            {crop.farm && (
+              <div>
+                <dt className="text-sm text-gray-500">農場</dt>
+                <dd>
+                  <Link href={`/farms/${crop.farm.id}`} className="text-green-600 hover:underline">
+                    {crop.farm.name}
+                  </Link>
+                </dd>
+              </div>
+            )}
             {crop.field && (
               <div>
                 <dt className="text-sm text-gray-500">圃場</dt>
@@ -101,12 +123,12 @@ export default async function CropDetailPage({
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">収穫履歴</h2>
-            <Link href="/harvests/new" className="text-sm text-primary-600 hover:underline">
+            <Link href="/harvests/new" className="text-sm text-green-600 hover:underline">
               収穫を記録 →
             </Link>
           </div>
           {crop.harvests.length === 0 ? (
-            <p className="text-gray-500 py-4">収穫記録がありません</p>
+            <p className="text-gray-500 py-4">収穫がありません</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -121,7 +143,7 @@ export default async function CropDetailPage({
                   {crop.harvests.map((h) => (
                     <tr key={h.id} className="border-b border-gray-100">
                       <td className="py-2">
-                        <Link href={`/harvests/${h.id}`} className="text-primary-600 hover:underline">
+                        <Link href={`/harvests/${h.id}`} className="text-green-600 hover:underline">
                           {formatDateShort(h.date)}
                         </Link>
                       </td>
@@ -139,7 +161,7 @@ export default async function CropDetailPage({
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-semibold">関連タスク</h2>
-            <Link href="/tasks" className="text-sm text-primary-600 hover:underline">
+            <Link href="/tasks" className="text-sm text-green-600 hover:underline">
               タスク一覧 →
             </Link>
           </div>

@@ -16,7 +16,7 @@ git init
 git add .
 
 # コミット（変更を記録）
-git commit -m "Initial commit: 農業SaaS プロジェクト"
+git commit -m "Initial commit: Tillto プロジェクト"
 ```
 
 **確認**: `.git` フォルダが作成されていれば OK。

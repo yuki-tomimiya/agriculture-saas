@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import TilltoLogo from '@/components/TilltoLogo'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -13,29 +14,17 @@ export default function Navbar() {
     return null
   }
 
-  const navItems = [
-    { href: '/dashboard', label: 'ダッシュボード' },
-    { href: '/farms', label: '農場' },
-    { href: '/crops', label: '作物' },
-    { href: '/harvests', label: '収穫記録' },
-    { href: '/tasks', label: 'タスク' },
-  ]
-
   return (
-    <nav className="bg-white shadow-md fixed top-0 left-0 right-0 z-30 h-16 border-b border-gray-200">
-      <div className="flex items-center justify-between h-full px-6">
-        <Link href="/dashboard" className="text-xl font-bold text-green-600">
-          農業SaaS
+    <header className="app-header">
+      <div className="app-header-inner">
+        <Link href="/dashboard" className="app-header-brand">
+          <TilltoLogo size={28} />
+          <span>Tillto</span>
         </Link>
-        <div className="flex items-center gap-4">
-          <Link
-            href="/auth/signin"
-            className="text-sm text-gray-600 hover:text-gray-900"
-          >
-            ログアウト
-          </Link>
-        </div>
+        <Link href="/auth/signin" className="app-header-logout">
+          ログアウト
+        </Link>
       </div>
-    </nav>
+    </header>
   )
 }

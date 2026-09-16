@@ -6,8 +6,9 @@ import Navbar from '@/components/Navbar'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: '農業管理SaaS',
+  title: { default: 'Tillto', template: '%s | Tillto' },
   description: '中小規模の農家と新規就農者向けの農業管理アプリケーション',
+  robots: 'index, follow',
 }
 
 export default function RootLayout({

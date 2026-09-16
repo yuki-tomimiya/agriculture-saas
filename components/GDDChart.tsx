@@ -1,85 +1,454 @@
-export default function GDDChart() {
+type CropForGDD = {
+  id: string
+  name: string
+  variety: string | null
+  plantingDate: Date | null
+  baseTemperature: number | null
+} | null
+
+type ProjectionPoint = { date: Date; cumulativeGDD: number }
+type LastYearPoint = { dayFromPlanting: number; value: number }
+
+type GDDChartProps = {
+  crop?: CropForGDD
+  currentGDD?: number
+  targetGDD?: number
+  daysFromPlanting?: number
+  historicalPoints?: ProjectionPoint[]
+  dailyProjections?: ProjectionPoint[]
+  /** 前回作付けの累積GDD（植付けからの日数で揃える） */
+  lastYearPoints?: LastYearPoint[]
+  lastYearLabel?: string | null
+}
+
+const CHART_WIDTH = 2000
+const CHART_HEIGHT = 260
+const PAD_LEFT = 40
+const PAD_RIGHT = 88
+const PAD_TOP = 20
+const PAD_BOTTOM = 28
+const PLOT_W = CHART_WIDTH - PAD_LEFT - PAD_RIGHT
+const PLOT_H = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM
+const MAX_DAYS = 180
+
+function scaleX(day: number, maxDays: number): number {
+  return PAD_LEFT + (day / Math.max(1, maxDays)) * PLOT_W
+}
+
+function scaleY(gdd: number, maxGDD: number): number {
+  return PAD_TOP + PLOT_H - (gdd / Math.max(1, maxGDD)) * PLOT_H
+}
+
+function toPoints(pairs: [number, number][], maxGDD: number, maxDays: number): string {
+  return pairs.map(([d, g]) => `${scaleX(d, maxDays)},${scaleY(g, maxGDD)}`).join(' ')
+}
+
+function daysFromBase(base: Date, date: Date): number {
+  const b = new Date(base)
+  b.setHours(0, 0, 0, 0)
+  const d = new Date(date)
+  d.setHours(0, 0, 0, 0)
+  return Math.max(0, Math.floor((d.getTime() - b.getTime()) / (24 * 60 * 60 * 1000)))
+}
+
+/** 同じXに複数点がある場合は最後の値だけ残し、縦線化を防ぐ */
+function dedupeByDay(pairs: [number, number][]): [number, number][] {
+  const map = new Map<number, number>()
+  for (const [day, value] of pairs) {
+    map.set(day, value)
+  }
+  return Array.from(map.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map(([day, value]) => [day, value])
+}
+
+function formatAxisDate(baseDate: Date | null, offsetDays: number): string {
+  if (!baseDate) return offsetDays === 0 ? '植付' : `+${offsetDays}日`
+  const d = new Date(baseDate)
+  d.setDate(d.getDate() + offsetDays)
+  return `${d.getMonth() + 1}/${d.getDate()}`
+}
+
+function chooseStep(maxValue: number): number {
+  const steps = [10, 20, 25, 50, 100, 200, 250, 500]
+  const raw = maxValue / 6
+  for (const s of steps) {
+    if (raw <= s) return s
+  }
+  return 500
+}
+
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n))
+}
+
+export default function GDDChart({
+  crop,
+  currentGDD = 0,
+  targetGDD = 1000,
+  daysFromPlanting = 0,
+  historicalPoints = [],
+  dailyProjections = [],
+  lastYearPoints = [],
+  lastYearLabel = null,
+}: GDDChartProps) {
+  const cropLabel = crop ? `${crop.name}${crop.variety ? `（${crop.variety}）` : ''}` : '対象作物'
+  const plantingStart = crop?.plantingDate
+    ? new Date(new Date(crop.plantingDate).setHours(0, 0, 0, 0))
+    : null
+
+  const hasHistory = historicalPoints.length > 0
+  const hasProjection = dailyProjections.length > 0
+  const hasLastYear = lastYearPoints.length > 1
+  const historyMaxDay = hasHistory
+    ? Math.max(
+        0,
+        ...historicalPoints.map((p) =>
+          plantingStart ? daysFromBase(plantingStart, p.date) : 0
+        )
+      )
+    : Math.max(0, Math.floor(daysFromPlanting))
+  const lastYearMaxDay = hasLastYear
+    ? Math.max(...lastYearPoints.map((p) => p.dayFromPlanting))
+    : 0
+  const projectionDays = hasProjection ? dailyProjections.length : 0
+  // 実データの最終日＋予報分までX軸を伸ばす（90日固定で末尾を潰さない）
+  const dataEndDay = Math.max(historyMaxDay + projectionDays, lastYearMaxDay)
+  const displayDays = Math.max(10, Math.min(MAX_DAYS, dataEndDay || 10))
+  const standardSeasonDays = clamp(Math.round(targetGDD / 8), 90, 220)
+  const historicalMaxGDD = hasHistory
+    ? Math.max(currentGDD, ...historicalPoints.map((p) => p.cumulativeGDD))
+    : currentGDD
+  const lastYearMaxGDD = hasLastYear
+    ? Math.max(...lastYearPoints.map((p) => p.value))
+    : 0
+  const projectedMaxGDD = hasProjection
+    ? Math.max(...dailyProjections.map((p) => p.cumulativeGDD))
+    : historicalMaxGDD
+  const standardMaxDisplayed = targetGDD * 0.95 * (displayDays / standardSeasonDays)
+  const maxGDD = Math.max(
+    30,
+    historicalMaxGDD * 1.1,
+    lastYearMaxGDD * 1.1,
+    projectedMaxGDD * 1.05,
+    standardMaxDisplayed * 1.05
+  )
+  const stepY = chooseStep(maxGDD)
+  const maxGDDRounded = Math.ceil(maxGDD / stepY) * stepY
+
+  const standardPoints: [number, number][] = []
+  for (let d = 0; d <= displayDays; d += 1) {
+    const gdd = targetGDD * 0.95 * (d / standardSeasonDays)
+    standardPoints.push([d, gdd])
+  }
+
+  let thisYearPoints: [number, number][] = [[0, 0]]
+  let projectionPoints: [number, number][] = []
+  let lastHistoryDay = 0
+  if (hasHistory && plantingStart) {
+    const historySeries = historicalPoints.map((p) => {
+      const day = Math.min(displayDays, daysFromBase(plantingStart, p.date))
+      return [day, p.cumulativeGDD] as [number, number]
+    })
+    thisYearPoints = dedupeByDay([[0, 0], ...historySeries])
+  }
+  lastHistoryDay = Math.max(0, Math.floor(thisYearPoints[thisYearPoints.length - 1]?.[0] ?? 0))
+  if (hasProjection) {
+    const anchor = thisYearPoints[thisYearPoints.length - 1] ?? [0, 0]
+    const projected: [number, number][] = [anchor]
+    dailyProjections.forEach((p, i) => {
+      const day = lastHistoryDay + i + 1
+      if (day <= displayDays) projected.push([day, p.cumulativeGDD])
+    })
+    projectionPoints = dedupeByDay(projected)
+  }
+
+  const standardPath = toPoints(standardPoints, maxGDDRounded, displayDays)
+  const thisYearPath = toPoints(thisYearPoints, maxGDDRounded, displayDays)
+  const projectionPath = projectionPoints.length > 1 ? toPoints(projectionPoints, maxGDDRounded, displayDays) : ''
+  const lastYearPath = hasLastYear
+    ? toPoints(
+        dedupeByDay(
+          lastYearPoints
+            .filter((p) => p.dayFromPlanting <= displayDays)
+            .map((p) => [p.dayFromPlanting, p.value] as [number, number])
+        ),
+        maxGDDRounded,
+        displayDays
+      )
+    : ''
+
+  const gridLinesY: number[] = []
+  for (let y = 0; y <= maxGDDRounded; y += stepY) gridLinesY.push(y)
+  const gridLinesX: number[] = []
+  const stepX = Math.max(2, Math.round(displayDays / 6))
+  for (let x = 0; x <= displayDays; x += stepX) gridLinesX.push(x)
+  if (gridLinesX[gridLinesX.length - 1] !== displayDays) gridLinesX.push(displayDays)
+
+  const lastThisYear = thisYearPoints[thisYearPoints.length - 1]
+  const currentDay = Math.max(
+    0,
+    Math.min(displayDays, hasHistory ? Math.floor(lastThisYear?.[0] ?? 0) : Math.floor(daysFromPlanting))
+  )
+  const axisLabelDays = Array.from(new Set([0, Math.round(displayDays / 3), Math.round((displayDays * 2) / 3), displayDays]))
+  const projectedGDD = dailyProjections[dailyProjections.length - 1]?.cumulativeGDD
+  const currentProgressPct =
+    targetGDD > 0 ? Math.max(0, (currentGDD / targetGDD) * 100) : 0
+  const projectedProgressPct =
+    projectedGDD != null && targetGDD > 0
+      ? Math.max(0, (projectedGDD / targetGDD) * 100)
+      : null
+  const currentBarWidth = Math.min(100, currentProgressPct)
+  const projectedBarWidth =
+    projectedProgressPct != null ? Math.min(100, projectedProgressPct) : null
+
+  const suggestionItems =
+    currentProgressPct >= 100
+      ? [
+          <>
+            目標積算温度に到達しています。圃場の様子を見て、<span className="font-semibold">収穫適期・出荷計画</span>
+            を確認しましょう。
+          </>,
+          <>
+            これからの天候（特に降雨）も踏まえ、<span className="font-semibold">掘り取りや選別の日程</span>
+            を前倒しで調整すると安心です。
+          </>,
+        ]
+      : currentProgressPct >= 70
+        ? [
+            <>
+              目標まで残りわずかです。<span className="font-semibold">収穫・出荷の準備</span>
+              （人員・資材・保管）を早めに整えましょう。
+            </>,
+            <>
+              高温や過湿が続く日は、<span className="font-semibold">生育・病害の見回り</span>
+              を優先すると安心です。
+            </>,
+          ]
+        : [
+            <>
+              生育前半〜中盤です。潅水や追肥のタイミングを、<span className="font-semibold">気象ナビの予報</span>
+              とあわせて見直しましょう。
+            </>,
+            <>
+              株の様子（葉色・草勢）を定期的に確認し、<span className="font-semibold">異常があれば作業記録</span>
+              に残しておくと後から振り返りやすくなります。
+            </>,
+          ]
+
   return (
-    <div className="bg-white p-6 rounded-lg shadow">
-      <h2 className="text-xl font-semibold mb-1">積算温度から見た生育ナビ</h2>
-      <p className="text-sm text-gray-500 mb-3">
-        植え付け日からの積算温度（GDD）の推移を、標準年と今年で比較して表示します。
+    <section className="dashboard-card">
+      <h2 className="dashboard-section-title">{cropLabel}の積算温度（GDD）の推移</h2>
+      <p className="dashboard-section-sub">
+        上段は実績（緑）と予報（青破線）
+        {hasLastYear ? '、前回作付け（灰）' : ''}
+        の累積推移、下段は目標に対する進捗率を表示します。
+        {!crop && ' 作物一覧で植え付け日を登録した作物がここに表示されます。'}
+        {crop && !hasHistory && ' この作物の農場に緯度・経度を登録すると、実データに基づく推移が表示されます。'}
       </p>
-      {/* 積算温度の推移グラフ（簡易ラインチャート風） */}
-      <div className="mb-4">
-        <div className="flex justify-between items-center text-xs mb-1">
-          <span className="text-gray-600">植え付けからの推移（累積 ℃日）</span>
-          <span className="font-semibold text-green-700">現在：820 ℃日 / 目標：1,000 ℃日</span>
+
+      <div className="dashboard-gdd-graph">
+        <div className="dashboard-gdd-graph-header">
+          <span>植え付けからの推移（累積 ℃日）</span>
+          <span className="dashboard-gdd-graph-current">
+            現在：{currentGDD} ℃日 / 目標：{targetGDD} ℃日
+          </span>
         </div>
-        <div className="relative w-full h-28 bg-gray-50 rounded-md border border-gray-100 overflow-hidden">
-          {/* グリッド線 */}
-          <div className="absolute inset-0 flex flex-col justify-between">
-            <div className="h-px bg-gray-200/60"></div>
-            <div className="h-px bg-gray-200/40"></div>
-            <div className="h-px bg-gray-200/20"></div>
-          </div>
-          {/* 標準年のライン（点線） */}
-          <svg className="absolute inset-0 w-full h-full">
+        <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">
+          <svg className="dashboard-gdd-graph-svg" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none">
+            {/* 縦グリッド */}
+            {gridLinesX.map((d) => (
+              <line
+                key={`v-${d}`}
+                x1={scaleX(d, displayDays)}
+                y1={PAD_TOP}
+                x2={scaleX(d, displayDays)}
+                y2={CHART_HEIGHT - PAD_BOTTOM}
+                stroke="#e5e7eb"
+                strokeWidth="0.5"
+                strokeDasharray="2 2"
+              />
+            ))}
+            {/* 横グリッド */}
+            {gridLinesY.map((g) => (
+              <line
+                key={`h-${g}`}
+                x1={PAD_LEFT}
+                y1={scaleY(g, maxGDDRounded)}
+                x2={CHART_WIDTH - PAD_RIGHT}
+                y2={scaleY(g, maxGDDRounded)}
+                stroke="#e5e7eb"
+                strokeWidth="0.5"
+                strokeDasharray="2 2"
+              />
+            ))}
+            {/* Y軸ラベル */}
+            {gridLinesY.map((g) => (
+              <text
+                key={`y-${g}`}
+                x={PAD_LEFT - 6}
+                y={scaleY(g, maxGDDRounded) + 4}
+                textAnchor="end"
+                fontSize="11"
+                fill="#6b7280"
+              >
+                {g}
+              </text>
+            ))}
+            {/* X軸ラベル */}
+            {axisLabelDays.map((d) => (
+              <text
+                key={`x-${d}`}
+                x={scaleX(d, displayDays)}
+                y={CHART_HEIGHT - 8}
+                textAnchor="middle"
+                fontSize="11"
+                fill="#6b7280"
+              >
+                {formatAxisDate(plantingStart, d)}
+              </text>
+            ))}
+            {/* 標準（同作物の目安ライン） */}
             <polyline
-              points="0,80 40,70 80,60 120,50 160,40 200,32 240,25 280,18"
+              points={standardPath}
               fill="none"
-              stroke="#9CA3AF"
-              strokeWidth="1.5"
-              strokeDasharray="4 3"
-            />
-            {/* 今年のライン（太線） */}
-            <polyline
-              points="0,82 40,72 80,58 120,44 160,34 200,24 240,16 280,10"
-              fill="none"
-              stroke="#16A34A"
+              stroke="#DC2626"
               strokeWidth="2"
-              strokeLinecap="round"
+              strokeDasharray="3 2"
             />
+            {/* 前回作付け（昨年） */}
+            {lastYearPath && (
+              <polyline
+                points={lastYearPath}
+                fill="none"
+                stroke="#9CA3AF"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.9"
+              />
+            )}
+            {/* 今年（実績） */}
+            <polyline
+              points={thisYearPath}
+              fill="none"
+              stroke="#34D399"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            {/* 予報（明日以降） */}
+            {projectionPath && (
+              <polyline
+                points={projectionPath}
+                fill="none"
+                stroke="#60A5FA"
+                strokeWidth="2"
+                strokeDasharray="4 3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                opacity="0.85"
+              />
+            )}
           </svg>
-          {/* 現在地点のマーカー */}
-          <div className="absolute -right-1 top-2 flex flex-col items-end text-[10px]">
-            <div className="flex items-center gap-1 mb-0.5">
-              <span className="w-2 h-2 rounded-full bg-green-600"></span>
-              <span className="text-green-700 font-semibold">今年：820 ℃日</span>
+          <div
+            className="dashboard-gdd-graph-marker"
+            style={{
+              position: 'absolute',
+              top: 'auto',
+              right: 'auto',
+              left: '54%',
+              bottom: '4.25rem',
+              transform: 'translateX(-50%)',
+              background: 'rgba(255, 255, 255, 0.6)',
+              backdropFilter: 'blur(1px)',
+              border: '1px solid rgba(255,255,255,0.45)',
+              borderRadius: '0.5rem',
+              padding: '0.35rem 0.55rem',
+              width: 'fit-content',
+            }}
+          >
+            <div className="dashboard-gdd-graph-marker-row">
+              <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#34D399' }} />
+              <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">
+                現在：{Math.round(currentGDD)} ℃日
+              </span>
             </div>
-            <div className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-gray-400"></span>
-              <span className="text-gray-500">標準：760 ℃日</span>
+            {hasLastYear && (
+              <div className="dashboard-gdd-graph-marker-row">
+                <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#9CA3AF' }} />
+                <span className="dashboard-gdd-graph-marker-text">
+                  前回作付け
+                  {lastYearLabel ? `（${lastYearLabel}）` : ''}
+                  ：{Math.round(lastYearMaxGDD)} ℃日
+                </span>
+              </div>
+            )}
+            <div className="dashboard-gdd-graph-marker-row">
+              <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#DC2626' }} />
+              <span className="dashboard-gdd-graph-marker-text">標準ライン（目安）</span>
             </div>
-          </div>
-          {/* X軸ラベル */}
-          <div className="absolute bottom-1 left-0 right-0 flex justify-between px-2 text-[10px] text-gray-500">
-            <span>植え付け（4/10）</span>
-            <span>+30日</span>
-            <span>+60日</span>
-            <span>+90日</span>
+            {projectedGDD != null && (
+              <div className="dashboard-gdd-graph-marker-row">
+                <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#60A5FA' }} />
+                <span className="dashboard-gdd-graph-marker-text">14日後見込み：{Math.round(projectedGDD)} ℃日</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
-      {/* 標準年との比較コメント */}
-      <div className="mb-3 text-xs">
-        <p className="font-semibold text-gray-700 mb-1">標準年との比較</p>
-        <p className="text-gray-700">
-          同じ日付時点の標準積算温度：<span className="font-semibold">760 ℃日</span>
-          <br />
-          → <span className="font-semibold text-green-700">今年は +60 ℃日（約 5〜7日分）進行</span> しており、生育はやや前倒し傾向です。
+
+      <div className="dashboard-gdd-summary">
+        <p className="dashboard-gdd-summary-title">目標進捗</p>
+        <p className="dashboard-gdd-summary-text">
+          目標進捗（現在）：<span className="font-semibold">{currentProgressPct.toFixed(1)}%</span>
+          {projectedProgressPct != null && (
+            <>
+              {' '}／ 14日後見込み：<span className="font-semibold">{projectedProgressPct.toFixed(1)}%</span>
+            </>
+          )}
         </p>
+        <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.4rem' }}>
+          <div style={{ background: '#e5e7eb', borderRadius: 9999, height: 8 }}>
+            <div
+              style={{
+                width: `${currentBarWidth}%`,
+                background: '#16A34A',
+                height: 8,
+                borderRadius: 9999,
+              }}
+            />
+          </div>
+          {projectedBarWidth != null && (
+            <div style={{ background: '#e5e7eb', borderRadius: 9999, height: 8 }}>
+              <div
+                style={{
+                  width: `${projectedBarWidth}%`,
+                  background: '#2563EB',
+                  height: 8,
+                  borderRadius: 9999,
+                }}
+              />
+            </div>
+          )}
+        </div>
+        {currentProgressPct > 100 && (
+          <p className="dashboard-gdd-summary-text" style={{ marginTop: '0.5rem' }}>
+            目標を超過しています（現在 {Math.round(currentGDD)} ℃日 / 目標 {Math.round(targetGDD)} ℃日）。
+          </p>
+        )}
       </div>
-      {/* 積算温度に基づく提案 */}
-      <div className="text-xs mb-3">
-        <p className="font-semibold text-gray-700 mb-1">今すぐ検討したいこと</p>
-        <ul className="list-disc list-inside space-y-1 text-gray-700">
-          <li>
-            最初のまとまった収穫に備えて、<span className="font-semibold">パートさんのシフト・出荷計画</span>を前倒しで調整。
-          </li>
-          <li>
-            高温で一気に色づく可能性があるため、<span className="font-semibold">収穫間隔を短く</span>（2〜3日おき）に見直し。
-          </li>
+      <div className="dashboard-gdd-suggestions">
+        <p className="dashboard-gdd-suggestions-title">今すぐ検討したいこと</p>
+        <ul className="dashboard-gdd-suggestions-list">
+          {suggestionItems.map((item, i) => (
+            <li key={i}>{item}</li>
+          ))}
         </ul>
       </div>
-      <p className="text-[11px] text-gray-500">
-        ※ 実装時は、日々の気温データから自動で積算温度カーブを更新し、「標準」との差をもとにコメントを生成する想定です。
+      <p className="dashboard-gdd-note">
+        ※ 日々の気温データと連携すると積算温度が自動で更新されます。詳細な作物比較は生育ナビで確認できます。
       </p>
-    </div>
+    </section>
   )
 }
