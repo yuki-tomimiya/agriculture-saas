@@ -100,7 +100,7 @@ function CalendarDayCell({
           className="dashboard-calendar-badge dashboard-calendar-badge--proposal dashboard-calendar-badge--compact"
           title={proposalTitles.join('\n')}
         >
-          提案{proposalCount > 1 ? ` ${proposalCount}件` : ''}
+          今日の提案 {proposalCount}件
         </Link>
       )}
       {hasRecords && (
@@ -297,7 +297,7 @@ export default async function WorkCalendar({
   }
   if (showProposals) {
     for (const p of proposals) {
-      if (p.urgency === 'watch') continue
+      if (p.urgency !== 'today') continue
       const key = toYmd(p.suggestedDate ?? today)
       const day = getDay(key)
       if (!day.proposalTitles.includes(p.title)) {

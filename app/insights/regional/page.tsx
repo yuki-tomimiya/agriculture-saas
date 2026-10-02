@@ -31,13 +31,11 @@ export default async function InsightsRegionalPage() {
             </p>
             <h1 className="farms-title">
               {regional.primary
-                ? regional.primary.dayOfMonth < 7
-                  ? `${regional.primary.month}月1日〜${regional.primary.dayOfMonth}日の降水量（地域）`
-                  : `${regional.primary.month}月の降水量（地域）`
+                ? `${regional.primary.month}月の降水量（平年比）`
                 : 'この地域の気象（地域）'}
             </h1>
             <p className="farms-subtitle">
-              今月と昨年同時期の降水量を比べ、地域のコンディションを確認します
+              今月の降水量を、同じ期間の平年と昨年同時期と比べます
             </p>
           </div>
           <div className="insights-header-actions">
@@ -66,6 +64,12 @@ export default async function InsightsRegionalPage() {
                   </span>
                 </div>
                 <div>
+                  <span className="insights-regional-stat-label">平年</span>
+                  <span className="insights-regional-stat-value">
+                    {regional.primary.normalMm !== null ? `${regional.primary.normalMm} mm` : '—'}
+                  </span>
+                </div>
+                <div>
                   <span className="insights-regional-stat-label">昨年同時期</span>
                   <span className="insights-regional-stat-value">
                     {regional.primary.lastYearMm !== null
@@ -74,15 +78,17 @@ export default async function InsightsRegionalPage() {
                   </span>
                 </div>
                 <div>
-                  <span className="insights-regional-stat-label">差</span>
+                  <span className="insights-regional-stat-label">平年比</span>
                   <span className="insights-regional-stat-value">
-                    {formatDiff(regional.primary.diffPct)}
+                    {regional.primary.normalRatioPct !== null
+                      ? `平年の${regional.primary.normalRatioPct}%`
+                      : formatDiff(regional.primary.diffPct)}
                   </span>
                 </div>
               </div>
               {regional.primary.farmName && (
                 <p className="insights-regional-meta">
-                  基準：{regional.primary.farmName}の座標（Open-Meteo）
+                  基準：{regional.primary.farmName}の座標。平年＝この地点の過去10年平均（Open-Meteo）
                 </p>
               )}
               <p className="insights-regional-link">

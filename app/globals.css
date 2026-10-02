@@ -494,6 +494,7 @@
   flex-direction: column;
   gap: 0.75rem;
   min-height: 180px;
+  container-type: inline-size;
 }
 .farms-card-title {
   font-size: 1.1rem;
@@ -527,13 +528,24 @@
 }
 .farms-card-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: auto;
 }
 .farms-card-button {
-  flex: 1 1 0;
+  flex: 1 1 auto;
+  min-width: 6.5rem;
   font-size: 0.85rem;
   text-align: center;
+  white-space: nowrap;
+}
+@container (max-width: 24rem) {
+  .farms-card-actions {
+    flex-direction: column;
+  }
+  .farms-card-button {
+    width: 100%;
+  }
 }
 .farms-filter-link {
   display: inline-block;
@@ -755,6 +767,12 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+}
+.ai-proposal-line-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 0.5rem;
 }
 .ai-proposal-line {
@@ -1936,17 +1954,19 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
     padding: 0.5rem 1rem;
     border-radius: 0.5rem;
     font-weight: 500;
     transition: all 0.2s;
     text-decoration: none;
-    border: none;
+    border: 2px solid transparent;
     cursor: pointer;
   }
   
   .btn-primary {
     background-color: #16a34a; /* green-600 */
+    border-color: #16a34a;
     color: #fff;
   }
   .btn-primary:hover {
@@ -1955,6 +1975,7 @@
   
   .btn-secondary {
     background-color: #2563eb; /* blue-600 */
+    border-color: #2563eb;
     color: #fff;
   }
   .btn-secondary:hover {

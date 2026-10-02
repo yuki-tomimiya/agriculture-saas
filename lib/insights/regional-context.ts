@@ -3,6 +3,7 @@ import {
   getHistoricalDailyPrecipitation,
   hasWeatherCoordinates,
 } from '@/lib/weather-forecast'
+import { getLocationDailyNormals, sumNormalPrecip } from '@/lib/weather-normals'
 
 export type RegionalRainSummary = {
   farmId: string | null
@@ -12,9 +13,13 @@ export type RegionalRainSummary = {
   dayOfMonth: number
   /** 今月1日〜比較日までの累積雨量（mm） */
   thisYearMm: number | null
+  /** 同じ暦日範囲の平年降水量（mm） */
+  normalMm: number | null
+  /** 今年 ÷ 平年 × 100。平年0のときは null */
+  normalRatioPct: number | null
   /** 昨年同月同時期の累積雨量（mm） */
   lastYearMm: number | null
-  /** 差（%）昨年同時期比。昨年0のときは null */
+  /** 平年との差（%）。平年が無いときは null */
   diffPct: number | null
   /** カード・提案用の短い解釈 */
   shortLine: string
@@ -64,53 +69,80 @@ function buildInterpretation(args: {
   month: number
   dayOfMonth: number
   thisYearMm: number | null
+  normalMm: number | null
   lastYearMm: number | null
   farmName: string | null
-}): { shortLine: string; interpretation: string; diffPct: number | null } {
+}): { shortLine: string; interpretation: string; diffPct: number | null; normalRatioPct: number | null } {
   const place = args.farmName ? `${args.farmName}周辺` : 'この地域'
   const period =
-    args.dayOfMonth <= 1
-      ? `${args.month}月1日`
-      : `${args.month}月1日〜${args.dayOfMonth}日`
-  const tooEarly = args.dayOfMonth < 7
+    args.dayOfMonth <= 1 ? `${args.month}月1日まで` : `${args.month}月1日〜${args.dayOfMonth}日`
 
   if (args.thisYearMm === null) {
     const msg = `${place}の降水量データを取得できませんでした。緯度・経度や通信状況を確認してください。`
-    return { shortLine: msg, interpretation: msg, diffPct: null }
-  }
-
-  let diffPct: number | null = null
-  if (!tooEarly && args.lastYearMm !== null && args.lastYearMm > 0) {
-    diffPct = Math.round(((args.thisYearMm - args.lastYearMm) / args.lastYearMm) * 100)
+    return { shortLine: msg, interpretation: msg, diffPct: null, normalRatioPct: null }
   }
 
   const base = `${place}の${period}の降水量は約${args.thisYearMm}mm`
-  let compare = ''
-  let advice = ''
+  const lastNote =
+    args.lastYearMm !== null ? `昨年同時期は約${args.lastYearMm}mm。` : ''
 
-  if (tooEarly) {
-    const line = `${base}。日数が少ないため、昨年との割合は出していません。7日分そろってから、昨年同時期と見比べましょう。`
-    return { shortLine: line, interpretation: line, diffPct: null }
-  } else if (args.lastYearMm === null) {
-    compare = '（昨年同時期のデータは取得できませんでした）'
-    advice = '排水・灌水の判断は、直近の予報とあわせて確認しましょう。'
-  } else if (args.lastYearMm === 0 && args.thisYearMm === 0) {
-    compare = `。昨年同時期もほぼ降水なし`
-    advice = '乾燥が続く場合は灌水の優先度を上げましょう。'
-  } else if (diffPct !== null && diffPct >= 25) {
-    compare = `。昨年同時期（約${args.lastYearMm}mm）より多め（+${diffPct}%）`
-    advice = '排水と病害防除のタイミングに注意しましょう。'
-  } else if (diffPct !== null && diffPct <= -25) {
-    compare = `。昨年同時期（約${args.lastYearMm}mm）より少なめ（${diffPct}%）`
-    advice = '灌水や乾燥ストレスへの備えを早めに検討しましょう。'
-  } else if (args.lastYearMm !== null) {
-    compare = `。昨年同時期（約${args.lastYearMm}mm）と同程度`
-    advice = '例年並みの雨量帯です。作業計画は予報の晴れ間を軸に。'
+  if (args.normalMm === null) {
+    return fallbackLastYear({ ...args, place, period, base, lastNote })
   }
 
-  const shortLine = `${base}${compare}。${advice}`
-  const interpretation = `${base}${compare}です。${advice}`
-  return { shortLine, interpretation, diffPct }
+  const normalRatioPct =
+    args.normalMm > 0 ? Math.round((args.thisYearMm / args.normalMm) * 100) : null
+  const diffPct =
+    args.normalMm > 0 ? Math.round(((args.thisYearMm - args.normalMm) / args.normalMm) * 100) : null
+  const ratioText = normalRatioPct !== null ? `（平年の${normalRatioPct}%）` : ''
+  let advice = '作業計画は予報の晴れ間を軸にしましょう。'
+  if (args.normalMm === 0 && args.thisYearMm === 0) {
+    advice = '平年もほぼ降水なしです。乾燥が続く場合は灌水の優先度を上げましょう。'
+  } else if (normalRatioPct !== null && normalRatioPct <= 75) {
+    advice = '乾き気味なので灌水を早めに検討しましょう。'
+  } else if (normalRatioPct !== null && normalRatioPct >= 125) {
+    advice = '平年より雨が多いので、排水と病害防除のタイミングに注意しましょう。'
+  }
+  const compare = `平年の同じ期間は約${args.normalMm}mm${ratioText}`
+  const shortLine = `${base}。${compare}。${lastNote}${advice}`
+  const interpretation = `${base}。${compare}。${lastNote}${advice}`
+  return { shortLine, interpretation, diffPct, normalRatioPct }
+}
+
+function fallbackLastYear(args: {
+  dayOfMonth: number
+  thisYearMm: number
+  lastYearMm: number | null
+  base: string
+}): { shortLine: string; interpretation: string; diffPct: number | null; normalRatioPct: number | null } {
+  const tooEarly = args.dayOfMonth < 7
+  if (tooEarly) {
+    const line = `${args.base}。平年値を取得できなかったため、昨年との割合は7日分そろってから見ます。`
+    return { shortLine: line, interpretation: line, diffPct: null, normalRatioPct: null }
+  }
+  let diffPct: number | null = null
+  if (args.lastYearMm !== null && args.lastYearMm > 0) {
+    diffPct = Math.round(((args.thisYearMm - args.lastYearMm) / args.lastYearMm) * 100)
+  }
+  let compare = ''
+  let advice = '排水・灌水の判断は、直近の予報とあわせて確認しましょう。'
+  if (args.lastYearMm === null) {
+    compare = '昨年同時期のデータは取得できませんでした'
+  } else if (args.lastYearMm === 0 && args.thisYearMm === 0) {
+    compare = '昨年同時期もほぼ降水なし'
+    advice = '乾燥が続く場合は灌水の優先度を上げましょう。'
+  } else if (diffPct !== null && diffPct >= 25) {
+    compare = `昨年同時期（約${args.lastYearMm}mm）より多め（+${diffPct}%）`
+    advice = '排水と病害防除のタイミングに注意しましょう。'
+  } else if (diffPct !== null && diffPct <= -25) {
+    compare = `昨年同時期（約${args.lastYearMm}mm）より少なめ（${diffPct}%）`
+    advice = '灌水や乾燥ストレスへの備えを早めに検討しましょう。'
+  } else {
+    compare = `昨年同時期（約${args.lastYearMm}mm）と同程度`
+    advice = '昨年並みの雨量帯です。作業計画は予報の晴れ間を軸に。'
+  }
+  const shortLine = `${args.base}。${compare}。${advice}`
+  return { shortLine, interpretation: shortLine, diffPct, normalRatioPct: null }
 }
 
 /**
@@ -137,18 +169,21 @@ export async function getRegionalRainSummary(args: {
     longitude: Number(args.longitude),
   }
 
-  const [thisRows, lastRows] = await Promise.all([
+  const [thisRows, lastRows, normals] = await Promise.all([
     getHistoricalDailyPrecipitation({ startDate: thisStart, endDate: thisEnd, point }),
     getHistoricalDailyPrecipitation({ startDate: lastStart, endDate: lastEnd, point }),
+    getLocationDailyNormals(point),
   ])
 
   const thisYearMm = thisRows.length > 0 ? sumMm(thisRows) : null
   const lastYearMm = lastRows.length > 0 ? sumMm(lastRows) : null
+  const normalMm = normals ? sumNormalPrecip(normals, thisStart, thisEnd) : null
 
-  const { shortLine, interpretation, diffPct } = buildInterpretation({
+  const { shortLine, interpretation, diffPct, normalRatioPct } = buildInterpretation({
     month,
     dayOfMonth,
     thisYearMm,
+    normalMm,
     lastYearMm,
     farmName: args.farmName ?? null,
   })
@@ -160,6 +195,8 @@ export async function getRegionalRainSummary(args: {
     year,
     dayOfMonth,
     thisYearMm,
+    normalMm,
+    normalRatioPct,
     lastYearMm,
     diffPct,
     shortLine,
