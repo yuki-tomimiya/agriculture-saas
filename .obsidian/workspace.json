@@ -1,0 +1,205 @@
+{
+  "main": {
+    "id": "fa40857ce556195a",
+    "type": "split",
+    "children": [
+      {
+        "id": "de478c35d6f3fb66",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "d8d6be79b8637219",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/強み・差別化の整理.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "強み・差別化の整理"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a46e45d09ceb14a7",
+    "type": "split",
+    "children": [
+      {
+        "id": "c7632a15b7eb22a1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "5766050fade6f15d",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "ファイルエクスプローラ"
+            }
+          },
+          {
+            "id": "bdcd8405b3847beb",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "検索"
+            }
+          },
+          {
+            "id": "dfda2abc520010bc",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "ブックマーク"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "836f8902d4347cd4",
+    "type": "split",
+    "children": [
+      {
+        "id": "c9e6dc81a22b7e22",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "3b42079ca9bbc797",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "バックリンク"
+            }
+          },
+          {
+            "id": "f817baa723961517",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "アウトゴーイングリンク"
+            }
+          },
+          {
+            "id": "f92cb51a2868ef64",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "タグ"
+            }
+          },
+          {
+            "id": "da38cdaecb255d85",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "すべてのプロパティ"
+            }
+          },
+          {
+            "id": "310ce4755c8f7611",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "アウトライン"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:クイックスイッチャーを開く": false,
+      "graph:グラフビューを開く": false,
+      "canvas:新規キャンバスを作成": false,
+      "daily-notes:今日のデイリーノートを開く": false,
+      "templates:テンプレートを挿入": false,
+      "command-palette:コマンドパレットを開く": false,
+      "bases:新規ベースを作成": false
+    }
+  },
+  "active": "d8d6be79b8637219",
+  "lastOpenFiles": [
+    "tsconfig.tsbuildinfo",
+    "docs/daily/2026-09-16-c.md",
+    "docs/SESSION_HANDOFF.md",
+    "docs/daily/2026-09-16-b.md",
+    "app/insights/general/page.tsx",
+    "app/insights/general",
+    "app/insights/regional/page.tsx",
+    "app/insights/regional",
+    "app/insights/compare/page.tsx",
+    "app/insights/compare",
+    "docs/農業ツール機能調査_あったほうがいい機能.md",
+    "Claude outputs/Tillto_状況整理_Cursor並行開発メモ.md",
+    "Claude outputs/Tillto_状況整理_ClaudeCode移行メモ.md",
+    "docs/daily/2026-09-16.md"
+  ]
+}

@@ -22,7 +22,7 @@ export type ProposalCropLine = {
   daysSincePlanting?: number
   currentGDD: number | null
   targetGDD: number
-  action?: { kind: 'work' | 'task' | 'sale'; taskType?: string; title?: string }
+  action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
 }
 
 export type ScoredProposal = {
@@ -39,11 +39,11 @@ export type ScoredProposal = {
   variety?: string | null
   currentGDD?: number | null
   targetGDD?: number
-  /** 同じきっかけ・同じ品目・同じ農場を1枚にまとめたときの内訳 */
+  /** 同じきっかけ・同じ品目を1枚にまとめたときの内訳 */
   lines?: ProposalCropLine[]
   layers: ProposalLayers
   conclusion: string
-  action?: { kind: 'work' | 'task' | 'sale'; taskType?: string; title?: string }
+  action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
 }
 
 type Hit = {
@@ -90,8 +90,64 @@ function urgencyRank(urgency: ProposalUrgency): number {
 
 function groupTitle(name: string, count: number, title: string): string {
   const body = title.includes('：') ? title.split('：').slice(1).join('：') : title
+  if (body.includes('終了しましたか')) return `${name} ${count}作付けは終了しましたか？`
   if (body.includes('収穫適期')) return `${name} ${count}作付けが収穫適期です`
   return `${name} ${count}作付け：${body}`
+}
+
+function formatMeasure(value: number): string {
+  const rounded = Math.round(value * 10) / 10
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1)
+}
+
+function groupPersonalSummary(list: ScoredProposal[]): string {
+  const count = list.length
+  const days = list
+    .map((card) => card.daysSincePlanting)
+    .filter((day): day is number => day != null)
+  const gdds = list
+    .map((card) => card.currentGDD)
+    .filter((value): value is number => value != null)
+  const targets = [...new Set(list.map((card) => card.targetGDD).filter((value): value is number => value != null))]
+    .sort((a, b) => a - b)
+  const parts: string[] = []
+  if (days.length > 0) {
+    const min = Math.min(...days)
+    const max = Math.max(...days)
+    parts.push(
+      min === max
+        ? `${count}作付けとも植え付けから${min}日目`
+        : `${count}作付けは植え付けから${min}〜${max}日目`
+    )
+  }
+  if (gdds.length > 0) {
+    const min = Math.min(...gdds)
+    const max = Math.max(...gdds)
+    const targetText =
+      targets.length > 1
+        ? `目標は品種により ${targets.map(formatMeasure).join(' / ')}℃日`
+        : targets.length === 1
+          ? `目標 ${formatMeasure(targets[0])}℃日`
+          : null
+    const same = min === max && gdds.length === count
+    const both = count === 2 ? 'どちらも' : 'どれも'
+    const valueText = same
+      ? `積算温度は${both} ${formatMeasure(min)}℃日`
+      : `積算温度は ${formatMeasure(min)}〜${formatMeasure(max)}℃日`
+    parts.push(targetText ? `${valueText}（${targetText}）` : valueText)
+  }
+  if (list[0]?.trigger === 'season-finish') {
+    parts.push('収穫の記録があるか、収穫予定日を過ぎています')
+  }
+  return `${parts.join('。')}。`
+}
+
+function groupRegionalText(head: ScoredProposal, list: ScoredProposal[]): string | null {
+  const farms = [...new Set(list.map((card) => card.farmName).filter((name): name is string => !!name))]
+  const base = head.layers.regional
+  if (farms.length <= 1) return base
+  const note = `農場が混ざっているため、上の天気は${head.farmName ?? farms[0]}のものです。農場ごとに異なります。`
+  return base ? `${base} ${note}` : `農場ごとに異なります（${farms.join('、')}）。`
 }
 
 function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
@@ -102,7 +158,7 @@ function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
       alone.push(card)
       continue
     }
-    const key = `${card.trigger}|${card.cropName.trim()}|${card.farmId ?? ''}`
+    const key = `${card.trigger}|${card.cropName.trim()}`
     const list = buckets.get(key) ?? []
     list.push(card)
     buckets.set(key, list)
@@ -116,8 +172,16 @@ function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
     const head = [...list].sort((a, b) => b.score - a.score)[0]
     grouped.push({
       ...head,
-      id: `group-${head.trigger}-${head.cropName}-${head.farmId ?? 'none'}`,
+      id: `group-${head.trigger}-${head.cropName}`,
       title: groupTitle(head.cropName ?? '', list.length, head.title),
+      farmId: undefined,
+      farmName: undefined,
+      layers: mergeLayers({
+        personal: groupPersonalSummary(list),
+        regional: groupRegionalText(head, list),
+        general: head.layers.general,
+        conclusion: head.conclusion,
+      }),
       lines: list.map((card) => ({
         cropId: card.cropId!,
         cropName: card.cropName!,
@@ -228,6 +292,21 @@ export async function scoreGrowingCrops(
     const taskTypes = crop.workRecords.map((work) => work.taskType)
     const hits: Hit[] = []
 
+    const harvestDatePast =
+      crop.harvestDate != null && new Date(crop.harvestDate).setHours(0, 0, 0, 0) < today.getTime()
+    const overTarget = gddRatio != null && gddRatio >= 1
+    const daysFarPast = days >= 180
+    if ((hasHarvest || harvestDatePast) && (overTarget || daysFarPast)) {
+      hits.push({
+        trigger: 'season-finish',
+        urgency: 'today',
+        score: 110,
+        title: 'この作付けは終了しましたか？',
+        conclusion: '終わっているなら、収穫済みにしましょう。',
+        action: { kind: 'finish', title: `${crop.name}の作付けを終える` },
+      })
+    }
+
     if (!hasHarvest && gddRatio != null && gddRatio >= 1) {
       hits.push({
         trigger: 'harvest-window',
@@ -235,7 +314,7 @@ export async function scoreGrowingCrops(
         score: 100,
         title: '収穫適期に入っています',
         conclusion: '試し掘りや収穫を、雨の前に段取りしましょう。',
-        action: { kind: 'work', taskType: '収穫準備', title: `${crop.name}の収穫` },
+        action: { kind: 'work', taskType: '収穫', title: `${crop.name}の収穫` },
       })
     } else if (!hasHarvest && gddRatio != null && gddRatio >= 0.9) {
       hits.push({
@@ -244,7 +323,7 @@ export async function scoreGrowingCrops(
         score: 80,
         title: '試し掘りの時期です',
         conclusion: '肥大を確認し、問題があれば収穫を前倒ししましょう。',
-        action: { kind: 'work', taskType: '収穫準備', title: `${crop.name}の試し掘り` },
+        action: { kind: 'work', taskType: '試し掘り', title: `${crop.name}の試し掘り` },
       })
     }
 
@@ -335,7 +414,19 @@ export async function scoreGrowingCrops(
       currentGDD != null
         ? `${crop.name}の積算温度は ${currentGDD}℃日です（目標 ${targetGDD}℃日、植付から${days}日）。`
         : `${crop.name}は植付から${days}日目です（${farmName}）。`
-    const personalText = personal ? `${personal} ${measuredLine}` : measuredLine
+    const finishReason = hasHarvest
+      ? `収穫を${crop.harvests.length}回記録しています。`
+      : harvestDatePast && crop.harvestDate
+        ? `収穫予定日 ${new Date(crop.harvestDate).toLocaleDateString('ja-JP')} を過ぎています。`
+        : `植付から${days}日たち、目安を大きく超えています。`
+    const personalText =
+      best.trigger === 'sale-missing'
+        ? personal
+        : best.trigger === 'season-finish'
+          ? `${personal ? `${personal} ` : ''}${measuredLine} ${finishReason}`
+          : personal
+            ? `${personal} ${measuredLine}`
+            : measuredLine
 
     cards.push({
       id: `${best.trigger}-${crop.id}`,

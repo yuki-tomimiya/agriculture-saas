@@ -7,10 +7,29 @@ import Sidebar from '@/components/Sidebar'
 
 type CropOption = { id: string; name: string; farmName: string | null; status: string }
 
-export default function HarvestNewForm({ crops }: { crops: CropOption[] }) {
+function safeReturnTo(value?: string): string | null {
+  if (!value || !value.startsWith('/crops/') || value.includes('//')) return null
+  return value
+}
+
+export default function HarvestNewForm({
+  crops,
+  initialCropId,
+  initialDate,
+  returnTo,
+}: {
+  crops: CropOption[]
+  initialCropId?: string
+  initialDate?: string
+  returnTo?: string
+}) {
   const router = useRouter()
-  const [cropId, setCropId] = useState(crops[0]?.id ?? '')
+  const backHref = safeReturnTo(returnTo)
+  const [cropId, setCropId] = useState(
+    initialCropId && crops.some((crop) => crop.id === initialCropId) ? initialCropId : (crops[0]?.id ?? '')
+  )
   const [date, setDate] = useState(() => {
+    if (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return initialDate
     const d = new Date()
     return d.toISOString().slice(0, 10)
   })
@@ -61,7 +80,7 @@ export default function HarvestNewForm({ crops }: { crops: CropOption[] }) {
         setLoading(false)
         return
       }
-      router.push('/harvests')
+      router.push(backHref ?? '/harvests')
       router.refresh()
     } catch {
       setError('エラーが発生しました')
@@ -107,11 +126,16 @@ export default function HarvestNewForm({ crops }: { crops: CropOption[] }) {
               </div>
             )}
             <div className="farm-new-actions">
-              <button type="button" className="btn btn-outline" onClick={() => router.push('/harvests')} disabled={finishing}>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={() => router.push(backHref ?? '/harvests')}
+                disabled={finishing}
+              >
                 まだ続く
               </button>
               <button type="button" className="btn btn-primary" onClick={finishSeason} disabled={finishing}>
-                {finishing ? '更新中...' : '終了する'}
+                {finishing ? '振り返りを開いています…' : '終了する'}
               </button>
             </div>
           </div>

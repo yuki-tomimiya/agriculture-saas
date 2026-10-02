@@ -3,7 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import HarvestNewForm from './HarvestNewForm'
 
-export default async function NewHarvestPage() {
+export default async function NewHarvestPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ cropId?: string; farmId?: string; date?: string; returnTo?: string }>
+}) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -27,6 +31,7 @@ export default async function NewHarvestPage() {
     })
   )
 
+  const sp = searchParams ? await searchParams : undefined
   const cropsForSelect = crops.map((c) => ({
     id: c.id,
     name: c.name,
@@ -34,5 +39,12 @@ export default async function NewHarvestPage() {
     status: c.status,
   }))
 
-  return <HarvestNewForm crops={cropsForSelect} />
+  return (
+    <HarvestNewForm
+      crops={cropsForSelect}
+      initialCropId={sp?.cropId}
+      initialDate={sp?.date}
+      returnTo={sp?.returnTo}
+    />
+  )
 }

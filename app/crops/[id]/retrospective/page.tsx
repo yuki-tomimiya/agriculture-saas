@@ -1,8 +1,9 @@
+import { Suspense } from 'react'
 import { getCurrentUser } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
-import { getCropSeasonRetrospective } from '@/lib/insights/crop-season-retrospective'
+import { getCropSeasonRetrospective, getRetrospectiveGdd } from '@/lib/insights/crop-season-retrospective'
 import { formatDateShort } from '@/lib/utils'
 
 function formatYen(n: number): string {
@@ -13,6 +14,11 @@ function formatDiff(pct: number | null): string {
   if (pct === null) return '—'
   if (pct > 0) return `+${pct}%`
   return `${pct}%`
+}
+
+async function RetrospectiveGddValue({ userId, cropId }: { userId: string; cropId: string }) {
+  const gdd = await getRetrospectiveGdd(userId, cropId)
+  return <>{gdd?.accumulatedGdd != null ? `${gdd.accumulatedGdd}℃日` : '—'}</>
 }
 
 function statusLabel(status: string): string {
@@ -55,7 +61,7 @@ export default async function CropRetrospectivePage({
               <span className="gdd-breadcrumb-sep">/</span>
               <span>振り返り</span>
             </p>
-            <h1 className="farms-title">今シーズンの振り返り</h1>
+            <h1 className="farms-title">{data.seasonTitle}</h1>
             <p className="farms-subtitle">{data.label}</p>
           </div>
           <div className="insights-header-actions">
@@ -71,7 +77,7 @@ export default async function CropRetrospectivePage({
         {fromStatus && data.status !== 'growing' && (
           <div className="card gdd-past-banner" style={{ marginBottom: '1.25rem' }}>
             <p className="gdd-past-banner-text">
-              作付けを「{statusLabel(data.status)}」にしました。今シーズンの振り返りです。来年の計画にも使えます。
+              作付けを「{statusLabel(data.status)}」にしました。{data.seasonTitle}です。来年の計画にも使えます。
             </p>
           </div>
         )}
@@ -161,6 +167,24 @@ export default async function CropRetrospectivePage({
               同名・同品種・同農場の前回作付けがありません
             </p>
           )}
+          <div className="farm-new-actions" style={{ marginTop: '0.75rem' }}>
+            {(data.harvestCount === 0 || data.harvestQty === 0) && (
+              <Link
+                href={`/harvests/new?cropId=${id}&returnTo=${encodeURIComponent(`/crops/${id}/retrospective`)}`}
+                className="btn btn-primary"
+              >
+                収穫を記録する
+              </Link>
+            )}
+            {data.salesAmount === 0 && (
+              <Link
+                href={`/sales/new?cropId=${id}${data.farmId ? `&farmId=${data.farmId}` : ''}&returnTo=${encodeURIComponent(`/crops/${id}/retrospective`)}`}
+                className="btn btn-outline"
+              >
+                売上を記録する
+              </Link>
+            )}
+          </div>
           {(data.firstHarvestDate || data.lastHarvestDate) && (
             <p className="insights-regional-meta">
               収穫期間：
@@ -226,9 +250,13 @@ export default async function CropRetrospectivePage({
           </p>
           <div className="insights-regional-stats" style={{ marginTop: '0.75rem' }}>
             <div>
-              <span className="insights-regional-stat-label">積算温度（実績）</span>
+              <span className="insights-regional-stat-label">
+                {data.gddAsOf === 'harvest' ? '積算温度（収穫日時点）' : '積算温度（今日まで）'}
+              </span>
               <span className="insights-regional-stat-value">
-                {data.accumulatedGdd !== null ? `${data.accumulatedGdd}℃日` : '—'}
+                <Suspense fallback={<span>集計中…</span>}>
+                  <RetrospectiveGddValue userId={user.id} cropId={id} />
+                </Suspense>
               </span>
             </div>
             <div>
@@ -238,7 +266,7 @@ export default async function CropRetrospectivePage({
               </span>
             </div>
           </div>
-          {data.accumulatedGdd === null && (
+          {data.gddAsOf === null && (
             <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
               農場に緯度・経度と植付日があると積算温度を表示できます。
             </p>

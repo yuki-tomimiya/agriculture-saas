@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import ProposalDismissButton from './ProposalDismissButton'
+import ProposalSeasonActions from './ProposalSeasonActions'
 
 const typeLabel: Record<ProposalType, string> = {
   task_due: 'タスク',
@@ -54,32 +55,62 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                             {line.daysSincePlanting != null ? ` · 植付から${line.daysSincePlanting}日` : ''}
                             {line.currentGDD != null ? ` · ${line.currentGDD}/${line.targetGDD}℃日` : ''}
                           </span>
-                          <Link
-                            href={recordHref({
-                              title: line.action?.title ?? p.title,
-                              relatedCropId: line.cropId,
-                              relatedFarmId: line.farmId,
-                              suggestedDate: p.suggestedDate,
-                              action: line.action,
-                            })}
-                            className="ai-proposal-action ai-proposal-action--primary"
-                          >
-                            記録する
-                          </Link>
+                          {p.trigger === 'season-finish' ? (
+                            <ProposalSeasonActions cropId={line.cropId} farmId={line.farmId} trigger={p.trigger} />
+                          ) : (
+                            <span className="ai-proposal-line-actions">
+                              <Link
+                                href={recordHref({
+                                  title: line.action?.title ?? p.title,
+                                  relatedCropId: line.cropId,
+                                  relatedFarmId: line.farmId,
+                                  suggestedDate: p.suggestedDate,
+                                  action: line.action,
+                                })}
+                                className="ai-proposal-action ai-proposal-action--primary"
+                              >
+                                記録する
+                              </Link>
+                              <Link
+                                href={taskHref({
+                                  title: line.action?.title ?? p.title,
+                                  relatedCropId: line.cropId,
+                                  relatedFarmId: line.farmId,
+                                  suggestedDate: p.suggestedDate,
+                                  action: line.action,
+                                })}
+                                className="ai-proposal-action"
+                              >
+                                タスクにする
+                              </Link>
+                            </span>
+                          )}
                         </li>
                       ))}
                     </ul>
                   ) : (
                     <div className="ai-proposal-actions">
-                      <Link href={recordHref(p)} className="ai-proposal-action ai-proposal-action--primary">
-                        記録する
-                      </Link>
-                      <Link href={taskHref(p)} className="ai-proposal-action">
-                        タスクにする
-                      </Link>
+                      {p.trigger === 'season-finish' && p.relatedCropId ? (
+                        <ProposalSeasonActions
+                          cropId={p.relatedCropId}
+                          farmId={p.relatedFarmId}
+                          trigger={p.trigger}
+                        />
+                      ) : (
+                        <>
+                          {(p.relatedCropId || p.action?.taskType) && (
+                            <Link href={recordHref(p)} className="ai-proposal-action ai-proposal-action--primary">
+                              記録する
+                            </Link>
+                          )}
+                          <Link href={taskHref(p)} className="ai-proposal-action">
+                            タスクにする
+                          </Link>
+                        </>
+                      )}
                     </div>
                   )}
-                  {p.trigger && (
+                  {p.trigger && p.trigger !== 'season-finish' && (
                     <div className="ai-proposal-actions">
                       <ProposalDismissButton
                         trigger={p.trigger}
@@ -178,10 +209,11 @@ export default async function AiProposalPage() {
   if (!user) redirect('/auth/signin')
 
   const proposals = await getTodayProposals(user.id)
-  const todayItems = proposals.filter((item) => item.urgency === 'today')
-  const weekItems = proposals.filter((item) => item.urgency === 'thisWeek')
+  const confirmItems = proposals.filter((item) => item.trigger === 'season-finish')
+  const todayItems = proposals.filter((item) => item.urgency === 'today' && item.trigger !== 'season-finish')
+  const weekItems = proposals.filter((item) => item.urgency === 'thisWeek' && item.trigger !== 'season-finish')
   const watchCount = proposals.filter((item) => item.urgency === 'watch').length
-  const visible = todayItems.length + weekItems.length
+  const visible = todayItems.length + weekItems.length + confirmItems.length
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -231,6 +263,7 @@ export default async function AiProposalPage() {
             <>
               <ProposalGroup title="今日やること" items={todayItems} />
               <ProposalGroup title="今週中に" items={weekItems} />
+              <ProposalGroup title="確認したいこと" items={confirmItems} />
               {watchCount > 0 && (
                 <p className="ai-proposal-watch">様子見 {watchCount}件（記録が止まっている作付け）</p>
               )}

@@ -6,7 +6,7 @@ import SalesNewForm from './SalesNewForm'
 export default async function NewSalesPage({
   searchParams,
 }: {
-  searchParams?: { cropId?: string; farmId?: string; date?: string }
+  searchParams?: { cropId?: string; farmId?: string; date?: string; returnTo?: string }
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
@@ -43,6 +43,7 @@ export default async function NewSalesPage({
       initialCropId={searchParams?.cropId}
       initialFarmId={searchParams?.farmId}
       initialDate={searchParams?.date}
+      returnTo={searchParams?.returnTo}
     />
   )
 }

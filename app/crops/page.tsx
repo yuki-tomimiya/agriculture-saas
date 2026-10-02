@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { formatDateShort } from '@/lib/utils'
+import { daysSincePlanting, formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
 
 type CropListItem = {
@@ -152,7 +152,15 @@ export default async function CropsPage({
                       </>
                     )}
                     {crop.field && <> · 📍 {crop.field.name}</>}
-                    {crop.plantingDate && <> · 🌱 {formatDateShort(crop.plantingDate)}</>}
+                    {crop.plantingDate && (
+                      <>
+                        {' '}
+                        · 🌱 {formatDateShort(crop.plantingDate)}
+                        {daysSincePlanting(crop.plantingDate) != null
+                          ? `（植付から${daysSincePlanting(crop.plantingDate)}日）`
+                          : ''}
+                      </>
+                    )}
                     {crop.harvestDate && <> · 📅 {formatDateShort(crop.harvestDate)}</>}
                   </div>
                 )}

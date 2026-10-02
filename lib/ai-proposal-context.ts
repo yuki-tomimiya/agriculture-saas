@@ -296,8 +296,6 @@ export async function buildPersonalLayerForCrop(args: {
     } else if (prevQ > 0 && curQ === 0) {
       parts.push(`前回作付けの収量は${prevQ}kgでした。`)
     }
-  } else if (days !== null) {
-    parts.push('同名・同品種の前回作付けがまだないため、作付け同士の比較はこれから蓄積されます。')
   }
 
   // カレンダー軸：昨年同日の作業（植付日ベースとは別）

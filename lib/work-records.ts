@@ -4,6 +4,8 @@ export const WORK_TASK_TYPES = [
   '除草',
   '整地',
   '収穫準備',
+  '試し掘り',
+  '収穫',
   '誘引・仕立て',
   '摘花・除葉',
   'その他',
@@ -16,8 +18,6 @@ export function isWorkTaskType(value: string): value is WorkTaskType {
 }
 
 const WORK_TASK_ALIASES: Record<string, WorkTaskType> = {
-  収穫: '収穫準備',
-  試し掘り: '収穫準備',
   つる返し: '誘引・仕立て',
   除草: '除草',
   植え付け: '植え付け',

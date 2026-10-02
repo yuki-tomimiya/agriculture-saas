@@ -8,20 +8,28 @@ import Sidebar from '@/components/Sidebar'
 type CropOption = { id: string; name: string; farmName: string | null }
 type FarmOption = { id: string; name: string }
 
+function safeReturnTo(value?: string): string | null {
+  if (!value || !value.startsWith('/crops/') || value.includes('//')) return null
+  return value
+}
+
 export default function SalesNewForm({
   crops,
   farms,
   initialCropId,
   initialFarmId,
   initialDate,
+  returnTo,
 }: {
   crops: CropOption[]
   farms: FarmOption[]
   initialCropId?: string
   initialFarmId?: string
   initialDate?: string
+  returnTo?: string
 }) {
   const router = useRouter()
+  const backHref = safeReturnTo(returnTo)
   const [date, setDate] = useState(() => {
     if (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return initialDate
     const d = new Date()
@@ -99,7 +107,7 @@ export default function SalesNewForm({
         setLoading(false)
         return
       }
-      router.push('/sales')
+      router.push(backHref ?? '/sales')
       router.refresh()
     } catch {
       setError('エラーが発生しました')

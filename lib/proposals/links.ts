@@ -12,7 +12,7 @@ type LinkInput = {
   relatedFarmId?: string
   suggestedDate?: Date
   title: string
-  action?: { kind: 'work' | 'task' | 'sale'; taskType?: string; title?: string }
+  action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
 }
 
 export function recordHref(proposal: LinkInput): string {
@@ -28,12 +28,28 @@ export function recordHref(proposal: LinkInput): string {
   if (proposal.relatedCropId) params.set('cropId', proposal.relatedCropId)
   if (proposal.relatedFarmId) params.set('farmId', proposal.relatedFarmId)
   const raw = proposal.action?.taskType
-  params.set('taskType', resolveWorkTaskType(raw))
-  if (raw && raw !== resolveWorkTaskType(raw) && !isWorkTaskType(raw)) {
-    params.set('description', raw)
+  if (raw) {
+    params.set('taskType', resolveWorkTaskType(raw))
+    if (raw !== resolveWorkTaskType(raw) && !isWorkTaskType(raw)) {
+      params.set('description', raw)
+    }
   }
   params.set('date', date)
   return `/work-records/new?${params}`
+}
+
+export function harvestHref(input: {
+  cropId: string
+  farmId?: string
+  date?: Date
+  returnTo?: string
+}): string {
+  const params = new URLSearchParams()
+  params.set('cropId', input.cropId)
+  if (input.farmId) params.set('farmId', input.farmId)
+  params.set('date', formatLocalYmd(input.date ?? new Date()))
+  if (input.returnTo) params.set('returnTo', input.returnTo)
+  return `/harvests/new?${params}`
 }
 
 export function taskHref(proposal: LinkInput): string {

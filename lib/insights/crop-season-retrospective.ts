@@ -16,6 +16,7 @@ export type CropSeasonRetrospective = {
   cropName: string
   variety: string | null
   farmName: string | null
+  farmId: string | null
   status: string
   plantingDate: Date | null
   endDate: Date | null
@@ -40,7 +41,20 @@ export type CropSeasonRetrospective = {
   yieldComment: string | null
   accumulatedGdd: number | null
   targetGdd: number | null
+  /** 積算温度の終点。今日までなら today、収穫日までなら harvest */
+  gddAsOf: 'today' | 'harvest' | null
+  seasonTitle: string
   headlineSummary: string
+}
+
+export function retrospectiveSeasonTitle(plantingDate: Date | null, status: string): string {
+  if (status === 'growing') return '栽培中の途中まとめ'
+  if (!plantingDate) return 'この作付けの振り返り'
+  const year = new Date(plantingDate).getFullYear()
+  if (year === new Date().getFullYear()) return '今シーズンの振り返り'
+  const month = new Date(plantingDate).getMonth() + 1
+  const season = month >= 3 && month <= 5 ? '春作' : month >= 6 && month <= 8 ? '夏作' : month >= 9 && month <= 11 ? '秋作' : '冬作'
+  return `${year}年${season}の振り返り`
 }
 
 function matchKey(name: string, variety: string | null, farmId: string | null): string {
@@ -69,29 +83,26 @@ function buildHeadline(args: {
   salesAmount: number
   yieldComment: string | null
   workCount: number
+  seasonTitle: string
 }): string {
   const parts: string[] = []
-  if (args.status === 'growing') {
-    parts.push('栽培中の途中まとめです')
-  } else {
-    parts.push('今シーズンの振り返りです')
-  }
+  parts.push(`${args.seasonTitle}です`)
   if (args.harvestQty > 0) {
     parts.push(`収量合計 ${args.harvestQty}${args.harvestUnit}`)
   }
   if (args.salesAmount > 0) {
     parts.push(`売上 ${args.salesAmount.toLocaleString('ja-JP')}円`)
   }
-  if (!args.hasPrevious) {
-    parts.push('前回作付けとの比較はこれから蓄積されます')
-  } else if (args.harvestDiffPct === null) {
-    parts.push('前回作付けとの収量比較は記録を確認してください')
-  } else if (args.harvestDiffPct > 5) {
-    parts.push(`収量は前回より +${args.harvestDiffPct}%`)
-  } else if (args.harvestDiffPct < -5) {
-    parts.push(`収量は前回より ${args.harvestDiffPct}%`)
-  } else {
-    parts.push('収量は前回と同程度')
+  if (args.hasPrevious) {
+    if (args.harvestDiffPct === null) {
+      parts.push('前回作付けとの収量比較は記録を確認してください')
+    } else if (args.harvestDiffPct > 5) {
+      parts.push(`収量は前回より +${args.harvestDiffPct}%`)
+    } else if (args.harvestDiffPct < -5) {
+      parts.push(`収量は前回より ${args.harvestDiffPct}%`)
+    } else {
+      parts.push('収量は前回と同程度')
+    }
   }
   if (args.yieldComment) parts.push(args.yieldComment)
   if (args.workCount > 0) parts.push(`作業記録 ${args.workCount}件`)
@@ -191,23 +202,13 @@ export async function getCropSeasonRetrospective(
     seasonDays = daysBetween(crop.plantingDate, endDate)
   }
 
-  let accumulatedGdd: number | null = null
   const targetGdd = getTargetGDDForCrop(crop.name, crop.variety)
-  const point = {
-    latitude: crop.farm?.latitude ?? null,
-    longitude: crop.farm?.longitude ?? null,
-  }
-  if (crop.plantingDate && endDate && hasWeatherCoordinates(point)) {
-    accumulatedGdd = await getAccumulatedGDDFromApi({
-      startDate: crop.plantingDate,
-      endDate,
-      baseTemp: crop.baseTemperature ?? 10,
-      point: {
-        latitude: Number(point.latitude),
-        longitude: Number(point.longitude),
-      },
-    })
-  }
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const endStamp = endDate ? new Date(endDate) : null
+  if (endStamp) endStamp.setHours(0, 0, 0, 0)
+  const gddAsOf = !endStamp ? null : endStamp.getTime() >= today.getTime() ? 'today' : 'harvest'
+  const seasonTitle = retrospectiveSeasonTitle(crop.plantingDate, crop.status)
 
   const label = formatPlantingLabel(crop.name, crop.variety, crop.plantingDate)
   const headlineSummary = buildHeadline({
@@ -219,6 +220,7 @@ export async function getCropSeasonRetrospective(
     salesAmount,
     yieldComment,
     workCount: crop.workRecords.length,
+    seasonTitle,
   })
 
   return {
@@ -227,6 +229,7 @@ export async function getCropSeasonRetrospective(
     cropName: crop.name,
     variety: crop.variety,
     farmName: crop.farm?.name ?? null,
+    farmId: crop.farmId,
     status: crop.status,
     plantingDate: crop.plantingDate,
     endDate,
@@ -251,8 +254,37 @@ export async function getCropSeasonRetrospective(
     previousHarvestQty,
     previousSalesAmount,
     yieldComment,
-    accumulatedGdd,
+    accumulatedGdd: null,
     targetGdd,
+    gddAsOf,
+    seasonTitle,
     headlineSummary,
   }
+}
+
+export async function getRetrospectiveGdd(
+  userId: string,
+  cropId: string
+): Promise<{ accumulatedGdd: number | null } | null> {
+  const crop = await prisma.crop.findFirst({
+    where: { id: cropId, OR: [{ userId }, { farm: { userId } }] },
+    include: { farm: true, harvests: { orderBy: { date: 'asc' } } },
+  })
+  if (!crop) return null
+  const lastHarvestDate = crop.harvests[crop.harvests.length - 1]?.date ?? null
+  const endDate = crop.harvestDate ?? lastHarvestDate ?? (crop.status === 'growing' ? new Date() : null)
+  const point = {
+    latitude: crop.farm?.latitude ?? null,
+    longitude: crop.farm?.longitude ?? null,
+  }
+  if (!crop.plantingDate || !endDate || !hasWeatherCoordinates(point)) {
+    return { accumulatedGdd: null }
+  }
+  const accumulatedGdd = await getAccumulatedGDDFromApi({
+    startDate: crop.plantingDate,
+    endDate,
+    baseTemp: crop.baseTemperature ?? 10,
+    point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
+  })
+  return { accumulatedGdd }
 }
