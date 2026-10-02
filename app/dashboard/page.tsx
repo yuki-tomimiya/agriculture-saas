@@ -1,9 +1,49 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getCropWhere, getHarvestWhere, getPesticideWhere, getFertilizerWhere, getWorkRecordWhere } from '@/lib/queries'
+import { getTodayProposals } from '@/lib/ai-proposal'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+
+function DashboardKpi({
+  title,
+  value,
+  unit,
+  tone,
+  href,
+  emptyHref,
+  note,
+  prominent,
+}: {
+  title: string
+  value: number
+  unit?: string
+  tone: 'green' | 'blue' | 'orange' | 'purple'
+  href: string
+  emptyHref?: string
+  note?: string
+  prominent?: boolean
+}) {
+  const empty = value === 0 && emptyHref
+  return (
+    <Link
+      href={empty ? emptyHref : href}
+      className={`dashboard-kpi-card${prominent ? ' dashboard-kpi-card--proposal' : ''}`}
+    >
+      <h3 className="dashboard-kpi-title">{title}</h3>
+      <p className={`dashboard-kpi-value dashboard-kpi-value--${tone}`}>
+        {unit === '円' ? value.toLocaleString() : value}
+        {unit && <span className="dashboard-kpi-unit">{unit}</span>}
+      </p>
+      {empty ? (
+        <span className="dashboard-kpi-note">＋ 記録する</span>
+      ) : (
+        note && <span className="dashboard-kpi-note">{note}</span>
+      )}
+    </Link>
+  )
+}
 
 export default async function DashboardPage() {
   const user = await getCurrentUser()
@@ -51,28 +91,43 @@ export default async function DashboardPage() {
     workRecords = 0
   }
 
+  const recentSince = new Date()
+  recentSince.setDate(recentSince.getDate() - 90)
+  recentSince.setHours(0, 0, 0, 0)
+  const growingWhere = { AND: [cropWhere, { status: 'growing' }] }
+  const growingWhereFallback = { AND: [cropWhereFallback, { status: 'growing' }] }
+  const recentHarvestWhere = { AND: [harvestWhere, { date: { gte: recentSince } }] }
+  const recentHarvestWhereFallback = { AND: [harvestWhereFallback, { date: { gte: recentSince } }] }
+
+  let todayProposalCount = 0
+  try {
+    todayProposalCount = (await getTodayProposals(user.id)).filter((p) => p.urgency === 'today').length
+  } catch {
+    todayProposalCount = 0
+  }
+
   let recentCrops = await prisma.crop.findMany({
-    where: cropWhere,
+    where: growingWhere,
     include: { farm: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { plantingDate: 'desc' },
     take: 5,
   }).catch(() =>
     prisma.crop.findMany({
-      where: cropWhereFallback,
+      where: growingWhereFallback,
       include: { farm: true },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { plantingDate: 'desc' },
       take: 5,
     })
   )
 
   let recentHarvests = await prisma.harvest.findMany({
-    where: harvestWhere,
+    where: recentHarvestWhere,
     include: { crop: { include: { farm: true } } },
     orderBy: { date: 'desc' },
     take: 5,
   }).catch(() =>
     prisma.harvest.findMany({
-      where: harvestWhereFallback,
+      where: recentHarvestWhereFallback,
       include: { crop: { include: { farm: true } } },
       orderBy: { date: 'desc' },
       take: 5,
@@ -132,40 +187,22 @@ export default async function DashboardPage() {
 
         {/* 上部サマリー（農場・作物・タスク・収穫・農薬・肥料） */}
         <div className="dashboard-kpi-grid">
-          <Link href="/farms" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">農場数</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--green">{farms}</p>
-          </Link>
-          <Link href="/crops" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">作物数</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--blue">{crops}</p>
-          </Link>
-          <Link href="/tasks" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">未完了タスク</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--orange">{tasks}</p>
-          </Link>
-          <Link href="/work-records" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">作業記録数</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--orange">{workRecords}</p>
-          </Link>
-          <Link href="/fertilizers" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">施肥記録数</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--blue">{fertilizers}</p>
-          </Link>
-          <Link href="/pesticides" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">農薬記録数</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--green">{pesticides}</p>
-          </Link>
-          <Link href="/harvests" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">収穫数</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--purple">{harvests}</p>
-          </Link>
-          <Link href="/sales" className="dashboard-kpi-card">
-            <h3 className="dashboard-kpi-title">販売金額（累計）</h3>
-            <p className="dashboard-kpi-value dashboard-kpi-value--green">
-              {totalSales.toLocaleString()}<span className="dashboard-kpi-unit">円</span>
-            </p>
-          </Link>
+          <DashboardKpi
+            title="今日の提案"
+            value={todayProposalCount}
+            tone="purple"
+            href="/dashboard/ai-proposal"
+            note="今日やることと確認"
+            prominent
+          />
+          <DashboardKpi title="農場数（累計）" value={farms} tone="green" href="/farms" emptyHref="/farms/new" />
+          <DashboardKpi title="作物数（累計）" value={crops} tone="blue" href="/crops" emptyHref="/crops/new" />
+          <DashboardKpi title="未完了タスク" value={tasks} tone="orange" href="/tasks" emptyHref="/tasks/new" />
+          <DashboardKpi title="作業記録数（累計）" value={workRecords} tone="orange" href="/work-records" emptyHref="/work-records/new" />
+          <DashboardKpi title="施肥記録数（累計）" value={fertilizers} tone="blue" href="/fertilizers" emptyHref="/fertilizers/new" />
+          <DashboardKpi title="農薬記録数（累計）" value={pesticides} tone="green" href="/pesticides" emptyHref="/pesticides/new" />
+          <DashboardKpi title="収穫数（累計）" value={harvests} tone="purple" href="/harvests" emptyHref="/harvests/new" />
+          <DashboardKpi title="販売金額（累計）" value={totalSales} unit="円" tone="green" href="/sales" emptyHref="/sales/new" />
         </div>
 
         {/* 中段：最近の作物 / 収穫 */}
@@ -174,9 +211,9 @@ export default async function DashboardPage() {
             <h2 className="dashboard-section-title">最近の作物</h2>
             {recentCrops.length === 0 ? (
               <div className="dashboard-empty">
-                <p className="dashboard-empty-text">作物が登録されていません</p>
+                <p className="dashboard-empty-text">栽培中の作物はありません</p>
                 <Link href="/crops" className="btn btn-primary">
-                  作物を追加
+                  作物を見る
                 </Link>
               </div>
             ) : (
@@ -203,12 +240,12 @@ export default async function DashboardPage() {
           </section>
 
           <section className="dashboard-section-card">
-            <h2 className="dashboard-section-title">最近の収穫</h2>
+            <h2 className="dashboard-section-title">最近の収穫（90日）</h2>
             {recentHarvests.length === 0 ? (
               <div className="dashboard-empty">
-                <p className="dashboard-empty-text">収穫がありません</p>
-                <Link href="/harvests/new" className="btn btn-primary">
-                  収穫を記録
+                <p className="dashboard-empty-text">直近90日の収穫はありません</p>
+                <Link href="/harvests" className="btn btn-primary">
+                  収穫一覧を見る
                 </Link>
               </div>
             ) : (
