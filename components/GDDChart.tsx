@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 type CropForGDD = {
   id: string
   name: string
@@ -19,6 +21,8 @@ type GDDChartProps = {
   /** 前回作付けの累積GDD（植付けからの日数で揃える） */
   lastYearPoints?: LastYearPoint[]
   lastYearLabel?: string | null
+  /** 植付日からの平年積算温度。null は取得失敗。未指定は線も注記も出さない */
+  normalGddByDay?: number[] | null
 }
 
 const CHART_WIDTH = 2000
@@ -78,10 +82,6 @@ function chooseStep(maxValue: number): number {
   return 500
 }
 
-function clamp(n: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, n))
-}
-
 export default function GDDChart({
   crop,
   currentGDD = 0,
@@ -91,6 +91,7 @@ export default function GDDChart({
   dailyProjections = [],
   lastYearPoints = [],
   lastYearLabel = null,
+  normalGddByDay,
 }: GDDChartProps) {
   const cropLabel = crop ? `${crop.name}${crop.variety ? `（${crop.variety}）` : ''}` : '対象作物'
   const plantingStart = crop?.plantingDate
@@ -115,7 +116,14 @@ export default function GDDChart({
   // 実データの最終日＋予報分までX軸を伸ばす（90日固定で末尾を潰さない）
   const dataEndDay = Math.max(historyMaxDay + projectionDays, lastYearMaxDay)
   const displayDays = Math.max(10, Math.min(MAX_DAYS, dataEndDay || 10))
-  const standardSeasonDays = clamp(Math.round(targetGDD / 8), 90, 220)
+  const normalPoints: [number, number][] =
+    normalGddByDay && normalGddByDay.length > 0
+      ? Array.from({ length: displayDays + 1 }, (_, d) => [
+          d,
+          normalGddByDay[Math.min(d, normalGddByDay.length - 1)] ?? 0,
+        ])
+      : []
+  const normalMax = normalPoints.length > 0 ? Math.max(...normalPoints.map((point) => point[1])) : 0
   const historicalMaxGDD = hasHistory
     ? Math.max(currentGDD, ...historicalPoints.map((p) => p.cumulativeGDD))
     : currentGDD
@@ -125,22 +133,16 @@ export default function GDDChart({
   const projectedMaxGDD = hasProjection
     ? Math.max(...dailyProjections.map((p) => p.cumulativeGDD))
     : historicalMaxGDD
-  const standardMaxDisplayed = targetGDD * 0.95 * (displayDays / standardSeasonDays)
   const maxGDD = Math.max(
     30,
     historicalMaxGDD * 1.1,
     lastYearMaxGDD * 1.1,
     projectedMaxGDD * 1.05,
-    standardMaxDisplayed * 1.05
+    normalMax * 1.05,
+    targetGDD
   )
   const stepY = chooseStep(maxGDD)
   const maxGDDRounded = Math.ceil(maxGDD / stepY) * stepY
-
-  const standardPoints: [number, number][] = []
-  for (let d = 0; d <= displayDays; d += 1) {
-    const gdd = targetGDD * 0.95 * (d / standardSeasonDays)
-    standardPoints.push([d, gdd])
-  }
 
   let thisYearPoints: [number, number][] = [[0, 0]]
   let projectionPoints: [number, number][] = []
@@ -163,7 +165,11 @@ export default function GDDChart({
     projectionPoints = dedupeByDay(projected)
   }
 
-  const standardPath = toPoints(standardPoints, maxGDDRounded, displayDays)
+  const normalPath = normalPoints.length > 1 ? toPoints(normalPoints, maxGDDRounded, displayDays) : ''
+  const normalAtToday =
+    normalGddByDay && normalGddByDay.length > 0
+      ? normalGddByDay[Math.min(Math.max(0, Math.floor(daysFromPlanting)), normalGddByDay.length - 1)] ?? null
+      : null
   const thisYearPath = toPoints(thisYearPoints, maxGDDRounded, displayDays)
   const projectionPath = projectionPoints.length > 1 ? toPoints(projectionPoints, maxGDDRounded, displayDays) : ''
   const lastYearPath = hasLastYear
@@ -238,7 +244,10 @@ export default function GDDChart({
 
   return (
     <section className="dashboard-card">
-      <h2 className="dashboard-section-title">{cropLabel}の積算温度（GDD）の推移</h2>
+      <h2 className="dashboard-section-title">
+        {cropLabel}の積算温度（GDD）の推移
+        <Link href="/faq#gdd" className="chart-help" aria-label="積算温度とは">？</Link>
+      </h2>
       <p className="dashboard-section-sub">
         上段は実績（緑）と予報（青破線）
         {hasLastYear ? '、前回作付け（灰）' : ''}
@@ -308,14 +317,26 @@ export default function GDDChart({
                 {formatAxisDate(plantingStart, d)}
               </text>
             ))}
-            {/* 標準（同作物の目安ライン） */}
-            <polyline
-              points={standardPath}
-              fill="none"
-              stroke="#DC2626"
-              strokeWidth="2"
-              strokeDasharray="3 2"
-            />
+            {normalPath && (
+              <polyline
+                points={normalPath}
+                fill="none"
+                stroke="#D97706"
+                strokeWidth="2"
+                strokeDasharray="3 2"
+              />
+            )}
+            {targetGDD > 0 && (
+              <line
+                x1={scaleX(0, displayDays)}
+                x2={scaleX(displayDays, displayDays)}
+                y1={scaleY(targetGDD, maxGDDRounded)}
+                y2={scaleY(targetGDD, maxGDDRounded)}
+                stroke="#DC2626"
+                strokeWidth="1.5"
+                strokeDasharray="6 4"
+              />
+            )}
             {/* 前回作付け（昨年） */}
             {lastYearPath && (
               <polyline
@@ -384,10 +405,20 @@ export default function GDDChart({
                 </span>
               </div>
             )}
-            <div className="dashboard-gdd-graph-marker-row">
-              <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#DC2626' }} />
-              <span className="dashboard-gdd-graph-marker-text">標準ライン（目安）</span>
-            </div>
+            {normalAtToday != null && (
+              <div className="dashboard-gdd-graph-marker-row">
+                <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#D97706' }} />
+                <span className="dashboard-gdd-graph-marker-text">
+                  平年（過去10年平均）：{Math.round(normalAtToday)} ℃日
+                </span>
+              </div>
+            )}
+            {targetGDD > 0 && (
+              <div className="dashboard-gdd-graph-marker-row">
+                <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#DC2626' }} />
+                <span className="dashboard-gdd-graph-marker-text">目標：{Math.round(targetGDD)} ℃日</span>
+              </div>
+            )}
             {projectedGDD != null && (
               <div className="dashboard-gdd-graph-marker-row">
                 <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#60A5FA' }} />
@@ -397,6 +428,14 @@ export default function GDDChart({
           </div>
         </div>
       </div>
+
+      {normalGddByDay !== undefined && (
+        <p className="dashboard-gdd-note">
+          {normalGddByDay == null
+            ? '平年値を取得できなかったため、平年線は出していません。'
+            : '平年＝この地点の過去10年平均（Open-Meteo）。赤の破線は収穫の目標積算温度です。'}
+        </p>
+      )}
 
       <div className="dashboard-gdd-summary">
         <p className="dashboard-gdd-summary-title">目標進捗</p>

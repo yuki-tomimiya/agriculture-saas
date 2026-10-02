@@ -26,8 +26,9 @@
 
 ## 次にやること（要約のみ）
 
-1. Claude の再レビュー後に、採否が付いた点だけ直す
-2. モバイル・用語説明・画面見出しの統一は後回し
+1. 終了の確認・地域層の平年比・用語のFAQは実装済み
+2. 農場名「メイン➁」の文字替えと、雨の目安520mmを残すかは確認待ち
+3. 次は来年計画のたたき台。土壌診断は Phase 3 のまま
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
 → 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**（Obsidian）
@@ -48,7 +49,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 |------|------|
 | `/dashboard/ai-proposal` | 今日の一手（3層提案） |
 | `/gdd` | 生育ナビ・栽培中 |
-| `/gdd/past` | 過去作付けの生育データ一覧（2階層目） |
+| `/gdd/past` | 過去の生育データ（2階層目） |
 | `/gdd?cropId=…` | 作付け別グラフ（過去時はバナー） |
 | `/insights` | 分析・振り返り（入口カード） |
 | `/insights/compare` | 作付け比較（あなた） |
@@ -69,7 +70,8 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | 領域 | パス |
 |------|------|
-| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・「今はしない」）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
+| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
+| 平年値 | `lib/weather-normals.ts`（生育ナビと提案の地域層） |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
 | 地域（降水量） | `lib/insights/regional-context.ts` |

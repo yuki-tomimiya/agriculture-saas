@@ -11,8 +11,8 @@ import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
 import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDailyPrecipitation, getHistoricalDailyRadiation, getHistoricalDailyTemps, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { computeGDDProjection, getTargetGDDForCrop } from '@/lib/gdd'
-import { getTargetRainfallForCrop } from '@/lib/rainfall'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
+import { accumulateNormals, getLocationDailyNormals } from '@/lib/weather-normals'
 
 export default async function GDDPage({
   searchParams,
@@ -121,7 +121,22 @@ export default async function GDDPage({
   })
   const currentGDD = historicalCumulative[historicalCumulative.length - 1]?.cumulativeGDD ?? 0
   const targetGDD = selectedCrop ? getTargetGDDForCrop(selectedCrop.name, selectedCrop.variety) : 1000
-  const targetRainfall = selectedCrop ? getTargetRainfallForCrop(selectedCrop.name) : 500
+  const normalTable =
+    canFetchWeather
+      ? await getLocationDailyNormals({
+          latitude: Number(point.latitude),
+          longitude: Number(point.longitude),
+        })
+      : undefined
+  const normalSeries =
+    normalTable && selectedCrop?.plantingDate
+      ? accumulateNormals({
+          normals: normalTable,
+          plantingDate: new Date(selectedCrop.plantingDate),
+          days: 220,
+          baseTemp,
+        })
+      : null
   const daysFromPlanting =
     selectedCrop?.plantingDate != null
       ? Math.floor((today.getTime() - new Date(selectedCrop.plantingDate).getTime()) / (24 * 60 * 60 * 1000))
@@ -174,7 +189,7 @@ export default async function GDDPage({
               分析・振り返り
             </Link>
             <Link href="/gdd/past" className="btn btn-outline farms-add-button">
-              過去の作付け
+              過去の生育データ
             </Link>
             <Link href="/crops" className="btn btn-outline farms-add-button">
               作物一覧
@@ -186,13 +201,13 @@ export default async function GDDPage({
           {viewingPastCrop && selectedCrop && (
             <div className="card gdd-past-banner">
               <p className="gdd-past-banner-text">
-                過去の作付け「{selectedCrop.name}
+                過去の生育データ「{selectedCrop.name}
                 {selectedCrop.variety ? `（${selectedCrop.variety}）` : ''}
                 」の生育データを表示しています。日常の進捗確認は栽培中の作物を選んでください。
               </p>
               <div className="gdd-past-banner-actions">
                 <Link href="/gdd/past" className="btn btn-outline farms-add-button">
-                  過去の作付け一覧へ
+                  過去の生育データ一覧へ
                 </Link>
                 {growingWithPlanting[0] && (
                   <Link
@@ -241,6 +256,7 @@ export default async function GDDPage({
             dailyProjections={projection?.dailyProjections.map((p) => ({ date: p.date, cumulativeGDD: p.cumulativeGDD })) ?? []}
             lastYearPoints={previousSeason?.gdd ?? []}
             lastYearLabel={lastYearShortLabel}
+            normalGddByDay={canFetchWeather ? normalSeries?.gdd ?? null : undefined}
           />
 
           {selectedCrop && canFetchWeather && (
@@ -248,7 +264,7 @@ export default async function GDDPage({
               cropName={`${selectedCrop.name}${selectedCrop.variety ? `（${selectedCrop.variety}）` : ''}`}
               daysFromPlanting={daysFromPlanting}
               currentCumulativeMm={rainfallCumulative[rainfallCumulative.length - 1]?.cumulativeMm ?? 0}
-              targetCumulativeMm={targetRainfall}
+              normalCumulativeMm={normalSeries?.precipMm ?? null}
               historicalPoints={rainfallCumulative}
               rainyDays={heavyRainDays.map((d) => ({ dayLabel: d.dayLabel, precipitationMm: d.precipitationMm }))}
               lastYearPoints={previousSeason?.rain ?? []}
@@ -271,6 +287,7 @@ export default async function GDDPage({
             historicalPoints={radiationCumulative}
             lastYearPoints={previousSeason?.radiation ?? []}
             lastYearLabel={lastYearShortLabel}
+            normalCumulativeMj={canFetchWeather ? normalSeries?.radiationMj ?? null : undefined}
           />
           </div>
         </div>

@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 type RainPoint = {
   dayLabel: string
   precipitationMm: number
@@ -12,7 +14,7 @@ export default function RainfallDataCard({
   cropName,
   daysFromPlanting,
   currentCumulativeMm,
-  targetCumulativeMm,
+  normalCumulativeMm = null,
   historicalPoints,
   rainyDays,
   lastYearPoints = [],
@@ -21,7 +23,8 @@ export default function RainfallDataCard({
   cropName: string
   daysFromPlanting: number
   currentCumulativeMm: number
-  targetCumulativeMm: number
+  /** null は取得失敗。空配列は線を出さない */
+  normalCumulativeMm?: number[] | null
   historicalPoints: CumPoint[]
   rainyDays: RainPoint[]
   lastYearPoints?: { dayFromPlanting: number; value: number }[]
@@ -96,9 +99,18 @@ export default function RainfallDataCard({
     ? Math.max(...lastYearSeries.map(([, v]) => v))
     : 0
 
+  const thisDay = Math.max(0, Math.min(displayDays, Math.floor(daysFromPlanting)))
+  const normalAtThisDay =
+    normalCumulativeMm && normalCumulativeMm.length > 0
+      ? normalCumulativeMm[Math.min(thisDay, normalCumulativeMm.length - 1)] ?? null
+      : null
+  const normalMax =
+    normalCumulativeMm && normalCumulativeMm.length > 0
+      ? Math.max(...normalCumulativeMm.slice(0, displayDays + 1))
+      : 0
   const maxCum = Math.max(
     historicalSeries[historicalSeries.length - 1]?.[1] ?? 0,
-    targetCumulativeMm,
+    normalMax,
     currentCumulativeMm,
     lastYearMax,
     20
@@ -120,21 +132,25 @@ export default function RainfallDataCard({
 
   const recentPath = toPoints(historicalSeries)
   const lastYearPath = lastYearSeries.length > 1 ? toPoints(lastYearSeries) : ''
-  const standardSeries: [number, number][] = []
-  for (let d = 0; d <= displayDays; d += 1) {
-    standardSeries.push([d, targetCumulativeMm * 0.95 * (d / Math.max(displayDays, 90))])
-  }
-  const standardPath = toPoints(standardSeries)
+  const standardSeries: [number, number][] =
+    normalCumulativeMm && normalCumulativeMm.length > 0
+      ? Array.from({ length: displayDays + 1 }, (_, d) => [
+          d,
+          normalCumulativeMm[Math.min(d, normalCumulativeMm.length - 1)] ?? 0,
+        ])
+      : []
+  const standardPath = standardSeries.length > 1 ? toPoints(standardSeries) : ''
   const gridY: number[] = []
   for (let y = 0; y <= maxRounded; y += stepY) gridY.push(y)
   const axisStep = Math.max(1, Math.round(displayDays / 3))
   const axisX = Array.from(new Set([0, axisStep, axisStep * 2, displayDays])).filter((d) => d <= displayDays)
-  const thisDay = Math.max(0, Math.min(displayDays, Math.floor(daysFromPlanting)))
-  const standardAtThisDay = targetCumulativeMm * 0.95 * (thisDay / Math.max(displayDays, 90))
 
   return (
     <section className="dashboard-card">
-      <h2 className="dashboard-section-title">{cropName}の積算雨量の推移</h2>
+      <h2 className="dashboard-section-title">
+        {cropName}の積算雨量の推移
+        <Link href="/faq#normals" className="chart-help" aria-label="平年とは">？</Link>
+      </h2>
       <p className="dashboard-section-sub">
         {cropName}の圃場地点に基づき、植え付け日から今日までの実績雨量を表示しています。
         {lastYearPath ? ' 灰色は前回作付けの積算雨量です。' : ''}
@@ -177,7 +193,9 @@ export default function RainfallDataCard({
                 {d === 0 ? '植え付け' : `+${d}日`}
               </text>
             ))}
-            <polyline points={standardPath} fill="none" stroke="#9CA3AF" strokeWidth="1.5" strokeDasharray="4 3" />
+            {standardPath && (
+              <polyline points={standardPath} fill="none" stroke="#D97706" strokeWidth="1.5" strokeDasharray="4 3" />
+            )}
             {lastYearPath && (
               <polyline
                 points={lastYearPath}
@@ -193,7 +211,9 @@ export default function RainfallDataCard({
           <div className="dashboard-gdd-graph-marker">
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot dashboard-gdd-graph-dot--standard" />
-              <span className="dashboard-gdd-graph-marker-text">標準：{Math.round(standardAtThisDay)} mm</span>
+              <span className="dashboard-gdd-graph-marker-text">
+                {normalAtThisDay != null ? `平年（過去10年平均）：${Math.round(normalAtThisDay)} mm` : '平年値なし'}
+              </span>
             </div>
             {lastYearPath && (
               <div className="dashboard-gdd-graph-marker-row">
@@ -214,13 +234,20 @@ export default function RainfallDataCard({
       <div className="dashboard-gdd-summary">
         <p className="dashboard-gdd-summary-title">植え付け以降の累積雨量</p>
         <p className="dashboard-gdd-summary-text">
-          同じ日付時点の標準積算雨量：<span className="font-semibold">{Math.round(standardAtThisDay)} mm</span>
-          <br />
-          → 今年は{' '}
-          <span className="font-semibold text-blue-700">
-            {Math.round(currentCumulativeMm - standardAtThisDay) >= 0 ? '+' : ''}
-            {Math.round(currentCumulativeMm - standardAtThisDay)} mm
-          </span>
+          {normalAtThisDay != null ? (
+            <>
+              同じ日付時点の平年積算雨量：<span className="font-semibold">{Math.round(normalAtThisDay)} mm</span>
+              <br />
+              → 今年は平年より{' '}
+              <span className="font-semibold text-blue-700">
+                {Math.round(currentCumulativeMm - normalAtThisDay) >= 0 ? '+' : ''}
+                {Math.round(currentCumulativeMm - normalAtThisDay)} mm
+                {normalAtThisDay > 0 ? `（平年の${Math.round((currentCumulativeMm / normalAtThisDay) * 100)}%）` : ''}
+              </span>
+            </>
+          ) : (
+            <>平年値を取得できなかったため、比較線は出していません。</>
+          )}
           <br />
           経過日数：<span className="font-semibold">{Math.max(0, daysFromPlanting)} 日</span>
         </p>
@@ -243,6 +270,7 @@ export default function RainfallDataCard({
 
       <p className="dashboard-gdd-note">
         ※ 降雨前後は、防除・施肥・収穫タイミングを見直してください。単位は日降水量（mm）です。
+        平年＝この地点の過去10年平均（Open-Meteo）。
       </p>
     </section>
   )

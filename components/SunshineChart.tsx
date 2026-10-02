@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 type CropForSunshine = {
   id: string
   name: string
@@ -40,19 +42,17 @@ export default function SunshineChart({
   historicalPoints = [],
   lastYearPoints = [],
   lastYearLabel = null,
+  normalCumulativeMj = null,
 }: {
   crop?: CropForSunshine
   daysFromPlanting?: number
   historicalPoints?: RadiationPoint[]
   lastYearPoints?: { dayFromPlanting: number; value: number }[]
   lastYearLabel?: string | null
+  normalCumulativeMj?: number[] | null
 }) {
   const cropLabel = crop ? `${crop.name}${crop.variety ? `（${crop.variety}）` : ''}` : '対象作物'
   const currentRadiation = historicalPoints[historicalPoints.length - 1]?.cumulativeRadiationMj ?? 0
-  const standardRadiation = Math.round(Math.max(0, daysFromPlanting) * 12 * 10) / 10
-  const targetRadiation = Math.round(Math.max(90, daysFromPlanting) * 14 * 10) / 10
-  const diff = currentRadiation - standardRadiation
-  const diffSign = diff >= 0 ? '+' : ''
   const plantingStart = crop?.plantingDate
     ? new Date(new Date(crop.plantingDate).setHours(0, 0, 0, 0))
     : null
@@ -72,9 +72,15 @@ export default function SunshineChart({
   const displayDays = Math.max(10, Math.min(MAX_DAYS, Math.max(historyMaxDay, lastYearMaxDay) || 10))
 
   const lastYearMax = hasLastYear ? Math.max(...lastYearPoints.map((p) => p.value)) : 0
+  const normalAtToday =
+    normalCumulativeMj && normalCumulativeMj.length > 0
+      ? normalCumulativeMj[Math.min(Math.max(0, Math.floor(daysFromPlanting ?? 0)), normalCumulativeMj.length - 1)] ?? null
+      : null
+  const normalMax =
+    normalCumulativeMj && normalCumulativeMj.length > 0 ? Math.max(...normalCumulativeMj.slice(0, displayDays + 1)) : 0
   const maxHoursRounded = Math.max(
     200,
-    Math.ceil(Math.max(currentRadiation, targetRadiation, standardRadiation, lastYearMax) * 1.1 / 100) * 100
+    Math.ceil(Math.max(currentRadiation, normalMax, lastYearMax) * 1.1 / 100) * 100
   )
   const chooseStep = (max: number): number => {
     if (max <= 200) return 50
@@ -86,10 +92,13 @@ export default function SunshineChart({
   const gridY: number[] = []
   for (let y = 0; y <= maxHoursRounded; y += stepY) gridY.push(y)
 
-  const standardLine: [number, number][] = []
-  for (let d = 0; d <= displayDays; d += 1) {
-    standardLine.push([d, d * 12])
-  }
+  const standardLine: [number, number][] =
+    normalCumulativeMj && normalCumulativeMj.length > 0
+      ? Array.from({ length: displayDays + 1 }, (_, d) => [
+          d,
+          normalCumulativeMj[Math.min(d, normalCumulativeMj.length - 1)] ?? 0,
+        ])
+      : []
 
   const thisYearLineRaw: [number, number][] = hasHistory
     ? historicalPoints.map((p) => {
@@ -108,7 +117,7 @@ export default function SunshineChart({
     .sort((a, b) => a[0] - b[0])
     .map(([day, value]) => [day, value] as [number, number])
 
-  const standardPath = toPoints(standardLine, maxHoursRounded, displayDays)
+  const standardPath = standardLine.length > 1 ? toPoints(standardLine, maxHoursRounded, displayDays) : ''
   const thisYearPath = toPoints(thisYearLine, maxHoursRounded, displayDays)
   const lastYearPath = hasLastYear
     ? toPoints(
@@ -124,9 +133,12 @@ export default function SunshineChart({
 
   return (
     <section className="dashboard-card">
-      <h2 className="dashboard-section-title">{cropLabel}の積算日射量の推移</h2>
+      <h2 className="dashboard-section-title">
+        {cropLabel}の積算日射量の推移
+        <Link href="/faq#radiation" className="chart-help" aria-label="日射量の単位とは">？</Link>
+      </h2>
       <p className="dashboard-section-sub">
-        植え付け日からの積算日射量（実データ）の推移を、標準年と今年
+        植え付け日からの積算日射量（実データ）の推移を、平年と今年
         {hasLastYear ? '・前回作付け' : ''}
         で比較して表示します。
         {crop && !hasHistory && ' この作物の農場に緯度・経度を登録すると、実データに基づく推移が表示されます。'}
@@ -134,7 +146,10 @@ export default function SunshineChart({
       <div className="dashboard-gdd-graph">
         <div className="dashboard-gdd-graph-header">
           <span>植え付けからの推移（累積 MJ/㎡）</span>
-          <span className="dashboard-gdd-graph-current">現在：{currentRadiation} MJ/㎡ / 目標：{targetRadiation} MJ/㎡</span>
+          <span className="dashboard-gdd-graph-current">
+            現在：{currentRadiation} MJ/㎡
+            {normalAtToday != null ? ` / 平年：${Math.round(normalAtToday)} MJ/㎡` : ''}
+          </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">
           <svg className="dashboard-gdd-graph-svg" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none">
@@ -186,13 +201,15 @@ export default function SunshineChart({
                 {d === 0 ? formatPlantingLabel(crop?.plantingDate ?? null) : `+${d}日`}
               </text>
             ))}
-            <polyline
-              points={standardPath}
-              fill="none"
-              stroke="#9CA3AF"
-              strokeWidth="1.5"
-              strokeDasharray="4 3"
-            />
+            {standardPath && (
+              <polyline
+                points={standardPath}
+                fill="none"
+                stroke="#D97706"
+                strokeWidth="1.5"
+                strokeDasharray="4 3"
+              />
+            )}
             {lastYearPath && (
               <polyline
                 points={lastYearPath}
@@ -230,7 +247,9 @@ export default function SunshineChart({
             )}
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot dashboard-gdd-graph-dot--standard" />
-              <span className="dashboard-gdd-graph-marker-text">標準：{standardRadiation} MJ/㎡</span>
+              <span className="dashboard-gdd-graph-marker-text">
+                {normalAtToday != null ? `平年（過去10年平均）：${Math.round(normalAtToday)} MJ/㎡` : '平年値なし'}
+              </span>
             </div>
           </div>
         </div>
@@ -238,9 +257,21 @@ export default function SunshineChart({
         <div className="dashboard-gdd-summary">
           <p className="dashboard-gdd-summary-title">日射量の傾向</p>
           <p className="dashboard-gdd-summary-text">
-            同じ日付時点の標準積算日射量：<span className="font-semibold">{standardRadiation} MJ/㎡</span>
-            <br />
-            → <span className="font-semibold text-orange-600">今年は {diffSign}{Math.round(diff * 10) / 10} MJ/㎡（{diff >= 0 ? 'やや日射多め' : 'やや日射少なめ'}）</span> です。
+            {normalAtToday != null ? (
+              <>
+                同じ日付時点の平年積算日射量：<span className="font-semibold">{Math.round(normalAtToday)} MJ/㎡</span>
+                <br />→ 今年は平年より{' '}
+                <span className="font-semibold text-orange-600">
+                  {currentRadiation - normalAtToday >= 0 ? '+' : ''}
+                  {Math.round((currentRadiation - normalAtToday) * 10) / 10} MJ/㎡
+                  {normalAtToday > 0 ? `（平年の${Math.round((currentRadiation / normalAtToday) * 100)}%）` : ''}
+                </span>
+              </>
+            ) : (
+              <>平年値を取得できなかったため、比較線は出していません。</>
+            )}
+          </p>
+          <p className="dashboard-gdd-note">平年＝この地点の過去10年平均（Open-Meteo）。
           </p>
         </div>
       </div>
