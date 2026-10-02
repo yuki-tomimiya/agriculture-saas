@@ -144,18 +144,26 @@ function CompareCard({
         <div className="insights-compare-row">
           <span>収量</span>
           <span>
-            {row.harvestQty} {row.harvestUnit}
+            {row.harvestRecorded ? `${row.harvestQty} ${row.harvestUnit}` : '記録なし'}
           </span>
           <span>
-            {row.previousHarvestQty !== null ? `${row.previousHarvestQty} ${row.harvestUnit}` : '—'}
+            {row.previousHarvestRecorded === null
+              ? '—'
+              : row.previousHarvestRecorded
+                ? `${row.previousHarvestQty} ${row.harvestUnit}`
+                : '記録なし'}
           </span>
           <span>{formatDiff(row.harvestDiffPct)}</span>
         </div>
         <div className="insights-compare-row">
           <span>売上</span>
-          <span>{formatYen(row.salesAmount)}</span>
+          <span>{row.salesRecorded ? formatYen(row.salesAmount) : '記録なし'}</span>
           <span>
-            {row.previousSalesAmount !== null ? formatYen(row.previousSalesAmount) : '—'}
+            {row.previousSalesRecorded === null
+              ? '—'
+              : row.previousSalesRecorded
+                ? formatYen(row.previousSalesAmount ?? 0)
+                : '記録なし'}
           </span>
           <span>{formatDiff(row.salesDiffPct)}</span>
         </div>

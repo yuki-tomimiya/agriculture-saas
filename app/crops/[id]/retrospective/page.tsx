@@ -16,6 +16,16 @@ function formatDiff(pct: number | null): string {
   return `${pct}%`
 }
 
+function formatQty(recorded: boolean, qty: number, unit: string): string {
+  if (!recorded) return '記録なし'
+  return `${qty} ${unit}`
+}
+
+function formatSales(recorded: boolean, amount: number): string {
+  if (!recorded) return '記録なし'
+  return formatYen(amount)
+}
+
 async function RetrospectiveGddValue({ userId, cropId }: { userId: string; cropId: string }) {
   const gdd = await getRetrospectiveGdd(userId, cropId)
   return <>{gdd?.accumulatedGdd != null ? `${gdd.accumulatedGdd}℃日` : '—'}</>
@@ -127,23 +137,23 @@ export default async function CropRetrospectivePage({
             <div className="insights-compare-row">
               <span>収量</span>
               <span>
-                {data.harvestQty} {data.harvestUnit}
+                {formatQty(data.harvestCount > 0, data.harvestQty, data.harvestUnit)}
                 {data.harvestCount > 0 ? `（${data.harvestCount}回）` : ''}
               </span>
               <span>
-                {data.previousHarvestQty !== null
-                  ? `${data.previousHarvestQty} ${data.harvestUnit}`
-                  : '—'}
+                {data.previousHarvestCount === null
+                  ? '—'
+                  : formatQty(data.previousHarvestCount > 0, data.previousHarvestQty ?? 0, data.harvestUnit)}
               </span>
               <span>{formatDiff(data.harvestDiffPct)}</span>
             </div>
             <div className="insights-compare-row">
               <span>売上</span>
-              <span>{formatYen(data.salesAmount)}</span>
+              <span>{formatSales(data.salesCount > 0, data.salesAmount)}</span>
               <span>
-                {data.previousSalesAmount !== null
-                  ? formatYen(data.previousSalesAmount)
-                  : '—'}
+                {data.previousSalesCount === null
+                  ? '—'
+                  : formatSales(data.previousSalesCount > 0, data.previousSalesAmount ?? 0)}
               </span>
               <span>{formatDiff(data.salesDiffPct)}</span>
             </div>
@@ -176,7 +186,7 @@ export default async function CropRetrospectivePage({
                 収穫を記録する
               </Link>
             )}
-            {data.salesAmount === 0 && (
+            {data.salesCount === 0 && (
               <Link
                 href={`/sales/new?cropId=${id}${data.farmId ? `&farmId=${data.farmId}` : ''}&returnTo=${encodeURIComponent(`/crops/${id}/retrospective`)}`}
                 className="btn btn-outline"
@@ -206,20 +216,25 @@ export default async function CropRetrospectivePage({
             <>
               <div className="insights-regional-stats">
                 <div>
-                  <span className="insights-regional-stat-label">作業</span>
+                  <span className="insights-regional-stat-label">作業記録</span>
                   <span className="insights-regional-stat-value">{data.workCount}件</span>
                 </div>
                 <div>
-                  <span className="insights-regional-stat-label">農薬</span>
+                  <span className="insights-regional-stat-label">農薬記録</span>
                   <span className="insights-regional-stat-value">{data.pesticideCount}件</span>
                 </div>
                 <div>
-                  <span className="insights-regional-stat-label">施肥</span>
+                  <span className="insights-regional-stat-label">施肥記録</span>
                   <span className="insights-regional-stat-value">{data.fertilizerCount}件</span>
                 </div>
               </div>
+              {data.workByType.some((w) => w.taskType.includes('追肥') || w.taskType.includes('施肥')) && (
+                <p className="insights-regional-meta" style={{ marginTop: '0.75rem' }}>
+                  作業の「追肥」は作業記録です。肥料の量を残す施肥記録とは別です。
+                </p>
+              )}
               {data.workByType.length > 0 && (
-                <ul className="insights-hint-list" style={{ marginTop: '0.75rem' }}>
+                <ul className="insights-hint-list" style={{ marginTop: '0.35rem' }}>
                   {data.workByType.map((w) => (
                     <li key={w.taskType}>
                       <strong>{w.taskType}</strong>：{w.count}回
@@ -260,12 +275,21 @@ export default async function CropRetrospectivePage({
               </span>
             </div>
             <div>
-              <span className="insights-regional-stat-label">目安GDD</span>
+              <span className="insights-regional-stat-label">
+                {data.gddBasis?.source === 'provisional' ? '一般の目安（暫定）' : '収穫時点の実績'}
+              </span>
               <span className="insights-regional-stat-value">
-                {data.targetGdd !== null ? `${data.targetGdd}℃日` : '—'}
+                {data.gddBasis ? `${data.gddBasis.gdd}℃日` : '—'}
               </span>
             </div>
           </div>
+          {data.gddBasis && (
+            <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
+              {data.gddBasis.summary}
+              {data.gddBasis.detail ? `。${data.gddBasis.detail}` : ''}
+              {data.gddBasis.spreadNote ? `。${data.gddBasis.spreadNote}` : '。'}
+            </p>
+          )}
           {data.gddAsOf === null && (
             <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
               農場に緯度・経度と植付日があると積算温度を表示できます。
@@ -285,6 +309,9 @@ export default async function CropRetrospectivePage({
               生育データ →
             </Link>
           )}
+          <Link href={`/plan#plan-${id}`} className="text-green-700 hover:underline text-sm">
+            来年の計画へ →
+          </Link>
           <Link href="/insights/compare" className="text-green-700 hover:underline text-sm">
             作付け比較 →
           </Link>

@@ -20,10 +20,14 @@ export type SeasonCompareRow = {
   previousPlantingDate: Date | null
   harvestQty: number
   harvestUnit: string
+  harvestRecorded: boolean
   previousHarvestQty: number | null
+  previousHarvestRecorded: boolean | null
   harvestDiffPct: number | null
   salesAmount: number
+  salesRecorded: boolean
   previousSalesAmount: number | null
+  previousSalesRecorded: boolean | null
   salesDiffPct: number | null
   benchmark: CropBenchmark | null
   yieldComment: string | null
@@ -56,25 +60,40 @@ function pctDiff(current: number, previous: number): number | null {
   return Math.round(((current - previous) / previous) * 1000) / 10
 }
 
-function buildSummary(args: {
+/** 前回比と一般目安を、判断できる1文にする */
+export function describeYieldChange(args: {
   harvestDiffPct: number | null
   hasPrevious: boolean
   yieldComment: string | null
 }): string {
-  const parts: string[] = []
-  if (!args.hasPrevious) {
-    parts.push('比較できる前回作付けがまだありません')
-  } else if (args.harvestDiffPct === null) {
-    parts.push('前回作付けとの収量比較ができません（単位や記録を確認）')
-  } else if (args.harvestDiffPct > 5) {
-    parts.push(`収量は前回作付けより +${args.harvestDiffPct}%`)
-  } else if (args.harvestDiffPct < -5) {
-    parts.push(`収量は前回作付けより ${args.harvestDiffPct}%`)
-  } else {
-    parts.push('収量は前回作付けと同程度')
+  if (!args.hasPrevious) return '比較できる前回作付けがまだありません。'
+  if (args.harvestDiffPct === null) {
+    const base = '前回作付けとの収量比較ができません（単位や記録を確認）'
+    return args.yieldComment ? `${base}。${args.yieldComment}` : `${base}。`
   }
-  if (args.yieldComment) parts.push(args.yieldComment)
-  return parts.join('。') + '。'
+  const pct = args.harvestDiffPct
+  const less = pct < -5
+  const more = pct > 5
+  const comment = args.yieldComment
+  if (!comment) {
+    if (more) return `収量は前回作付けより +${pct}%です。`
+    if (less) return `収量は前回作付けより ${pct}%です。`
+    return '収量は前回作付けと同程度です。'
+  }
+  const inRange = comment.includes('レンジ内')
+  const lowBench = comment.includes('少なめ') || comment.includes('下限')
+  const highBench = comment.includes('多め') || comment.includes('上限')
+  const pctLabel = more ? `+${pct}%` : `${pct}%`
+  if (less && inRange) return `前回より少ないですが、一般的な目安の範囲内です（${pctLabel}）。`
+  if (more && inRange) return `前回より多いですが、一般的な目安の範囲内です（${pctLabel}）。`
+  if (!less && !more && inRange) return '前回と同程度で、一般的な目安の範囲内です。'
+  if (less && lowBench) return `前回より少なく、一般的な目安よりも少なめです（${pctLabel}）。`
+  if (more && highBench) return `前回より多く、一般的な目安よりも多めです（${pctLabel}）。`
+  if (less && highBench) return `前回より少ない一方、一般的な目安よりは多めです（${pctLabel}）。`
+  if (more && lowBench) return `前回より多い一方、一般的な目安よりは少なめです（${pctLabel}）。`
+  if (more) return `収量は前回作付けより +${pct}%です。${comment}`
+  if (less) return `収量は前回作付けより ${pct}%です。${comment}`
+  return `収量は前回作付けと同程度です。${comment}`
 }
 
 /**
@@ -143,10 +162,18 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       ? previous.sales.reduce((s, sale) => s + sale.amount, 0)
       : null
 
+    const harvestRecorded = current.harvests.length > 0
+    const previousHarvestRecorded = previous ? previous.harvests.length > 0 : null
+    const salesRecorded = current.sales.length > 0
+    const previousSalesRecorded = previous ? previous.sales.length > 0 : null
     const harvestDiffPct =
-      previousHarvestQty !== null ? pctDiff(harvestQty, previousHarvestQty) : null
+      previousHarvestQty !== null && harvestRecorded && previousHarvestRecorded
+        ? pctDiff(harvestQty, previousHarvestQty)
+        : null
     const salesDiffPct =
-      previousSalesAmount !== null ? pctDiff(salesAmount, previousSalesAmount) : null
+      previousSalesAmount !== null && salesRecorded && previousSalesRecorded
+        ? pctDiff(salesAmount, previousSalesAmount)
+        : null
 
     const benchmark = findCropBenchmark(current.name, current.variety)
     const yieldComment =
@@ -170,14 +197,18 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       previousPlantingDate: previous?.plantingDate ?? null,
       harvestQty,
       harvestUnit,
+      harvestRecorded,
       previousHarvestQty,
+      previousHarvestRecorded,
       harvestDiffPct,
       salesAmount,
+      salesRecorded,
       previousSalesAmount,
+      previousSalesRecorded,
       salesDiffPct,
       benchmark,
       yieldComment,
-      summaryLine: buildSummary({
+      summaryLine: describeYieldChange({
         harvestDiffPct,
         hasPrevious: !!previous,
         yieldComment,

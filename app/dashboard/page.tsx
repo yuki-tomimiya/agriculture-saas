@@ -13,6 +13,7 @@ function DashboardKpi({
   tone,
   href,
   emptyHref,
+  emptyLabel,
   note,
   prominent,
 }: {
@@ -22,10 +23,11 @@ function DashboardKpi({
   tone: 'green' | 'blue' | 'orange' | 'purple'
   href: string
   emptyHref?: string
+  emptyLabel?: string
   note?: string
   prominent?: boolean
 }) {
-  const empty = value === 0 && emptyHref
+  const empty = value === 0 && emptyHref && emptyLabel
   return (
     <Link
       href={empty ? emptyHref : href}
@@ -37,7 +39,7 @@ function DashboardKpi({
         {unit && <span className="dashboard-kpi-unit">{unit}</span>}
       </p>
       {empty ? (
-        <span className="dashboard-kpi-note">＋ 記録する</span>
+        <span className="dashboard-kpi-note">{emptyLabel}</span>
       ) : (
         note && <span className="dashboard-kpi-note">{note}</span>
       )}
@@ -195,14 +197,14 @@ export default async function DashboardPage() {
             note="今日やることと確認"
             prominent
           />
-          <DashboardKpi title="農場数（累計）" value={farms} tone="green" href="/farms" emptyHref="/farms/new" />
-          <DashboardKpi title="作物数（累計）" value={crops} tone="blue" href="/crops" emptyHref="/crops/new" />
-          <DashboardKpi title="未完了タスク" value={tasks} tone="orange" href="/tasks" emptyHref="/tasks/new" />
-          <DashboardKpi title="作業記録数（累計）" value={workRecords} tone="orange" href="/work-records" emptyHref="/work-records/new" />
-          <DashboardKpi title="施肥記録数（累計）" value={fertilizers} tone="blue" href="/fertilizers" emptyHref="/fertilizers/new" />
-          <DashboardKpi title="農薬記録数（累計）" value={pesticides} tone="green" href="/pesticides" emptyHref="/pesticides/new" />
-          <DashboardKpi title="収穫数（累計）" value={harvests} tone="purple" href="/harvests" emptyHref="/harvests/new" />
-          <DashboardKpi title="販売金額（累計）" value={totalSales} unit="円" tone="green" href="/sales" emptyHref="/sales/new" />
+          <DashboardKpi title="農場数" value={farms} tone="green" href="/farms" note="累計" emptyHref="/farms/new" emptyLabel="＋ 農場を追加" />
+          <DashboardKpi title="作物数" value={crops} tone="blue" href="/crops" note="累計" emptyHref="/crops/new" emptyLabel="＋ 作物を追加" />
+          <DashboardKpi title="未完了タスク" value={tasks} tone="orange" href="/tasks" />
+          <DashboardKpi title="作業記録" value={workRecords} tone="orange" href="/work-records" note="累計" emptyHref="/work-records/new" emptyLabel="＋ 作業を記録" />
+          <DashboardKpi title="施肥記録" value={fertilizers} tone="blue" href="/fertilizers" note="累計" />
+          <DashboardKpi title="農薬記録" value={pesticides} tone="green" href="/pesticides" note="累計" />
+          <DashboardKpi title="収穫" value={harvests} tone="purple" href="/harvests" note="累計" />
+          <DashboardKpi title="販売金額" value={totalSales} unit="円" tone="green" href="/sales" note="累計" />
         </div>
 
         {/* 中段：最近の作物 / 収穫 */}
@@ -227,7 +229,7 @@ export default async function DashboardPage() {
                       </div>
                       <span className="dashboard-list-sub">
                         {crop.status === 'growing'
-                          ? '成長中'
+                          ? '栽培中'
                           : crop.status === 'harvested'
                           ? '収穫済み'
                           : '完了'}

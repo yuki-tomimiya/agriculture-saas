@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { getTargetGDDForCrop } from '@/lib/gdd'
+import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   buildGeneralLayer,
   buildPersonalLayerForCrop,
@@ -22,6 +22,7 @@ export type ProposalCropLine = {
   daysSincePlanting?: number
   currentGDD: number | null
   targetGDD: number
+  targetCaption?: string
   action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
 }
 
@@ -39,6 +40,7 @@ export type ScoredProposal = {
   variety?: string | null
   currentGDD?: number | null
   targetGDD?: number
+  targetCaption?: string
   /** 同じきっかけ・同じ品目を1枚にまとめたときの内訳 */
   lines?: ProposalCropLine[]
   layers: ProposalLayers
@@ -108,6 +110,7 @@ function groupPersonalSummary(list: ScoredProposal[]): string {
   const gdds = list
     .map((card) => card.currentGDD)
     .filter((value): value is number => value != null)
+  const captions = [...new Set(list.map((card) => card.targetCaption).filter((value): value is string => !!value))]
   const targets = [...new Set(list.map((card) => card.targetGDD).filter((value): value is number => value != null))]
     .sort((a, b) => a - b)
   const parts: string[] = []
@@ -124,11 +127,13 @@ function groupPersonalSummary(list: ScoredProposal[]): string {
     const min = Math.min(...gdds)
     const max = Math.max(...gdds)
     const targetText =
-      targets.length > 1
-        ? `目標は品種により ${targets.map(formatMeasure).join(' / ')}℃日`
-        : targets.length === 1
-          ? `目標 ${formatMeasure(targets[0])}℃日`
-          : null
+      captions.length > 0
+        ? captions.join('、')
+        : targets.length > 1
+          ? `基準は品種により ${targets.map(formatMeasure).join(' / ')}℃日`
+          : targets.length === 1
+            ? `基準 ${formatMeasure(targets[0])}℃日`
+            : null
     const same = min === max && gdds.length === count
     const both = count === 2 ? 'どちらも' : 'どれも'
     const valueText = same
@@ -191,6 +196,7 @@ function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
         daysSincePlanting: card.daysSincePlanting,
         currentGDD: card.currentGDD ?? null,
         targetGDD: card.targetGDD ?? 0,
+        targetCaption: card.targetCaption,
         action: card.action,
       })),
     })
@@ -258,6 +264,7 @@ export async function scoreGrowingCrops(
   const defaultFarm = farmList[0]
   const defaultRegional = defaultFarm ? (regionalByFarm.get(defaultFarm.id) ?? null) : fallbackRegional
 
+  const harvestSamples = await loadHarvestSamples(userId)
   const measured = await Promise.all(
     crops.map(async (crop) => {
       if (!crop.plantingDate || !crop.farm || !hasWeatherCoordinates(crop.farm)) {
@@ -282,7 +289,8 @@ export async function scoreGrowingCrops(
     const days = daysSince(crop.plantingDate, today)
     if (days === null) continue
     const hasHarvest = crop.harvests.length > 0
-    const targetGDD = getTargetGDDForCrop(crop.name, crop.variety)
+    const basis = pickHarvestBasis(harvestSamples, crop.name, crop.variety)
+    const targetGDD = basis.gdd
     const gddRatio = currentGDD != null && targetGDD > 0 ? currentGDD / targetGDD : null
     const stage = resolveCropStage(crop.name, crop.variety, {
       daysSincePlanting: days,
@@ -412,7 +420,7 @@ export async function scoreGrowingCrops(
     ])
     const measuredLine =
       currentGDD != null
-        ? `${crop.name}の積算温度は ${currentGDD}℃日です（目標 ${targetGDD}℃日、植付から${days}日）。`
+        ? `${crop.name}の積算温度は ${currentGDD}℃日です（${basis.summary}、植付から${days}日）。`
         : `${crop.name}は植付から${days}日目です（${farmName}）。`
     const finishReason = hasHarvest
       ? `収穫を${crop.harvests.length}回記録しています。`
@@ -442,6 +450,7 @@ export async function scoreGrowingCrops(
       variety: crop.variety,
       currentGDD,
       targetGDD,
+      targetCaption: basis.summary,
       conclusion: best.conclusion,
       action: best.action,
       layers: mergeLayers({

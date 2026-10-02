@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { resolveBaseTemperature } from '@/lib/benchmarks/base-temperature'
 
 export async function POST(request: NextRequest) {
   try {
@@ -64,6 +65,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const baseTemperature = resolveBaseTemperature(body.baseTemperature, name, variety)
+    if (typeof baseTemperature === 'object') {
+      return NextResponse.json({ error: baseTemperature.error }, { status: 400 })
+    }
+
     const crop = await prisma.crop.create({
       data: {
         name,
@@ -72,6 +78,7 @@ export async function POST(request: NextRequest) {
         plantingDate,
         harvestDate,
         fieldId: validatedFieldId,
+        baseTemperature,
         status: 'growing',
       },
     })

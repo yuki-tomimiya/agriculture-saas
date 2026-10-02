@@ -4,6 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import BaseTempField from '@/components/BaseTempField'
+import { defaultBaseTemperature } from '@/lib/benchmarks/base-temperature'
 
 type FarmWithFields = { id: string; name: string; fields: { id: string; name: string }[] }
 
@@ -15,6 +17,8 @@ export default function CropNewForm({ farms }: { farms: FarmWithFields[] }) {
   const [plantingDate, setPlantingDate] = useState('')
   const [harvestDate, setHarvestDate] = useState('')
   const [fieldId, setFieldId] = useState('')
+  const [baseTemp, setBaseTemp] = useState('')
+  const [baseTouched, setBaseTouched] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -37,6 +41,7 @@ export default function CropNewForm({ farms }: { farms: FarmWithFields[] }) {
           plantingDate: plantingDate || null,
           harvestDate: harvestDate || null,
           fieldId: fieldId || null,
+          baseTemperature: baseTemp.trim() === '' ? null : Number(baseTemp),
         }),
       })
 
@@ -88,7 +93,14 @@ export default function CropNewForm({ farms }: { farms: FarmWithFields[] }) {
                 id="crop-name"
                 type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setName(next)
+                  if (!baseTouched) {
+                    const usual = defaultBaseTemperature(next, variety)
+                    setBaseTemp(usual == null ? '' : String(usual))
+                  }
+                }}
                 required
                 className="input"
                 placeholder="例：トマト"
@@ -128,12 +140,29 @@ export default function CropNewForm({ farms }: { farms: FarmWithFields[] }) {
                 id="crop-variety"
                 type="text"
                 value={variety}
-                onChange={(e) => setVariety(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setVariety(next)
+                  if (!baseTouched) {
+                    const usual = defaultBaseTemperature(name, next)
+                    setBaseTemp(usual == null ? '' : String(usual))
+                  }
+                }}
                 className="input"
                 placeholder="例：桃太郎"
                 maxLength={100}
               />
             </div>
+
+            <BaseTempField
+              value={baseTemp}
+              cropName={name}
+              variety={variety}
+              onChange={(next) => {
+                setBaseTouched(true)
+                setBaseTemp(next)
+              }}
+            />
 
             {fields.length > 0 && (
               <div className="auth-field">

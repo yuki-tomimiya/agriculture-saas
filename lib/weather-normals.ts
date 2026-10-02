@@ -116,6 +116,35 @@ export function sumNormalPrecip(normals: Map<string, DayNormal>, start: Date, en
   return Math.round(total * 10) / 10
 }
 
+/** 暦日の範囲（両端を含む）で、平年の積算温度を合計する。 */
+export function sumNormalGdd(
+  normals: Map<string, DayNormal>,
+  start: Date,
+  end: Date,
+  baseTemp: number
+): number | null {
+  const cursor = new Date(start)
+  cursor.setHours(12, 0, 0, 0)
+  const last = new Date(end)
+  last.setHours(12, 0, 0, 0)
+  if (cursor > last) return null
+  let heat = 0
+  let days = 0
+  while (cursor <= last) {
+    let month = cursor.getMonth() + 1
+    let day = cursor.getDate()
+    if (month === 2 && day === 29) day = 28
+    const row = normals.get(`${month}-${day}`)
+    if (row && Number.isFinite(row.tempMean)) {
+      heat += Math.max(0, row.tempMean - baseTemp)
+      days += 1
+    }
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  if (days === 0) return null
+  return heat
+}
+
 /** 植付日からの経過日数ぶん、平年の日別値を累積する。添字が経過日数。 */
 export function accumulateNormals(args: {
   normals: Map<string, DayNormal>

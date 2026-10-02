@@ -36,7 +36,7 @@ const SWEET_POTATO_STAGES: CropStage[] = [
     label: '収穫',
     fromGddRatio: 1,
     expectedWorkTypes: ['収穫'],
-    generalLine: 'さつまいもは積算温度が目標に達し、収穫適期です。雨の前の掘り取りが安心です',
+    generalLine: 'さつまいもは積算温度が収穫の目安に達しています。雨の前の掘り取りが安心です',
     nextHint: '収穫と出荷の段取り',
   },
   {
@@ -45,7 +45,7 @@ const SWEET_POTATO_STAGES: CropStage[] = [
     fromGddRatio: 0.9,
     toGddRatio: 1,
     expectedWorkTypes: ['試し掘り', '病害確認'],
-    generalLine: 'さつまいもは目標の積算温度に近づいており、試し掘りで肥大を確かめる時期です',
+    generalLine: 'さつまいもは収穫の目安に近づいており、試し掘りで肥大を確かめる時期です',
     nextHint: '試し掘りと、問題があれば収穫の前倒し',
   },
   {

@@ -90,6 +90,9 @@ export default async function CropsArchivePage({
             </p>
           </div>
           <div className="insights-header-actions">
+            <Link href="/plan" className="btn btn-outline farms-add-button">
+              来年の計画
+            </Link>
             <Link href="/gdd/past" className="btn btn-outline farms-add-button">
               過去の生育データ
             </Link>

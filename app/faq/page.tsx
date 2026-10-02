@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
 
 export default async function FAQPage() {
   const user = await getCurrentUser()
@@ -99,12 +100,13 @@ export default async function FAQPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  <tr><td>トマト</td><td>10℃</td><td>約 800〜1,000</td></tr>
-                  <tr><td>ナス</td><td>10℃</td><td>約 900〜1,100</td></tr>
-                  <tr><td>ピーマン</td><td>10℃</td><td>約 850〜1,050</td></tr>
-                  <tr><td>キュウリ</td><td>10℃</td><td>約 650〜850</td></tr>
-                  <tr><td>スイートコーン</td><td>10℃</td><td>約 1,300〜1,500</td></tr>
-                  <tr><td>イチゴ</td><td>5℃</td><td>約 600〜800（開花〜収穫）</td></tr>
+                  {CROP_BASE_TEMPERATURES.map((row) => (
+                    <tr key={row.name}>
+                      <td>{row.name}</td>
+                      <td>{row.baseTemp}℃</td>
+                      <td>{row.gddLabel}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

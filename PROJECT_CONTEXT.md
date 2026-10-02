@@ -26,9 +26,9 @@
 
 ## 次にやること（要約のみ）
 
-1. 終了の確認・地域層の平年比・用語のFAQは実装済み
+1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直してから出す
 2. 農場名「メイン➁」の文字替えと、雨の目安520mmを残すかは確認待ち
-3. 次は来年計画のたたき台。土壌診断は Phase 3 のまま
+3. 次は土壌診断。モバイルはその次
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
 → 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**（Obsidian）
@@ -51,6 +51,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | `/gdd` | 生育ナビ・栽培中 |
 | `/gdd/past` | 過去の生育データ（2階層目） |
 | `/gdd?cropId=…` | 作付け別グラフ（過去時はバナー） |
+| `/plan` | 来年の計画（終わった作付けの一覧。詳細ページはなし） |
 | `/insights` | 分析・振り返り（入口カード） |
 | `/insights/compare` | 作付け比較（あなた） |
 | `/insights/regional` | この地域の気象（地域） |
@@ -71,18 +72,19 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 領域 | パス |
 |------|------|
 | 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
-| 平年値 | `lib/weather-normals.ts`（生育ナビと提案の地域層） |
+| 平年値 | `lib/weather-normals.ts`（生育ナビ、提案の地域層、来年の計画） |
+| 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準） |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
 | 地域（降水量） | `lib/insights/regional-context.ts` |
-| 一般目安 | `lib/benchmarks/crops.ts` |
+| 一般目安 | `lib/benchmarks/crops.ts`, `lib/benchmarks/base-temperature.ts`（基準温度。FAQ の表もここ） |
 | 生育ナビ | `app/gdd/`, `app/gdd/past/`, `components/GDDCropList.tsx`, `lib/gdd.ts` |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | サイドバー | `components/Sidebar.tsx` |
 | 議事録 | `docs/議事録/minutes-content.json`, `generate-minutes.mjs` |
 
 ```
-app/  dashboard/, dashboard/ai-proposal/, insights/, insights/compare/, insights/regional/,
+app/  dashboard/, dashboard/ai-proposal/, plan/, insights/, insights/compare/, insights/regional/,
       insights/general/, gdd/, gdd/past/, calendar/, weather/, farms/, crops/, tasks/,
       work-records/, fertilizers/, pesticides/, harvests/, sales/, faq/, data/
 lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth.ts, prisma.ts

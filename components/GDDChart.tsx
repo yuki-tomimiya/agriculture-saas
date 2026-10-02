@@ -15,6 +15,8 @@ type GDDChartProps = {
   crop?: CropForGDD
   currentGDD?: number
   targetGDD?: number
+  /** 赤線の意味。未指定のときは「目標」と書く */
+  targetCaption?: string
   daysFromPlanting?: number
   historicalPoints?: ProjectionPoint[]
   dailyProjections?: ProjectionPoint[]
@@ -86,6 +88,7 @@ export default function GDDChart({
   crop,
   currentGDD = 0,
   targetGDD = 1000,
+  targetCaption,
   daysFromPlanting = 0,
   historicalPoints = [],
   dailyProjections = [],
@@ -208,11 +211,12 @@ export default function GDDChart({
   const projectedBarWidth =
     projectedProgressPct != null ? Math.min(100, projectedProgressPct) : null
 
+  const basisLabel = targetCaption ?? `目標 ${Math.round(targetGDD)}℃日`
   const suggestionItems =
     currentProgressPct >= 100
       ? [
           <>
-            目標積算温度に到達しています。圃場の様子を見て、<span className="font-semibold">収穫適期・出荷計画</span>
+            {basisLabel}に到達しています。圃場の様子を見て、<span className="font-semibold">収穫適期・出荷計画</span>
             を確認しましょう。
           </>,
           <>
@@ -223,7 +227,7 @@ export default function GDDChart({
       : currentProgressPct >= 70
         ? [
             <>
-              目標まで残りわずかです。<span className="font-semibold">収穫・出荷の準備</span>
+              {basisLabel}まで残りわずかです。<span className="font-semibold">収穫・出荷の準備</span>
               （人員・資材・保管）を早めに整えましょう。
             </>,
             <>
@@ -251,7 +255,7 @@ export default function GDDChart({
       <p className="dashboard-section-sub">
         上段は実績（緑）と予報（青破線）
         {hasLastYear ? '、前回作付け（灰）' : ''}
-        の累積推移、下段は目標に対する進捗率を表示します。
+        の累積推移、下段はこの基準までの進捗を表示します。
         {!crop && ' 作物一覧で植え付け日を登録した作物がここに表示されます。'}
         {crop && !hasHistory && ' この作物の農場に緯度・経度を登録すると、実データに基づく推移が表示されます。'}
       </p>
@@ -260,7 +264,7 @@ export default function GDDChart({
         <div className="dashboard-gdd-graph-header">
           <span>植え付けからの推移（累積 ℃日）</span>
           <span className="dashboard-gdd-graph-current">
-            現在：{currentGDD} ℃日 / 目標：{targetGDD} ℃日
+            現在：{currentGDD} ℃日 / {basisLabel}
           </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">
@@ -416,7 +420,7 @@ export default function GDDChart({
             {targetGDD > 0 && (
               <div className="dashboard-gdd-graph-marker-row">
                 <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#DC2626' }} />
-                <span className="dashboard-gdd-graph-marker-text">目標：{Math.round(targetGDD)} ℃日</span>
+                <span className="dashboard-gdd-graph-marker-text">{basisLabel}</span>
               </div>
             )}
             {projectedGDD != null && (
@@ -433,14 +437,14 @@ export default function GDDChart({
         <p className="dashboard-gdd-note">
           {normalGddByDay == null
             ? '平年値を取得できなかったため、平年線は出していません。'
-            : '平年＝この地点の過去10年平均（Open-Meteo）。赤の破線は収穫の目標積算温度です。'}
+            : `平年＝この地点の過去10年平均（Open-Meteo）。赤の破線は${basisLabel}です。`}
         </p>
       )}
 
       <div className="dashboard-gdd-summary">
-        <p className="dashboard-gdd-summary-title">目標進捗</p>
+        <p className="dashboard-gdd-summary-title">基準までの進捗</p>
         <p className="dashboard-gdd-summary-text">
-          目標進捗（現在）：<span className="font-semibold">{currentProgressPct.toFixed(1)}%</span>
+          進捗（現在）：<span className="font-semibold">{currentProgressPct.toFixed(1)}%</span>
           {projectedProgressPct != null && (
             <>
               {' '}／ 14日後見込み：<span className="font-semibold">{projectedProgressPct.toFixed(1)}%</span>
@@ -473,7 +477,7 @@ export default function GDDChart({
         </div>
         {currentProgressPct > 100 && (
           <p className="dashboard-gdd-summary-text" style={{ marginTop: '0.5rem' }}>
-            目標を超過しています（現在 {Math.round(currentGDD)} ℃日 / 目標 {Math.round(targetGDD)} ℃日）。
+            {basisLabel}を超えています（現在 {Math.round(currentGDD)} ℃日）。
           </p>
         )}
       </div>

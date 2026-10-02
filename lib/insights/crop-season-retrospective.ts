@@ -3,8 +3,8 @@ import {
   commentYieldVsBenchmark,
   findCropBenchmark,
 } from '@/lib/benchmarks/crops'
-import { formatPlantingLabel } from '@/lib/insights/crop-season-compare'
-import { getTargetGDDForCrop } from '@/lib/gdd'
+import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-season-compare'
+import { loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   getAccumulatedGDDFromApi,
   hasWeatherCoordinates,
@@ -24,6 +24,7 @@ export type CropSeasonRetrospective = {
   harvestQty: number
   harvestUnit: string
   harvestCount: number
+  salesCount: number
   firstHarvestDate: Date | null
   lastHarvestDate: Date | null
   salesAmount: number
@@ -37,10 +38,13 @@ export type CropSeasonRetrospective = {
   harvestDiffPct: number | null
   salesDiffPct: number | null
   previousHarvestQty: number | null
+  previousHarvestCount: number | null
   previousSalesAmount: number | null
+  previousSalesCount: number | null
   yieldComment: string | null
   accumulatedGdd: number | null
   targetGdd: number | null
+  gddBasis: HarvestBasis | null
   /** 積算温度の終点。今日までなら today、収穫日までなら harvest */
   gddAsOf: 'today' | 'harvest' | null
   seasonTitle: string
@@ -94,17 +98,16 @@ function buildHeadline(args: {
     parts.push(`売上 ${args.salesAmount.toLocaleString('ja-JP')}円`)
   }
   if (args.hasPrevious) {
-    if (args.harvestDiffPct === null) {
-      parts.push('前回作付けとの収量比較は記録を確認してください')
-    } else if (args.harvestDiffPct > 5) {
-      parts.push(`収量は前回より +${args.harvestDiffPct}%`)
-    } else if (args.harvestDiffPct < -5) {
-      parts.push(`収量は前回より ${args.harvestDiffPct}%`)
-    } else {
-      parts.push('収量は前回と同程度')
-    }
+    parts.push(
+      describeYieldChange({
+        harvestDiffPct: args.harvestDiffPct,
+        hasPrevious: true,
+        yieldComment: args.yieldComment,
+      }).replace(/。$/, '')
+    )
+  } else if (args.yieldComment) {
+    parts.push(args.yieldComment.replace(/。$/, ''))
   }
-  if (args.yieldComment) parts.push(args.yieldComment)
   if (args.workCount > 0) parts.push(`作業記録 ${args.workCount}件`)
   return parts.join('。') + '。'
 }
@@ -143,6 +146,7 @@ export async function getCropSeasonRetrospective(
   const firstHarvestDate = crop.harvests[0]?.date ?? null
   const lastHarvestDate = crop.harvests[crop.harvests.length - 1]?.date ?? null
   const salesAmount = crop.sales.reduce((s, sale) => s + sale.amount, 0)
+  const salesCount = crop.sales.length
 
   const workByTypeMap = new Map<string, number>()
   for (const w of crop.workRecords) {
@@ -174,16 +178,24 @@ export async function getCropSeasonRetrospective(
   const previous = idx >= 0 ? group[idx + 1] : null
 
   let previousHarvestQty: number | null = null
+  let previousHarvestCount: number | null = null
   let previousSalesAmount: number | null = null
+  let previousSalesCount: number | null = null
   let harvestDiffPct: number | null = null
   let salesDiffPct: number | null = null
   if (previous) {
+    previousHarvestCount = previous.harvests.length
+    previousSalesCount = previous.sales.length
     previousHarvestQty = previous.harvests
       .filter((h) => h.unit === harvestUnit || (!h.unit && harvestUnit === 'kg'))
       .reduce((s, h) => s + h.quantity, 0)
     previousSalesAmount = previous.sales.reduce((s, sale) => s + sale.amount, 0)
-    harvestDiffPct = pctDiff(harvestQty, previousHarvestQty)
-    salesDiffPct = pctDiff(salesAmount, previousSalesAmount)
+    harvestDiffPct =
+      harvestCount > 0 && previousHarvestCount > 0
+        ? pctDiff(harvestQty, previousHarvestQty)
+        : null
+    salesDiffPct =
+      salesCount > 0 && previousSalesCount > 0 ? pctDiff(salesAmount, previousSalesAmount) : null
   }
 
   const benchmark = findCropBenchmark(crop.name, crop.variety)
@@ -202,7 +214,9 @@ export async function getCropSeasonRetrospective(
     seasonDays = daysBetween(crop.plantingDate, endDate)
   }
 
-  const targetGdd = getTargetGDDForCrop(crop.name, crop.variety)
+  const harvestSamples = await loadHarvestSamples(userId)
+  const gddBasis = pickHarvestBasis(harvestSamples, crop.name, crop.variety)
+  const targetGdd = gddBasis.gdd
   const today = new Date()
   today.setHours(0, 0, 0, 0)
   const endStamp = endDate ? new Date(endDate) : null
@@ -237,6 +251,7 @@ export async function getCropSeasonRetrospective(
     harvestQty,
     harvestUnit,
     harvestCount,
+    salesCount,
     firstHarvestDate,
     lastHarvestDate,
     salesAmount,
@@ -252,10 +267,13 @@ export async function getCropSeasonRetrospective(
     harvestDiffPct,
     salesDiffPct,
     previousHarvestQty,
+    previousHarvestCount,
     previousSalesAmount,
+    previousSalesCount,
     yieldComment,
     accumulatedGdd: null,
     targetGdd,
+    gddBasis,
     gddAsOf,
     seasonTitle,
     headlineSummary,

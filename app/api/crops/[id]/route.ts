@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { resolveBaseTemperature } from '@/lib/benchmarks/base-temperature'
 
 export async function PATCH(
   request: NextRequest,
@@ -119,6 +120,17 @@ export async function PATCH(
       updateData.userId = farmId ? null : userId
     }
     if (validatedFieldId !== undefined) updateData.fieldId = validatedFieldId
+    if ('baseTemperature' in body) {
+      const baseTemperature = resolveBaseTemperature(
+        body.baseTemperature,
+        name ?? existing.name,
+        variety === undefined ? existing.variety : variety
+      )
+      if (typeof baseTemperature === 'object') {
+        return NextResponse.json({ error: baseTemperature.error }, { status: 400 })
+      }
+      updateData.baseTemperature = baseTemperature
+    }
 
     const crop = await prisma.crop.update({
       where: { id },

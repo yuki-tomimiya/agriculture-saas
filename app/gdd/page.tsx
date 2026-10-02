@@ -10,7 +10,8 @@ import GDDChart from '@/components/GDDChart'
 import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
 import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDailyPrecipitation, getHistoricalDailyRadiation, getHistoricalDailyTemps, hasWeatherCoordinates } from '@/lib/weather-forecast'
-import { computeGDDProjection, getTargetGDDForCrop } from '@/lib/gdd'
+import { computeGDDProjection } from '@/lib/gdd'
+import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
 import { accumulateNormals, getLocationDailyNormals } from '@/lib/weather-normals'
 
@@ -120,7 +121,11 @@ export default async function GDDPage({
     }
   })
   const currentGDD = historicalCumulative[historicalCumulative.length - 1]?.cumulativeGDD ?? 0
-  const targetGDD = selectedCrop ? getTargetGDDForCrop(selectedCrop.name, selectedCrop.variety) : 1000
+  const harvestSamples = selectedCrop ? await loadHarvestSamples(user.id) : []
+  const harvestBasis = selectedCrop
+    ? pickHarvestBasis(harvestSamples, selectedCrop.name, selectedCrop.variety)
+    : null
+  const targetGDD = harvestBasis?.gdd ?? 1000
   const normalTable =
     canFetchWeather
       ? await getLocationDailyNormals({
@@ -251,6 +256,7 @@ export default async function GDDPage({
             }
             currentGDD={currentGDD}
             targetGDD={targetGDD}
+            targetCaption={harvestBasis?.summary}
             daysFromPlanting={daysFromPlanting}
             historicalPoints={historicalCumulative}
             dailyProjections={projection?.dailyProjections.map((p) => ({ date: p.date, cumulativeGDD: p.cumulativeGDD })) ?? []}

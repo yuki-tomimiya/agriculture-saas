@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import BaseTempField from '@/components/BaseTempField'
 
 type FarmWithFields = { id: string; name: string; fields: { id: string; name: string }[] }
 
@@ -16,6 +17,7 @@ type Initial = {
   plantingDate: string
   harvestDate: string
   status: string
+  baseTemperature: string
 }
 
 export default function CropEditForm({
@@ -35,6 +37,7 @@ export default function CropEditForm({
   const [harvestDate, setHarvestDate] = useState(initial.harvestDate)
   const [fieldId, setFieldId] = useState(initial.fieldId)
   const [status, setStatus] = useState(initial.status)
+  const [baseTemp, setBaseTemp] = useState(initial.baseTemperature)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -58,6 +61,7 @@ export default function CropEditForm({
           harvestDate: harvestDate || null,
           fieldId: fieldId || null,
           status,
+          baseTemperature: baseTemp.trim() === '' ? null : Number(baseTemp),
         }),
       })
 
@@ -163,6 +167,13 @@ export default function CropEditForm({
                 maxLength={100}
               />
             </div>
+
+            <BaseTempField
+              value={baseTemp}
+              cropName={name}
+              variety={variety}
+              onChange={setBaseTemp}
+            />
 
             {fields.length > 0 && (
               <div className="auth-field">
