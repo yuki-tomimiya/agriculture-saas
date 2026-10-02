@@ -42,7 +42,9 @@ function CropCard({
         </span>
       </div>
       <div className="gdd-crop-card-extra">
-        <span className="gdd-crop-card-base">基準温度 {crop.baseTemperature ?? 10}℃</span>
+        <Link href="/faq#base-temp" className="gdd-crop-card-base">
+          基準温度 {crop.baseTemperature ?? 10}℃
+        </Link>
         <span className="gdd-crop-card-status">栽培中</span>
         <Link
           href={`/gdd?cropId=${crop.id}#gdd-detail`}
@@ -93,7 +95,7 @@ export default function GDDCropList({
         <p className="gdd-crop-list-empty">
           栽培中（植え付け日あり）の作物はありません。
           {pastCount > 0
-            ? '過去の作付けの生育データは下から確認できます。'
+            ? '過去の生育データは下から確認できます。'
             : '作物を登録し、植え付け日を設定してください。'}
         </p>
       )}
@@ -101,7 +103,7 @@ export default function GDDCropList({
       {pastCount > 0 && (
         <p className="gdd-crop-past-link">
           <Link href="/gdd/past" className="gdd-crop-past-link-a">
-            過去の作付けの生育データを見る（{pastCount}）→
+            過去の生育データを見る（{pastCount}）→
           </Link>
           <span className="gdd-crop-past-link-hint">生育ナビの下の階層</span>
         </p>

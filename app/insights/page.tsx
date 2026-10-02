@@ -36,7 +36,7 @@ export default async function InsightsPage() {
           <div className="farms-header-text">
             <h1 className="farms-title">分析・振り返り</h1>
             <p className="farms-subtitle">
-              比較・地域・一般の入口です。詳細は各カードから。過去の生育グラフは生育ナビの「過去の作付け」へ
+              比較・地域・一般の入口です。詳細は各カードから。過去の生育グラフは生育ナビの「過去の生育データ」へ
             </p>
           </div>
           <div className="insights-header-actions">

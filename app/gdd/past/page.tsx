@@ -27,9 +27,9 @@ export default async function GddPastPage() {
                 生育ナビ
               </Link>
               <span className="gdd-breadcrumb-sep">/</span>
-              <span>過去の作付け</span>
+              <span>過去の生育データ</span>
             </p>
-            <h1 className="farms-title">過去の作付け（生育データ）</h1>
+            <h1 className="farms-title">過去の生育データ</h1>
             <p className="farms-subtitle">
               収穫済み・完了した作付けの積算温度・雨量・日射を確認できます。栽培中の進捗は生育ナビ本体で追ってください。
             </p>
@@ -51,7 +51,7 @@ export default async function GddPastPage() {
           {pastCrops.length === 0 ? (
             <div className="card farms-empty-card">
               <div className="farms-empty-icon">🌡️</div>
-              <h3 className="farms-empty-title">過去の作付けはまだありません</h3>
+              <h3 className="farms-empty-title">過去の生育データはまだありません</h3>
               <p className="farms-empty-text">
                 作付けを「収穫済み」などにすると、ここにまとまって表示されます
               </p>
