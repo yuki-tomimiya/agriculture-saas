@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { findCropBenchmark } from '@/lib/benchmarks/crops'
 import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
+import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 
 export type ProposalLayers = {
@@ -8,6 +9,12 @@ export type ProposalLayers = {
   regional: string | null
   general: string | null
   conclusion: string
+}
+
+export type LastYearSameDaySummary = {
+  labels: string[]
+  /** 【あなた】層向けの一文。該当なしは null */
+  summaryLine: string | null
 }
 
 function getTodayStart(): Date {
@@ -36,18 +43,128 @@ function matchKey(name: string, variety: string | null, farmId: string | null): 
   return `${name.trim().toLowerCase()}|${(variety ?? '').trim().toLowerCase()}|${farmId ?? ''}`
 }
 
+/**
+ * カレンダーの「昨年」オーバーレイと同じ軸：前年の同月同日（±windowDays）。
+ * 植付日ベースの「前回作付け」とは別概念。
+ */
+export async function getLastYearSameDayWorkSummary(
+  userId: string,
+  options?: {
+    farmId?: string | null
+    cropId?: string | null
+    /** 前年同日の前後何日を含めるか（デフォルト 2） */
+    windowDays?: number
+  }
+): Promise<LastYearSameDaySummary> {
+  const windowDays = options?.windowDays ?? 2
+  const today = getTodayStart()
+  const lastYearAnchor = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
+  // 2/29 → 非うるう年はスキップ（カレンダーと同趣旨）
+  if (lastYearAnchor.getMonth() !== today.getMonth()) {
+    return { labels: [], summaryLine: null }
+  }
+  lastYearAnchor.setHours(0, 0, 0, 0)
+  const rangeStart = addDays(lastYearAnchor, -windowDays)
+  const rangeEnd = addDays(lastYearAnchor, windowDays)
+  rangeEnd.setHours(23, 59, 59, 999)
+
+  const workWhere: {
+    farm: { userId: string; id?: string }
+    date: { gte: Date; lte: Date }
+    cropId?: string
+  } = {
+    farm: { userId },
+    date: { gte: rangeStart, lte: rangeEnd },
+  }
+  if (options?.farmId) {
+    workWhere.farm = { userId, id: options.farmId }
+  }
+  if (options?.cropId) {
+    workWhere.cropId = options.cropId
+  }
+
+  const fertilizerWhere: {
+    userId: string
+    appliedAt: { gte: Date; lte: Date }
+    farmId?: string
+  } = {
+    userId,
+    appliedAt: { gte: rangeStart, lte: rangeEnd },
+  }
+  if (options?.farmId) {
+    fertilizerWhere.farmId = options.farmId
+  }
+
+  const [works, fertilizers] = await Promise.all([
+    prisma.workRecord.findMany({
+      where: workWhere,
+      include: { crop: true },
+      orderBy: { date: 'asc' },
+      take: 8,
+    }),
+    // 作物指定時は施肥を省略（crop紐付けが弱い）
+    options?.cropId
+      ? Promise.resolve([])
+      : prisma.fertilizerRecord.findMany({
+          where: fertilizerWhere,
+          orderBy: { appliedAt: 'asc' },
+          take: 5,
+        }),
+  ])
+
+  let workRows = works
+  if (workRows.length === 0 && options?.cropId && options?.farmId) {
+    workRows = await prisma.workRecord.findMany({
+      where: {
+        farm: { userId, id: options.farmId },
+        date: { gte: rangeStart, lte: rangeEnd },
+      },
+      include: { crop: true },
+      orderBy: { date: 'asc' },
+      take: 8,
+    })
+  }
+
+  const labels: string[] = []
+  for (const w of workRows) {
+    const crop = w.crop?.name ? `（${w.crop.name}）` : ''
+    const label = `${w.taskType}${crop}`
+    if (!labels.includes(label)) labels.push(label)
+  }
+  for (const f of fertilizers) {
+    const label = `施肥：${f.productName}`
+    if (!labels.includes(label)) labels.push(label)
+  }
+
+  if (labels.length === 0) {
+    return { labels: [], summaryLine: null }
+  }
+
+  const shown = labels.slice(0, 4)
+  const more = labels.length > shown.length ? `ほか${labels.length - shown.length}件` : ''
+  const joined = shown.join('・') + (more ? `・${more}` : '')
+  const windowNote = windowDays > 0 ? `（前後${windowDays}日含む）` : ''
+  return {
+    labels,
+    summaryLine: `昨年同日${windowNote}は「${joined}」を実施しています。`,
+  }
+}
+
 export function buildGeneralLayer(
   cropName: string | null | undefined,
-  variety?: string | null
-): string {
+  variety?: string | null,
+  progress?: StageProgress
+): string | null {
   const month = new Date().getMonth() + 1
-  if (!cropName) {
-    return '記録が増えるほど、あなた専用のアドバイスが出やすくなります。'
+  if (!cropName) return null
+
+  if (progress) {
+    const stage = resolveCropStage(cropName, variety, progress)
+    if (stage) return formatStageGeneralLine(stage)
   }
+
   const benchmark = findCropBenchmark(cropName, variety)
-  if (!benchmark) {
-    return `${cropName}の一般目安は準備中です。同時期の作業記録を残すと、次回から比較できます。`
-  }
+  if (!benchmark) return null
   const parts: string[] = []
   const monthly = benchmark.monthlyWorkHints[month]
   if (monthly) parts.push(`${benchmark.displayName}は${month}月、${monthly}`)
@@ -142,6 +259,7 @@ export async function buildPersonalLayerForCrop(args: {
   const idx = group.findIndex((c) => c.id === args.cropId)
   const previous = idx >= 0 ? group[idx + 1] : group[1]
 
+  let phenologyLabels: string[] = []
   if (previous?.plantingDate && days !== null) {
     const windowStart = addDays(previous.plantingDate, Math.max(0, days - 7))
     const windowEnd = addDays(previous.plantingDate, days + 7)
@@ -154,9 +272,9 @@ export async function buildPersonalLayerForCrop(args: {
       take: 5,
     })
     if (prevWorks.length > 0) {
-      const labels = [...new Set(prevWorks.map((w) => w.taskType))]
+      phenologyLabels = [...new Set(prevWorks.map((w) => w.taskType))]
       parts.push(
-        `前回作付けの同時期（植付から約${days}日前後）に${labels.join('・')}を実施しています。`
+        `前回作付けの同時期（植付から約${days}日前後）に${phenologyLabels.join('・')}を実施しています。`
       )
     }
 
@@ -179,23 +297,52 @@ export async function buildPersonalLayerForCrop(args: {
       parts.push(`前回作付けの収量は${prevQ}kgでした。`)
     }
   } else if (days !== null) {
-    parts.push('同名・同品種の前回作付けがまだないため、昨年との比較はこれから蓄積されます。')
+    parts.push('同名・同品種の前回作付けがまだないため、作付け同士の比較はこれから蓄積されます。')
+  }
+
+  // カレンダー軸：昨年同日の作業（植付日ベースとは別）
+  const lastYear = await getLastYearSameDayWorkSummary(args.userId, {
+    farmId: args.farmId,
+    cropId: args.cropId,
+  })
+  if (lastYear.summaryLine) {
+    const phenologySet = new Set(phenologyLabels)
+    const calendarOnly = lastYear.labels.filter((label) => {
+      const taskType = label.replace(/（.+）$/, '').replace(/^施肥：/, '')
+      return !phenologySet.has(taskType)
+    })
+    if (calendarOnly.length > 0 || phenologyLabels.length === 0) {
+      parts.push(lastYear.summaryLine)
+    } else {
+      parts.push('カレンダー上の昨年同日にも、上記と同種の作業記録があります。')
+    }
   }
 
   return parts.length > 0 ? parts.join(' ') : null
 }
 
-export function buildPersonalLayerForTask(args: {
+export async function buildPersonalLayerForTask(args: {
+  userId: string
   title: string
   farmName: string
+  farmId?: string | null
   cropName?: string | null
+  cropId?: string | null
   isOverdue: boolean
-}): string {
+}): Promise<string> {
   const cropPart = args.cropName ? ` / ${args.cropName}` : ''
-  if (args.isOverdue) {
-    return `「${args.title}」（${args.farmName}${cropPart}）の期限を過ぎています。`
+  const base = args.isOverdue
+    ? `「${args.title}」（${args.farmName}${cropPart}）の期限を過ぎています。`
+    : `「${args.title}」（${args.farmName}${cropPart}）が今日が期限です。`
+
+  const lastYear = await getLastYearSameDayWorkSummary(args.userId, {
+    farmId: args.farmId,
+    cropId: args.cropId,
+  })
+  if (lastYear.summaryLine) {
+    return `${base} ${lastYear.summaryLine}`
   }
-  return `「${args.title}」（${args.farmName}${cropPart}）が今日が期限です。`
+  return base
 }
 
 export function mergeLayers(

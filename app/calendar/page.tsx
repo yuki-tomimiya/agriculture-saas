@@ -22,7 +22,7 @@ export default async function CalendarPage() {
               提案・実績と、前年同日の作業を重ねて確認できます
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="insights-header-actions">
             <Link href="/calendar/history" className="btn btn-outline farms-add-button">
               過去の実績
             </Link>

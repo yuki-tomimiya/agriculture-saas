@@ -68,7 +68,11 @@ function buildInterpretation(args: {
   farmName: string | null
 }): { shortLine: string; interpretation: string; diffPct: number | null } {
   const place = args.farmName ? `${args.farmName}周辺` : 'この地域'
-  const period = `${args.month}月1日〜${args.dayOfMonth}日`
+  const period =
+    args.dayOfMonth <= 1
+      ? `${args.month}月1日`
+      : `${args.month}月1日〜${args.dayOfMonth}日`
+  const tooEarly = args.dayOfMonth < 7
 
   if (args.thisYearMm === null) {
     const msg = `${place}の降水量データを取得できませんでした。緯度・経度や通信状況を確認してください。`
@@ -76,7 +80,7 @@ function buildInterpretation(args: {
   }
 
   let diffPct: number | null = null
-  if (args.lastYearMm !== null && args.lastYearMm > 0) {
+  if (!tooEarly && args.lastYearMm !== null && args.lastYearMm > 0) {
     diffPct = Math.round(((args.thisYearMm - args.lastYearMm) / args.lastYearMm) * 100)
   }
 
@@ -84,7 +88,10 @@ function buildInterpretation(args: {
   let compare = ''
   let advice = ''
 
-  if (args.lastYearMm === null) {
+  if (tooEarly) {
+    const line = `${base}。日数が少ないため、昨年との割合は出していません。7日分そろってから、昨年同時期と見比べましょう。`
+    return { shortLine: line, interpretation: line, diffPct: null }
+  } else if (args.lastYearMm === null) {
     compare = '（昨年同時期のデータは取得できませんでした）'
     advice = '排水・灌水の判断は、直近の予報とあわせて確認しましょう。'
   } else if (args.lastYearMm === 0 && args.thisYearMm === 0) {

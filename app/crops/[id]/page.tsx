@@ -51,8 +51,16 @@ export default async function CropDetailPage({
       <main className="flex-1 ml-64 px-6 py-8">
         <div className="mb-6">
           <Link href="/crops" className="text-sm text-gray-500 hover:text-gray-700">
-            ← 作物一覧
+            ← {crop.status === 'growing' ? '作物一覧（栽培中）' : '作物一覧'}
           </Link>
+          {crop.status !== 'growing' && (
+            <>
+              <span className="text-sm text-gray-400 mx-2">/</span>
+              <Link href="/crops/archive" className="text-sm text-gray-500 hover:text-gray-700">
+                過去の作付け
+              </Link>
+            </>
+          )}
         </div>
 
         <div className="flex items-start justify-between mb-8">
@@ -68,8 +76,16 @@ export default async function CropDetailPage({
               {statusLabel}
             </span>
           </div>
-          <div className="flex gap-2">
-            <Link href={`/crops/${id}/edit`} className="btn btn-primary">
+          <div className="flex gap-2 flex-wrap">
+            {crop.status !== 'growing' && (
+              <Link href={`/crops/${id}/retrospective`} className="btn btn-primary">
+                今シーズンの振り返り
+              </Link>
+            )}
+            <Link
+              href={`/crops/${id}/edit`}
+              className={crop.status !== 'growing' ? 'btn btn-outline' : 'btn btn-primary'}
+            >
               編集
             </Link>
             <Link href="/crops" className="btn btn-outline">

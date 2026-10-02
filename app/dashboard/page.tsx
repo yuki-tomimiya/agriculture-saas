@@ -97,7 +97,27 @@ export default async function DashboardPage() {
     <div className="dashboard-page min-h-screen">
       <Sidebar />
       <main className="dashboard-main">
-        <h1 className="dashboard-title">ダッシュボード</h1>
+        <div className="farms-header dashboard-hub-header">
+          <div className="farms-header-text">
+            <h1 className="dashboard-title" style={{ marginBottom: 0 }}>
+              ダッシュボード
+            </h1>
+            <p className="farms-subtitle">
+              記録の入口です。今日の一手・振り返り・生育は下のリンクから
+            </p>
+          </div>
+          <div className="insights-header-actions">
+            <Link href="/dashboard/ai-proposal" className="btn btn-primary farms-add-button">
+              今日の提案
+            </Link>
+            <Link href="/insights" className="btn btn-outline farms-add-button">
+              分析・振り返り
+            </Link>
+            <Link href="/gdd" className="btn btn-outline farms-add-button">
+              生育ナビ
+            </Link>
+          </div>
+        </div>
 
         {/* クイック追加リンク */}
         <div className="farms-filter-bar" style={{ marginBottom: '1.5rem' }}>

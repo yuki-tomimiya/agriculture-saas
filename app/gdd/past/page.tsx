@@ -34,9 +34,17 @@ export default async function GddPastPage() {
               収穫済み・完了した作付けの積算温度・雨量・日射を確認できます。栽培中の進捗は生育ナビ本体で追ってください。
             </p>
           </div>
-          <Link href="/gdd" className="btn btn-primary farms-add-button">
-            栽培中へ戻る
-          </Link>
+          <div className="insights-header-actions">
+            <Link href="/dashboard/ai-proposal" className="btn btn-outline farms-add-button">
+              今日の提案
+            </Link>
+            <Link href="/insights" className="btn btn-outline farms-add-button">
+              分析・振り返り
+            </Link>
+            <Link href="/gdd" className="btn btn-primary farms-add-button">
+              栽培中へ戻る
+            </Link>
+          </div>
         </div>
 
         <div className="calendar-page-content">
@@ -75,6 +83,13 @@ export default async function GddPastPage() {
                     </div>
                     <div className="insights-past-item-actions">
                       <span className="insights-past-status">{statusLabel(crop.status)}</span>
+                      <Link
+                        href={`/crops/${crop.id}/retrospective`}
+                        className="btn btn-outline"
+                        style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
+                      >
+                        振り返り
+                      </Link>
                       <Link
                         href={`/crops/${crop.id}`}
                         className="btn btn-outline"

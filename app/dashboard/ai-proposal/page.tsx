@@ -1,8 +1,10 @@
 import { getCurrentUser } from '@/lib/auth'
 import { getTodayProposals, type Proposal, type ProposalType } from '@/lib/ai-proposal'
+import { recordHref, taskHref } from '@/lib/proposals/links'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import ProposalDismissButton from './ProposalDismissButton'
 
 const typeLabel: Record<ProposalType, string> = {
   task_due: 'タスク',
@@ -20,6 +22,126 @@ const priorityBorderClass: Record<Proposal['priority'], string> = {
   high: 'ai-proposal-card--high',
   medium: 'ai-proposal-card--medium',
   low: 'ai-proposal-card--low',
+}
+
+function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
+  if (items.length === 0) return null
+  return (
+    <section className="ai-proposal-group">
+      <h2 className="ai-proposal-group-title">
+        {title}
+        <span className="ai-proposal-group-count">{items.length}</span>
+      </h2>
+      <ul className="ai-proposal-list">
+        {items.map((p) => (
+          <li key={p.id}>
+            <article className={`ai-proposal-card ${priorityBorderClass[p.priority]}`}>
+              <div className="ai-proposal-card-inner">
+                <span className="ai-proposal-card-icon">{typeIcon[p.type]}</span>
+                <div className="ai-proposal-card-body">
+                  <span className="ai-proposal-card-type">{typeLabel[p.type]}</span>
+                  <h3 className="ai-proposal-card-title">{p.title}</h3>
+                  {!(p.lines && p.lines.length > 1) && <ProposalMeta proposal={p} />}
+                  <ProposalLayersBlock layers={p.layers} />
+                  {p.lines && p.lines.length > 1 ? (
+                    <ul className="ai-proposal-lines">
+                      {p.lines.map((line) => (
+                        <li key={line.cropId} className="ai-proposal-line">
+                          <span>
+                            {line.cropName}
+                            {line.variety ? `（${line.variety}）` : ''}
+                            {line.farmName ? ` · ${line.farmName}` : ''}
+                            {line.daysSincePlanting != null ? ` · 植付から${line.daysSincePlanting}日` : ''}
+                            {line.currentGDD != null ? ` · ${line.currentGDD}/${line.targetGDD}℃日` : ''}
+                          </span>
+                          <Link
+                            href={recordHref({
+                              title: line.action?.title ?? p.title,
+                              relatedCropId: line.cropId,
+                              relatedFarmId: line.farmId,
+                              suggestedDate: p.suggestedDate,
+                              action: line.action,
+                            })}
+                            className="ai-proposal-action ai-proposal-action--primary"
+                          >
+                            記録する
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <div className="ai-proposal-actions">
+                      <Link href={recordHref(p)} className="ai-proposal-action ai-proposal-action--primary">
+                        記録する
+                      </Link>
+                      <Link href={taskHref(p)} className="ai-proposal-action">
+                        タスクにする
+                      </Link>
+                    </div>
+                  )}
+                  {p.trigger && (
+                    <div className="ai-proposal-actions">
+                      <ProposalDismissButton
+                        trigger={p.trigger}
+                        cropId={p.lines && p.lines.length > 1 ? undefined : p.relatedCropId}
+                        cropIds={p.lines && p.lines.length > 1 ? p.lines.map((line) => line.cropId) : undefined}
+                      />
+                    </div>
+                  )}
+                  <div className="ai-proposal-card-links">
+                    {p.relatedTaskId && (
+                      <Link href="/tasks" className="ai-proposal-card-link">
+                        タスクを見る →
+                      </Link>
+                    )}
+                    {p.relatedCropId && (
+                      <Link href={`/crops/${p.relatedCropId}`} className="ai-proposal-card-link">
+                        作物を見る →
+                      </Link>
+                    )}
+                    {p.relatedCropId && (
+                      <Link href={`/gdd?cropId=${p.relatedCropId}`} className="ai-proposal-card-link">
+                        生育ナビで見る →
+                      </Link>
+                    )}
+                    {p.trigger === 'neglected-crop' && p.relatedCropId && (
+                      <Link href={`/crops/${p.relatedCropId}/edit`} className="ai-proposal-card-link">
+                        作付けの状態を変える →
+                      </Link>
+                    )}
+                    <Link href="/insights" className="ai-proposal-card-link">
+                      分析・振り返り →
+                    </Link>
+                    {(p.trigger === 'last-year-same-day' ||
+                      p.layers.personal?.includes('昨年同日')) && (
+                      <Link href="/calendar" className="ai-proposal-card-link">
+                        カレンダーで昨年を見る →
+                      </Link>
+                    )}
+                    {p.type === 'weather' && (
+                      <Link href="/weather" className="ai-proposal-card-link">
+                        気象ナビ →
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
+function ProposalMeta({ proposal }: { proposal: Proposal }) {
+  const parts = [
+    proposal.relatedCropName,
+    proposal.relatedFarmName,
+    proposal.daysSincePlanting != null ? `植付から${proposal.daysSincePlanting}日` : null,
+  ].filter((part): part is string => !!part)
+  if (parts.length === 0) return null
+  return <p className="ai-proposal-card-meta">{parts.join(' · ')}</p>
 }
 
 function ProposalLayersBlock({ layers }: { layers: Proposal['layers'] }) {
@@ -56,18 +178,36 @@ export default async function AiProposalPage() {
   if (!user) redirect('/auth/signin')
 
   const proposals = await getTodayProposals(user.id)
+  const todayItems = proposals.filter((item) => item.urgency === 'today')
+  const weekItems = proposals.filter((item) => item.urgency === 'thisWeek')
+  const watchCount = proposals.filter((item) => item.urgency === 'watch').length
+  const visible = todayItems.length + weekItems.length
 
   return (
     <div className="dashboard-page min-h-screen flex">
       <Sidebar />
       <main className="dashboard-main">
         <div className="ai-proposal-wrap">
-          <h1 className="ai-proposal-title">今日の提案</h1>
-          <p className="ai-proposal-desc">
-            【あなた】【地域】【一般】の根拠を重ねて、今日の一手を提案します。
-          </p>
+          <div className="farms-header ai-proposal-page-header">
+            <div className="farms-header-text">
+              <h1 className="ai-proposal-title" style={{ marginBottom: 0 }}>
+                今日の提案
+              </h1>
+              <p className="ai-proposal-desc" style={{ marginBottom: 0 }}>
+                【あなた】【地域】【一般】の根拠を重ねて、今日の一手を提案します。
+              </p>
+            </div>
+            <div className="insights-header-actions">
+              <Link href="/insights" className="btn btn-outline farms-add-button">
+                分析・振り返り
+              </Link>
+              <Link href="/gdd" className="btn btn-outline farms-add-button">
+                生育ナビ
+              </Link>
+            </div>
+          </div>
 
-          {proposals.length === 0 ? (
+          {visible === 0 && watchCount === 0 ? (
             <div className="ai-proposal-empty">
               <p className="ai-proposal-empty-text">
                 今日の提案はありません。タスクの期限や作物の植え付け日を登録すると、ここに表示されます。
@@ -79,54 +219,38 @@ export default async function AiProposalPage() {
                 <Link href="/crops" className="ai-proposal-btn-primary">
                   作物を確認
                 </Link>
+                <Link href="/insights" className="ai-proposal-btn-primary">
+                  分析・振り返り
+                </Link>
+                <Link href="/gdd" className="ai-proposal-btn-primary">
+                  生育ナビ
+                </Link>
               </div>
             </div>
           ) : (
-            <ul className="ai-proposal-list">
-              {proposals.map((p) => (
-                <li key={p.id}>
-                  <article className={`ai-proposal-card ${priorityBorderClass[p.priority]}`}>
-                    <div className="ai-proposal-card-inner">
-                      <span className="ai-proposal-card-icon">{typeIcon[p.type]}</span>
-                      <div className="ai-proposal-card-body">
-                        <span className="ai-proposal-card-type">{typeLabel[p.type]}</span>
-                        <h2 className="ai-proposal-card-title">{p.title}</h2>
-                        <ProposalLayersBlock layers={p.layers} />
-                        <div className="ai-proposal-card-links">
-                          {p.relatedTaskId && (
-                            <Link href="/tasks" className="ai-proposal-card-link">
-                              タスクを見る →
-                            </Link>
-                          )}
-                          {p.relatedCropId && (
-                            <Link href={`/crops/${p.relatedCropId}`} className="ai-proposal-card-link">
-                              作物を見る →
-                            </Link>
-                          )}
-                          {p.relatedCropId && (
-                            <Link href="/insights" className="ai-proposal-card-link">
-                              分析・振り返り →
-                            </Link>
-                          )}
-                          {p.type === 'weather' && (
-                            <Link href="/weather" className="ai-proposal-card-link">
-                              気象ナビ →
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                </li>
-              ))}
-            </ul>
+            <>
+              <ProposalGroup title="今日やること" items={todayItems} />
+              <ProposalGroup title="今週中に" items={weekItems} />
+              {watchCount > 0 && (
+                <p className="ai-proposal-watch">様子見 {watchCount}件（記録が止まっている作付け）</p>
+              )}
+            </>
           )}
 
-          <p className="ai-proposal-back">
+          <nav className="ai-proposal-footer-nav" aria-label="関連ページ">
             <Link href="/dashboard" className="ai-proposal-back-link">
-              ← ダッシュボードに戻る
+              ← ダッシュボード
             </Link>
-          </p>
+            <Link href="/insights" className="ai-proposal-back-link">
+              分析・振り返り →
+            </Link>
+            <Link href="/gdd" className="ai-proposal-back-link">
+              生育ナビ →
+            </Link>
+            <Link href="/calendar" className="ai-proposal-back-link">
+              カレンダー →
+            </Link>
+          </nav>
         </div>
       </main>
     </div>

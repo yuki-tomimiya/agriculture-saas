@@ -45,7 +45,7 @@ function CropCard({
         <span className="gdd-crop-card-base">基準温度 {crop.baseTemperature ?? 10}℃</span>
         <span className="gdd-crop-card-status">栽培中</span>
         <Link
-          href={`/gdd?cropId=${crop.id}`}
+          href={`/gdd?cropId=${crop.id}#gdd-detail`}
           className="btn btn-outline"
           style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
         >

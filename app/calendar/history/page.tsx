@@ -51,17 +51,23 @@ export default async function CalendarHistoryPage({
       <main className="dashboard-main farms-page">
         <div className="farms-header">
           <div className="farms-header-text">
-            <Link href="/calendar" className="farm-new-back">
-              ← カレンダー
-            </Link>
+            <p className="gdd-breadcrumb">
+              <Link href="/calendar" className="gdd-breadcrumb-link">
+                カレンダー
+              </Link>
+              <span className="gdd-breadcrumb-sep">/</span>
+              <span>過去の実績</span>
+            </p>
             <h1 className="farms-title">過去の実績</h1>
             <p className="farms-subtitle">
               {monthLabel(start.year, start.month)}〜{monthLabel(end.year, end.month)}の作業・施肥履歴
             </p>
           </div>
-          <Link href="/calendar" className="btn btn-outline farms-add-button">
-            今月のカレンダーへ
-          </Link>
+          <div className="insights-header-actions">
+            <Link href="/calendar" className="btn btn-primary farms-add-button">
+              カレンダーへ戻る
+            </Link>
+          </div>
         </div>
 
         <div className="calendar-history-nav">

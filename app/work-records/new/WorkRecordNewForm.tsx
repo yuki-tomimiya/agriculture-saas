@@ -17,20 +17,39 @@ type FarmWithRelations = {
 export default function WorkRecordNewForm({
   farms,
   initialDate,
+  initialCropId,
+  initialFarmId,
+  initialTaskType,
+  initialDescription,
 }: {
   farms: FarmWithRelations[]
   initialDate?: string
+  initialCropId?: string
+  initialFarmId?: string
+  initialTaskType?: string
+  initialDescription?: string
 }) {
   const router = useRouter()
-  const [farmId, setFarmId] = useState(farms[0]?.id ?? '')
-  const [cropId, setCropId] = useState('')
+  const startingFarmId =
+    initialFarmId && farms.some((farm) => farm.id === initialFarmId)
+      ? initialFarmId
+      : (farms[0]?.id ?? '')
+  const startingFarm = farms.find((farm) => farm.id === startingFarmId)
+  const [farmId, setFarmId] = useState(startingFarmId)
+  const [cropId, setCropId] = useState(
+    initialCropId && startingFarm?.crops.some((crop) => crop.id === initialCropId) ? initialCropId : ''
+  )
   const [taskId, setTaskId] = useState('')
   const [date, setDate] = useState(() => {
     if (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return initialDate
     return new Date().toISOString().slice(0, 10)
   })
-  const [taskType, setTaskType] = useState<string>(WORK_TASK_TYPES[0])
-  const [description, setDescription] = useState('')
+  const [taskType, setTaskType] = useState<string>(
+    initialTaskType && (WORK_TASK_TYPES as readonly string[]).includes(initialTaskType)
+      ? initialTaskType
+      : WORK_TASK_TYPES[0]
+  )
+  const [description, setDescription] = useState(initialDescription ?? '')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

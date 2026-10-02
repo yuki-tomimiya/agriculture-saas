@@ -2,9 +2,19 @@
 
 ## 作業開始時に必ず読む（この順）
 
-1. `docs/SESSION_HANDOFF.md` — 直近チャットの文脈・合意・未着手
-2. `PROJECT_CONTEXT.md` — コードの地図・ルート・主要 lib
-3. `docs/議事録/minutes-content.json` — 方針・Phase・次にやることの正本
+1. `C:\Users\yukit\Desktop\cursor_obsidian\Tillto\SESSION_HANDOFF.md` — 直近チャットの文脈・合意・未着手（Obsidian）
+2. `PROJECT_CONTEXT.md` — コードの地図・ルート・主要 lib（このリポジトリ）
+3. `docs/議事録/minutes-content.json` — 方針・Phase・次にやることの正本（このリポジトリ）
+4. `C:\Users\yukit\Desktop\cursor_obsidian\Tillto\daily\` の当日メモ（あれば）— Obsidian 日報
+
+### 作業開始時に必ず作る（日報・Obsidian）
+
+実装・調査の**前に** `C:\Users\yukit\Desktop\cursor_obsidian\Tillto\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
+
+必須: **日付** / **現在の課題** / **今日やること**  
+詳細は `cursor_obsidian/Tillto/daily/README.md` および `Tillto/README.md`。
+
+**ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `cursor_obsidian/Tillto/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。
 
 ## サービス概要
 
@@ -25,9 +35,11 @@
 
 | 変えたこと | 更新するもの |
 |---|---|
-| 方針・優先順・Phase・決定 | `docs/議事録/minutes-content.json` を更新 → `node docs/議事録/generate-minutes.mjs` を実行して `docs/議事録/Tillto_開発議事録.docx` を上書き再生成（日付別ファイルは作らない、常に1本のみ） |
+| 方針・優先順・Phase・決定 | `docs/議事録/minutes-content.json` を更新 → `node docs/議事録/generate-minutes.mjs` で Word 再生成 |
 | パス・画面・lib・Sidebarの変更 | `PROJECT_CONTEXT.md` のみ更新 |
-| チャット終了時・大きな合意後 | `docs/SESSION_HANDOFF.md` を上書き（セクション3・4を更新） |
+| チャット終了時・大きな合意後 | Obsidian `Tillto/SESSION_HANDOFF.md` を上書き（セクション3・4） |
+| 作業セッション開始時 | Obsidian 日報 `Tillto/daily/YYYY-MM-DD.md` を作成。終了時に「やったこと/残り」を追記 |
+| 調査・差別化などのナレッジ | Obsidian `Tillto/` に作成・更新（リポジトリ `docs/` には書かない） |
 
 同じ説明文を複数ファイルに重複して書かない。方針が変わったら議事録を更新し、`PROJECT_CONTEXT.md` の要約が古ければ1〜3行だけ直す。
 

@@ -7,13 +7,34 @@ import Sidebar from '@/components/Sidebar'
 
 type FarmWithCrops = { id: string; name: string; crops: { id: string; name: string }[] }
 
-export default function TaskNewForm({ farms }: { farms: FarmWithCrops[] }) {
+export default function TaskNewForm({
+  farms,
+  initialCropId,
+  initialFarmId,
+  initialTitle,
+  initialDueDate,
+}: {
+  farms: FarmWithCrops[]
+  initialCropId?: string
+  initialFarmId?: string
+  initialTitle?: string
+  initialDueDate?: string
+}) {
   const router = useRouter()
-  const [farmId, setFarmId] = useState(farms[0]?.id ?? '')
-  const [cropId, setCropId] = useState('')
-  const [title, setTitle] = useState('')
+  const startingFarmId =
+    initialFarmId && farms.some((farm) => farm.id === initialFarmId)
+      ? initialFarmId
+      : (farms[0]?.id ?? '')
+  const startingFarm = farms.find((farm) => farm.id === startingFarmId)
+  const [farmId, setFarmId] = useState(startingFarmId)
+  const [cropId, setCropId] = useState(
+    initialCropId && startingFarm?.crops.some((crop) => crop.id === initialCropId) ? initialCropId : ''
+  )
+  const [title, setTitle] = useState(initialTitle ?? '')
   const [description, setDescription] = useState('')
-  const [dueDate, setDueDate] = useState('')
+  const [dueDate, setDueDate] = useState(
+    initialDueDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDueDate) ? initialDueDate : ''
+  )
   const [priority, setPriority] = useState('medium')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

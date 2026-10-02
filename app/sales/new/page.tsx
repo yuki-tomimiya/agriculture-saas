@@ -3,7 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import SalesNewForm from './SalesNewForm'
 
-export default async function NewSalesPage() {
+export default async function NewSalesPage({
+  searchParams,
+}: {
+  searchParams?: { cropId?: string; farmId?: string; date?: string }
+}) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
 
@@ -32,6 +36,14 @@ export default async function NewSalesPage() {
   }))
   const farmsForSelect = farms.map((f) => ({ id: f.id, name: f.name }))
 
-  return <SalesNewForm crops={cropsForSelect} farms={farmsForSelect} />
+  return (
+    <SalesNewForm
+      crops={cropsForSelect}
+      farms={farmsForSelect}
+      initialCropId={searchParams?.cropId}
+      initialFarmId={searchParams?.farmId}
+      initialDate={searchParams?.date}
+    />
+  )
 }
 

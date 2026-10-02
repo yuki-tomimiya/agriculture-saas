@@ -69,7 +69,15 @@ export default function CropEditForm({
         return
       }
 
-      router.push(`/crops/${cropId}`)
+      const endedSeason =
+        initial.status === 'growing' &&
+        (status === 'harvested' || status === 'completed')
+
+      if (endedSeason) {
+        router.push(`/crops/${cropId}/retrospective?from=status`)
+      } else {
+        router.push(`/crops/${cropId}`)
+      }
       router.refresh()
     } catch {
       setError('エラーが発生しました')

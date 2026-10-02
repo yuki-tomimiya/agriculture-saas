@@ -8,14 +8,31 @@ import Sidebar from '@/components/Sidebar'
 type CropOption = { id: string; name: string; farmName: string | null }
 type FarmOption = { id: string; name: string }
 
-export default function SalesNewForm({ crops, farms }: { crops: CropOption[]; farms: FarmOption[] }) {
+export default function SalesNewForm({
+  crops,
+  farms,
+  initialCropId,
+  initialFarmId,
+  initialDate,
+}: {
+  crops: CropOption[]
+  farms: FarmOption[]
+  initialCropId?: string
+  initialFarmId?: string
+  initialDate?: string
+}) {
   const router = useRouter()
   const [date, setDate] = useState(() => {
+    if (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return initialDate
     const d = new Date()
     return d.toISOString().slice(0, 10)
   })
-  const [cropId, setCropId] = useState(crops[0]?.id ?? '')
-  const [farmId, setFarmId] = useState('')
+  const [cropId, setCropId] = useState(
+    initialCropId && crops.some((crop) => crop.id === initialCropId) ? initialCropId : (crops[0]?.id ?? '')
+  )
+  const [farmId, setFarmId] = useState(
+    initialFarmId && farms.some((farm) => farm.id === initialFarmId) ? initialFarmId : ''
+  )
   const [quantity, setQuantity] = useState('')
   const [unit, setUnit] = useState('kg')
   const [unitPrice, setUnitPrice] = useState('')

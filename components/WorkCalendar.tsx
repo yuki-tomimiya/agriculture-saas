@@ -81,13 +81,19 @@ function CalendarDayCell({
   const hasLastYear = showLastYear && lastYearCount > 0
   const hasHighlight = hasProposals || hasRecords || hasLastYear
 
+  const todayKey = toYmd(new Date())
+  const isToday = item.dateKey === todayKey
+  const visibleRecords = recordLabels.slice(0, 2)
+  const extraRecords = recordLabels.length - visibleRecords.length
+
   return (
     <div
-      className={`dashboard-calendar-cell${hasHighlight ? ' dashboard-calendar-cell--highlight' : ''}`}
+      className={`dashboard-calendar-cell${hasHighlight ? ' dashboard-calendar-cell--highlight' : ''}${isToday ? ' dashboard-calendar-cell--today' : ''}`}
     >
-      <Link href={`/work-records/new?date=${item.dateKey}`} className="dashboard-calendar-day-link">
-        <span className="dashboard-calendar-day">{item.day}</span>
-      </Link>
+      <span className="dashboard-calendar-day">
+        {item.day}
+        {isToday ? <span className="dashboard-calendar-today-mark">今日</span> : null}
+      </span>
       {hasProposals && (
         <Link
           href="/dashboard/ai-proposal"
@@ -105,6 +111,14 @@ function CalendarDayCell({
         >
           実績{recordCount > 1 ? ` ${recordCount}件` : ''}
         </Link>
+      )}
+      {visibleRecords.map((label, index) => (
+        <span key={`${label}-${index}`} className="dashboard-calendar-label" title={label}>
+          {label}
+        </span>
+      ))}
+      {extraRecords > 0 && (
+        <span className="dashboard-calendar-label">ほか{extraRecords}件</span>
       )}
       {hasLastYear && (
         <span
@@ -283,6 +297,7 @@ export default async function WorkCalendar({
   }
   if (showProposals) {
     for (const p of proposals) {
+      if (p.urgency === 'watch') continue
       const key = toYmd(p.suggestedDate ?? today)
       const day = getDay(key)
       if (!day.proposalTitles.includes(p.title)) {
@@ -377,7 +392,7 @@ export default async function WorkCalendar({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">作業カレンダー（{todayMonth}月）</h2>
       <p className="dashboard-section-sub">
-        提案（AI）と実績（作業・施肥）、昨年同日の記録をひと目で確認できます。
+        提案（AI）と実績（作業・施肥）、昨年同日の記録を確認できます。日付を押しても記録画面には移りません。
       </p>
       <div className="dashboard-calendar-frame">
         <div className="dashboard-calendar-header">

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import GDDCropList from '@/components/GDDCropList'
+import ScrollToGddDetail from '@/components/ScrollToGddDetail'
 import GDDChart from '@/components/GDDChart'
 import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
@@ -166,10 +167,16 @@ export default async function GDDPage({
             </p>
           </div>
           <div className="insights-header-actions">
+            <Link href="/dashboard/ai-proposal" className="btn btn-primary farms-add-button">
+              今日の提案
+            </Link>
+            <Link href="/insights" className="btn btn-outline farms-add-button">
+              分析・振り返り
+            </Link>
             <Link href="/gdd/past" className="btn btn-outline farms-add-button">
               過去の作付け
             </Link>
-            <Link href="/crops" className="btn btn-primary farms-add-button">
+            <Link href="/crops" className="btn btn-outline farms-add-button">
               作物一覧
             </Link>
           </div>
@@ -213,6 +220,8 @@ export default async function GDDPage({
             selectedCropId={selectedCrop?.id}
           />
 
+          <ScrollToGddDetail cropId={selectedCropId} />
+          <div id="gdd-detail">
           <GDDChart
             crop={
               selectedCrop
@@ -263,6 +272,7 @@ export default async function GDDPage({
             lastYearPoints={previousSeason?.radiation ?? []}
             lastYearLabel={lastYearShortLabel}
           />
+          </div>
         </div>
       </main>
     </div>

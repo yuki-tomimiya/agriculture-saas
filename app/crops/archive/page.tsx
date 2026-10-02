@@ -18,7 +18,12 @@ type CropListItem = {
   _count: { harvests: number; tasks: number; workRecords: number }
 }
 
-export default async function CropsPage({
+function statusLabel(status: string): string {
+  if (status === 'harvested') return '収穫済み'
+  return '完了'
+}
+
+export default async function CropsArchivePage({
   searchParams,
 }: {
   searchParams?: Promise<{ farmId?: string }>
@@ -43,19 +48,19 @@ export default async function CropsPage({
   const orderBy = { plantingDate: 'desc' as const }
 
   const { where, whereFallback } = getCropWhere(user.id, { farmId })
-  const growingWhere = { AND: [where, { status: 'growing' }] }
-  const growingFallback = { AND: [whereFallback, { status: 'growing' }] }
+  const pastWhere = { AND: [where, { status: { not: 'growing' } }] }
+  const pastFallback = { AND: [whereFallback, { status: { not: 'growing' } }] }
 
   let crops: CropListItem[]
   try {
     crops = (await prisma.crop.findMany({
-      where: growingWhere,
+      where: pastWhere,
       include,
       orderBy,
     })) as CropListItem[]
   } catch {
     crops = (await prisma.crop.findMany({
-      where: growingFallback,
+      where: pastFallback,
       include,
       orderBy,
     })) as CropListItem[]
@@ -72,17 +77,24 @@ export default async function CropsPage({
       <main className="dashboard-main farms-page">
         <div className="farms-header">
           <div className="farms-header-text">
-            <h1 className="farms-title">作物管理</h1>
+            <p className="gdd-breadcrumb">
+              <Link href="/crops" className="gdd-breadcrumb-link">
+                作物管理
+              </Link>
+              <span className="gdd-breadcrumb-sep">/</span>
+              <span>過去の作付け</span>
+            </p>
+            <h1 className="farms-title">過去の作付け</h1>
             <p className="farms-subtitle">
-              栽培中の作付け一覧です。収穫済み・完了は「過去の作付け」へ
+              収穫済み・完了した作付けです。振り返りや生育データから確認できます
             </p>
           </div>
           <div className="insights-header-actions">
-            <Link href="/crops/archive" className="btn btn-outline farms-add-button">
-              過去の作付け
+            <Link href="/gdd/past" className="btn btn-outline farms-add-button">
+              過去の生育データ
             </Link>
-            <Link href="/crops/new" className="btn btn-primary farms-add-button">
-              新規作物を追加
+            <Link href="/crops" className="btn btn-primary farms-add-button">
+              栽培中へ戻る
             </Link>
           </div>
         </div>
@@ -90,7 +102,7 @@ export default async function CropsPage({
         {farms.length > 0 && (
           <div className="farms-filter-bar">
             <Link
-              href="/crops"
+              href="/crops/archive"
               className={!farmId ? 'farms-filter-active' : 'farms-filter-link'}
             >
               すべて
@@ -98,7 +110,7 @@ export default async function CropsPage({
             {farms.map((farm) => (
               <Link
                 key={farm.id}
-                href={`/crops?farmId=${farm.id}`}
+                href={`/crops/archive?farmId=${farm.id}`}
                 className={farmId === farm.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {farm.name}
@@ -109,24 +121,22 @@ export default async function CropsPage({
 
         {crops.length === 0 ? (
           <div className="card farms-empty-card">
-            <div className="farms-empty-icon">🌱</div>
-            <h3 className="farms-empty-title">栽培中の作物はありません</h3>
+            <div className="farms-empty-icon">📦</div>
+            <h3 className="farms-empty-title">過去の作付けはまだありません</h3>
             <p className="farms-empty-text">
-              新規登録するか、過去の作付け一覧を確認してください
+              作物を「収穫済み」や「完了」にすると、ここに表示されます
             </p>
-            <div className="insights-header-actions" style={{ justifyContent: 'center' }}>
-              <Link href="/crops/new" className="btn btn-primary farms-add-button">
-                新規作物を追加
-              </Link>
-              <Link href="/crops/archive" className="btn btn-outline farms-add-button">
-                過去の作付け
-              </Link>
-            </div>
+            <Link href="/crops" className="btn btn-outline farms-add-button">
+              栽培中へ
+            </Link>
           </div>
         ) : (
           <div className="farms-grid">
             {crops.map((crop) => (
               <article key={crop.id} className="card farms-card">
+                <div className="farms-card-meta" style={{ marginBottom: '0.35rem' }}>
+                  <span className="insights-past-status">{statusLabel(crop.status)}</span>
+                </div>
                 <h3 className="farms-card-title">
                   <Link href={`/crops/${crop.id}`} className="farms-card-title-link">
                     {crop.name}
@@ -137,7 +147,6 @@ export default async function CropsPage({
 
                 <div className="farms-card-meta">
                   <span>🌾 {crop._count.harvests} 収穫</span>
-                  <span>📋 {crop._count.tasks} タスク</span>
                   <span>📝 {crop._count.workRecords} 作業</span>
                 </div>
 
@@ -158,18 +167,21 @@ export default async function CropsPage({
                 )}
 
                 <div className="farms-card-actions">
+                  <Link
+                    href={`/crops/${crop.id}/retrospective`}
+                    className="btn btn-primary farms-card-button"
+                  >
+                    振り返り
+                  </Link>
                   <Link href={`/crops/${crop.id}`} className="btn btn-outline farms-card-button">
                     詳細
-                  </Link>
-                  <Link href={`/crops/${crop.id}/edit`} className="btn btn-secondary farms-card-button">
-                    編集
                   </Link>
                   {crop.plantingDate && (
                     <Link
                       href={`/gdd?cropId=${crop.id}`}
                       className="btn btn-outline farms-card-button"
                     >
-                      生育ナビ
+                      生育データ
                     </Link>
                   )}
                 </div>

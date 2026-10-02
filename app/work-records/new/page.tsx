@@ -6,7 +6,7 @@ import WorkRecordNewForm from './WorkRecordNewForm'
 export default async function NewWorkRecordPage({
   searchParams,
 }: {
-  searchParams?: { date?: string }
+  searchParams?: { date?: string; cropId?: string; farmId?: string; taskType?: string; description?: string }
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
@@ -30,5 +30,14 @@ export default async function NewWorkRecordPage({
     tasks: farm.tasks.map((t) => ({ id: t.id, title: t.title })),
   }))
 
-  return <WorkRecordNewForm farms={farmsForForm} initialDate={searchParams?.date} />
+  return (
+    <WorkRecordNewForm
+      farms={farmsForForm}
+      initialDate={searchParams?.date}
+      initialCropId={searchParams?.cropId}
+      initialFarmId={searchParams?.farmId}
+      initialTaskType={searchParams?.taskType}
+      initialDescription={searchParams?.description}
+    />
+  )
 }

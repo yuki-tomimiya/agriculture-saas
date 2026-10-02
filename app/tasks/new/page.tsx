@@ -3,7 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import TaskNewForm from './TaskNewForm'
 
-export default async function NewTaskPage() {
+export default async function NewTaskPage({
+  searchParams,
+}: {
+  searchParams?: { cropId?: string; farmId?: string; title?: string; dueDate?: string }
+}) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -24,5 +28,13 @@ export default async function NewTaskPage() {
     crops: f.crops.map((c) => ({ id: c.id, name: c.name })),
   }))
 
-  return <TaskNewForm farms={farmsWithCrops} />
+  return (
+    <TaskNewForm
+      farms={farmsWithCrops}
+      initialCropId={searchParams?.cropId}
+      initialFarmId={searchParams?.farmId}
+      initialTitle={searchParams?.title}
+      initialDueDate={searchParams?.dueDate}
+    />
+  )
 }

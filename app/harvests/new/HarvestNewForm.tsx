@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 
-type CropOption = { id: string; name: string; farmName: string | null }
+type CropOption = { id: string; name: string; farmName: string | null; status: string }
 
 export default function HarvestNewForm({ crops }: { crops: CropOption[] }) {
   const router = useRouter()
@@ -19,6 +19,8 @@ export default function HarvestNewForm({ crops }: { crops: CropOption[] }) {
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [savedCropId, setSavedCropId] = useState<string | null>(null)
+  const [finishing, setFinishing] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -53,12 +55,69 @@ export default function HarvestNewForm({ crops }: { crops: CropOption[] }) {
         return
       }
 
+      const saved = crops.find((crop) => crop.id === cropId)
+      if (saved?.status === 'growing') {
+        setSavedCropId(cropId)
+        setLoading(false)
+        return
+      }
       router.push('/harvests')
       router.refresh()
     } catch {
       setError('エラーが発生しました')
       setLoading(false)
     }
+  }
+
+  const finishSeason = async () => {
+    if (!savedCropId) return
+    setFinishing(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/crops/${savedCropId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'harvested' }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(typeof data.error === 'string' ? data.error : '状態の更新に失敗しました')
+        setFinishing(false)
+        return
+      }
+      router.push(`/crops/${savedCropId}/retrospective?from=status`)
+      router.refresh()
+    } catch {
+      setError('エラーが発生しました')
+      setFinishing(false)
+    }
+  }
+
+  if (savedCropId) {
+    return (
+      <div className="dashboard-page min-h-screen flex">
+        <Sidebar />
+        <main className="dashboard-main farms-page">
+          <div className="card farm-new-card">
+            <h1 className="farms-title">収穫を記録しました</h1>
+            <p className="farms-subtitle">この作付けは終了しましたか？数回に分けて掘る場合は、まだ続くを選んでください。</p>
+            {error && (
+              <div className="auth-error" role="alert">
+                {error}
+              </div>
+            )}
+            <div className="farm-new-actions">
+              <button type="button" className="btn btn-outline" onClick={() => router.push('/harvests')} disabled={finishing}>
+                まだ続く
+              </button>
+              <button type="button" className="btn btn-primary" onClick={finishSeason} disabled={finishing}>
+                {finishing ? '更新中...' : '終了する'}
+              </button>
+            </div>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   if (crops.length === 0) {

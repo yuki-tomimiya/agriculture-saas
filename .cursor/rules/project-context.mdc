@@ -1,11 +1,18 @@
 ---
-description: PROJECT_CONTEXT と議事録の役割分担。方針は議事録、実装地図は PROJECT_CONTEXT。
+description: PROJECT_CONTEXT と議事録の役割分担。ナレッジは Obsidian。
 alwaysApply: true
 ---
 
 # ドキュメントの役割分担
 
-## 正本（方針・決定・ロードマップ）
+## ナレッジ（Obsidian・正本）
+
+- **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**
+- 日報 `daily/`、引き継ぎ `SESSION_HANDOFF.md`、調査・差別化メモ、archive
+- 目次: 同フォルダの `README.md`
+- リポジトリ `docs/` には議事録以外のナレッジを**新規作成しない**
+
+## 正本（方針・決定・ロードマップ・リポジトリ）
 
 - **`docs/議事録/minutes-content.json`**
 - プロダクト趣旨、3層モデル、Phase、次にやること、決定事項、changelog
@@ -20,14 +27,13 @@ alwaysApply: true
 
 ## 重複を書かない
 
-- 同じ説明文を両方に載せない
+- 同じ説明文を複数に載せない
 - 方針が変わった → 議事録を更新し、PROJECT_CONTEXT の要約が古ければ1〜3行だけ直す
 - 画面・パス・ファイルが変わった → PROJECT_CONTEXT のみ更新
+- チャット合意・未着手 → Obsidian の `SESSION_HANDOFF.md` を更新
 
 ## 作業開始時
 
-実装タスクでは次の順で読む:
-
-1. `docs/SESSION_HANDOFF.md`（直近チャットの文脈）
-2. `PROJECT_CONTEXT.md`（コードの地図）
-3. 必要なら議事録の「次にやること」
+1. Obsidian 日報 `Tillto/daily/YYYY-MM-DD.md` を作成
+2. Obsidian `Tillto/SESSION_HANDOFF.md` を参照
+3. `PROJECT_CONTEXT.md` と、必要なら議事録の「次にやること」を参照

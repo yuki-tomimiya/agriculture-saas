@@ -31,6 +31,7 @@ export default async function NewHarvestPage() {
     id: c.id,
     name: c.name,
     farmName: c.farm?.name ?? null,
+    status: c.status,
   }))
 
   return <HarvestNewForm crops={cropsForSelect} />

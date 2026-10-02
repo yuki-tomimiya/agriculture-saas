@@ -34,7 +34,7 @@ function matchKey(name: string, variety: string | null, farmId: string | null): 
   return `${name.trim().toLowerCase()}|${(variety ?? '').trim().toLowerCase()}|${farmId ?? ''}`
 }
 
-function formatPlantingLabel(name: string, variety: string | null, plantingDate: Date | null): string {
+export function formatPlantingLabel(name: string, variety: string | null, plantingDate: Date | null): string {
   const y = plantingDate ? plantingDate.getFullYear() : null
   const m = plantingDate ? plantingDate.getMonth() + 1 : null
   const season =
