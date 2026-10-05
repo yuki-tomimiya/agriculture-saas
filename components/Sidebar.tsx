@@ -16,20 +16,7 @@ type MenuSection = {
   items: MenuItem[]
 }
 
-const listPages = [
-  '/pesticides',
-  '/fertilizers',
-  '/work-records',
-  '/harvests',
-  '/sales',
-  '/insights',
-  '/plan',
-  '/crops',
-  '/farms',
-  '/tasks',
-  '/faq',
-  '/data',
-]
+const listPages = ['/crops', '/tasks', '/faq', '/data']
 
 export default function Sidebar() {
   const pathname = usePathname()
@@ -49,19 +36,19 @@ export default function Sidebar() {
         { href: '/calendar', label: 'カレンダー', icon: '📅', matchPaths: ['/calendar'] },
         { href: '/weather', label: '気象ナビ', icon: '🌤️' },
         { href: '/gdd', label: '生育ナビ', icon: '🌡️', matchPaths: ['/gdd'] },
-        { href: '/farms', label: '農場管理', icon: '🏡' },
+        { href: '/farms', label: '農場管理', icon: '🏡', matchPaths: ['/farms', '/soil'] },
         { href: '/crops', label: '作物管理', icon: '🌾' },
         {
-          href: '/work-records',
-          label: '作業管理',
+          href: '/records',
+          label: '記録',
           icon: '🛠️',
-          matchPaths: ['/work-records', '/fertilizers', '/work'],
+          matchPaths: ['/records', '/work-records', '/fertilizers', '/work', '/pesticides', '/harvests', '/sales'],
         },
-        { href: '/pesticides', label: '農薬管理', icon: '🧪' },
-        { href: '/harvests', label: '収穫管理', icon: '📦' },
-        { href: '/sales', label: '販売管理', icon: '💰' },
-        { href: '/insights', label: '分析・振り返り', icon: '📈' },
-        { href: '/plan', label: '来年の計画', icon: '🌱' },
+        { href: '/insights', label: '振り返りと計画', icon: '📈', matchPaths: ['/insights', '/plan'] },
+      ],
+    },
+    {
+      items: [
         { href: '/tasks', label: 'タスク', icon: '📋' },
         { href: '/data', label: '外部連携', icon: '🔁' },
         { href: '/faq', label: 'よくある質問', icon: '❓' },
@@ -95,6 +82,7 @@ export default function Sidebar() {
       <nav className="app-sidebar-nav">
         {menuSections.map((section, sectionIndex) => (
           <div key={section.title ?? `section-${sectionIndex}`}>
+            {sectionIndex > 0 && <div className="app-sidebar-divider" role="separator" />}
             {section.title && (
               <p className="app-sidebar-section-title">{section.title}</p>
             )}

@@ -33,9 +33,14 @@ export default async function FarmsPage() {
             <h1 className="farms-title">農場管理</h1>
             <p className="farms-subtitle">農場の一覧と管理</p>
           </div>
-          <Link href="/farms/new" className="btn btn-primary farms-add-button">
-            新規農場を追加
-          </Link>
+          <div className="farms-header-actions">
+            <Link href="/soil" className="btn btn-outline farms-add-button">
+              土壌診断
+            </Link>
+            <Link href="/farms/new" className="btn btn-primary farms-add-button">
+              新規農場を追加
+            </Link>
+          </div>
         </div>
 
         {farms.length === 0 ? (

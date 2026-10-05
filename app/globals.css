@@ -1813,6 +1813,11 @@
   flex-direction: column;
   gap: 0.25rem;
 }
+.app-sidebar-divider {
+  height: 1px;
+  background: #e5e7eb;
+  margin: 0.75rem 0.75rem 0.5rem;
+}
 .app-sidebar-section-title {
   font-size: 0.65rem;
   font-weight: 600;

@@ -16,6 +16,9 @@ dist/
 .env.test.local
 .env.production.local
 
+# 土壌診断の分析表（ローカルだけ。共有しない）
+data/soil-photos/
+
 # Database (local SQLite)
 *.db
 *.db-journal

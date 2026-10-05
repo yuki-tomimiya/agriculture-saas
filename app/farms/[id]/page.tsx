@@ -108,6 +108,18 @@ export default async function FarmDetailPage({
           </div>
         )}
 
+        <div className="bg-white p-6 rounded-lg shadow mb-8">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-semibold">土壌診断</h2>
+            <Link href={`/soil?farmId=${farm.id}`} className="text-sm text-green-600 hover:underline">
+              一覧 →
+            </Link>
+          </div>
+          <Link href={`/soil/new?farmId=${farm.id}`} className="text-sm text-green-600 hover:underline">
+            診断を追加
+          </Link>
+        </div>
+
         {/* この農場の作物（直近） */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <div className="flex items-center justify-between mb-4">

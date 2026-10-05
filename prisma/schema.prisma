@@ -23,6 +23,7 @@ model User {
   fertilizerRecords  FertilizerRecord[]
   sales              Sale[]
   proposalDismissals ProposalDismissal[]
+  soilDiagnoses      SoilDiagnosis[]
 }
 
 model Farm {
@@ -42,6 +43,7 @@ model Farm {
   pesticideRecords  PesticideRecord[]
   fertilizerRecords FertilizerRecord[]
   sales             Sale[]
+  soilDiagnoses     SoilDiagnosis[]
 }
 
 model Field {
@@ -53,6 +55,7 @@ model Field {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   crops       Crop[]
+  soilDiagnoses SoilDiagnosis[]
 }
 
 model Crop {
@@ -199,6 +202,28 @@ model Sale {
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+}
+
+model SoilDiagnosis {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  farmId      String
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  fieldId     String?
+  field       Field?   @relation(fields: [fieldId], references: [id], onDelete: SetNull)
+  diagnosedAt DateTime
+  ph          Float?
+  ec          Float?
+  nitrogen    Float? // 硝酸態窒素 mg/100g
+  phosphorus  Float? // 有効態リン酸 mg/100g
+  potassium   Float? // 交換性カリ mg/100g
+  notes       String?
+  photoPath   String? // data/soil-photos 内のファイル名だけ
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, diagnosedAt])
 }
 
 model ProposalDismissal {

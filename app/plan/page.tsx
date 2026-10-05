@@ -26,6 +26,13 @@ export default async function NextYearPlanPage() {
       <main className="dashboard-main farms-page">
         <div className="farms-header">
           <div className="farms-header-text">
+            <p className="gdd-breadcrumb">
+              <Link href="/insights" className="gdd-breadcrumb-link">
+                振り返りと計画
+              </Link>
+              <span className="gdd-breadcrumb-sep">/</span>
+              来年の計画
+            </p>
             <h1 className="farms-title">来年の計画</h1>
             <p className="farms-subtitle">
               終わった作付けごとに、来年も同じ日に植えたとき、平年の気温ではいつ頃収穫できるかを出します
@@ -36,7 +43,7 @@ export default async function NextYearPlanPage() {
               過去の作付け
             </Link>
             <Link href="/insights" className="btn btn-outline farms-add-button">
-              分析・振り返り
+              振り返りと計画
             </Link>
           </div>
         </div>

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
+import { RecordTabs } from '@/components/RecordTabs'
 
 export default async function PesticidesPage({
   searchParams,
@@ -58,6 +59,7 @@ export default async function PesticidesPage({
           <div className="farms-header-text">
             <h1 className="farms-title">農薬管理</h1>
             <p className="farms-subtitle">農薬の散布記録一覧</p>
+            <RecordTabs active="pesticides" />
           </div>
           <Link href="/pesticides/new" className="btn btn-primary farms-add-button">
             散布記録を追加

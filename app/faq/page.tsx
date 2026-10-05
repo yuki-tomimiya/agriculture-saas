@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
+import { formatSoilPhRange, SOIL_PH_RANGES } from '@/lib/benchmarks/soil-ph'
 
 export default async function FAQPage() {
   const user = await getCurrentUser()
@@ -30,6 +31,7 @@ export default async function FAQPage() {
               <li><a href="#normals">平年とは？</a></li>
               <li><a href="#radiation">日射量（MJ/㎡）とは？</a></li>
               <li><a href="#gdd-reference">主な作物の積算温度の目安</a></li>
+              <li><a href="#soil-ph">適正pHとは？</a></li>
             </ul>
           </nav>
 
@@ -105,6 +107,36 @@ export default async function FAQPage() {
                       <td>{row.name}</td>
                       <td>{row.baseTemp}℃</td>
                       <td>{row.gddLabel}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="soil-ph" className="faq-section">
+            <h2 className="faq-section-title">適正pHとは？</h2>
+            <p className="faq-section-text">
+              適正pHは、その品目が育ちやすい土壌の酸性・アルカリ性の目安です。
+              今日の提案では、農場の最新の診断がこの範囲から外れているときだけ知らせます。
+            </p>
+            <p className="faq-section-note">
+              一般的な目安です。地域・土壌型により変わります。都道府県の施肥基準がある場合はそちらを優先してください。
+              EC・窒素・リン酸・カリの良し悪しは、初版では判定しません。
+            </p>
+            <div className="overflow-x-auto">
+              <table className="gdd-reference-table">
+                <thead>
+                  <tr>
+                    <th>作物</th>
+                    <th>適正pHの目安</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SOIL_PH_RANGES.map((row) => (
+                    <tr key={row.name}>
+                      <td>{row.name}</td>
+                      <td>{formatSoilPhRange(row.min, row.max)}</td>
                     </tr>
                   ))}
                 </tbody>

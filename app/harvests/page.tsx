@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
+import { RecordTabs } from '@/components/RecordTabs'
 
 export default async function HarvestsPage({
   searchParams,
@@ -59,6 +60,7 @@ export default async function HarvestsPage({
           <div className="farms-header-text">
             <h1 className="farms-title">収穫管理</h1>
             <p className="farms-subtitle">収穫量の一覧と管理</p>
+            <RecordTabs active="harvests" />
           </div>
           <Link href="/harvests/new" className="btn btn-primary farms-add-button">
             収穫を記録

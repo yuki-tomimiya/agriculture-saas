@@ -44,7 +44,7 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                   <h3 className="ai-proposal-card-title">{p.title}</h3>
                   {!(p.lines && p.lines.length > 1) && <ProposalMeta proposal={p} />}
                   <ProposalLayersBlock layers={p.layers} />
-                  {p.lines && p.lines.length > 1 ? (
+                  {p.lines && p.lines.length > 1 && p.trigger !== 'soil-ph' ? (
                     <ul className="ai-proposal-lines">
                       {p.lines.map((line) => (
                         <li key={line.cropId} className="ai-proposal-line">
@@ -115,7 +115,11 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                       <ProposalDismissButton
                         trigger={p.trigger}
                         cropId={p.lines && p.lines.length > 1 ? undefined : p.relatedCropId}
-                        cropIds={p.lines && p.lines.length > 1 ? p.lines.map((line) => line.cropId) : undefined}
+                        cropIds={
+                          p.lines && (p.lines.length > 1 || p.trigger === 'soil-ph')
+                            ? p.lines.map((line) => line.cropId)
+                            : undefined
+                        }
                       />
                     </div>
                   )}

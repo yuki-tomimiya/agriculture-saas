@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
+import { RecordTabs } from '@/components/RecordTabs'
 
 export default async function SalesPage({
   searchParams,
@@ -54,6 +55,7 @@ export default async function SalesPage({
           <div className="farms-header-text">
             <h1 className="farms-title">販売管理</h1>
             <p className="farms-subtitle">作物別・販売先別の販売実績の一覧と管理</p>
+            <RecordTabs active="sales" />
           </div>
           <div className="farms-header-actions">
             <Link href="/sales/new" className="btn btn-primary farms-add-button">

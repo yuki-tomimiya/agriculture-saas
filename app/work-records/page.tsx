@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
+import { RecordTabs } from '@/components/RecordTabs'
 import { WorkManagementTabs, buildWorkManagementQuery } from '@/components/WorkManagementTabs'
 
 export default async function WorkRecordsPage({
@@ -54,6 +55,7 @@ export default async function WorkRecordsPage({
           <div className="farms-header-text">
             <h1 className="farms-title">作業管理</h1>
             <p className="farms-subtitle">植え付け・除草・整地など、実際に行った作業の記録</p>
+            <RecordTabs active="work" />
             <WorkManagementTabs active="work-records" queryString={filterQuery} />
           </div>
           <Link href="/work-records/new" className="btn btn-primary farms-add-button">

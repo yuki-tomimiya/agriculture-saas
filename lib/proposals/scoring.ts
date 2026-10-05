@@ -9,6 +9,7 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { resolveCropStage } from '@/lib/proposals/stages'
+import { formatSoilPhRange, matchedSoilPh } from '@/lib/benchmarks/soil-ph'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
@@ -491,5 +492,93 @@ export async function scoreGrowingCrops(
     })
   }
 
-  return groupSameSignal(cards)
+  const diagnoses = await prisma.soilDiagnosis.findMany({
+    where: { userId, ph: { not: null } },
+    orderBy: { diagnosedAt: 'desc' },
+  })
+  const latestByFarm = new Map<string, (typeof diagnoses)[number]>()
+  for (const row of diagnoses) {
+    if (!latestByFarm.has(row.farmId)) latestByFarm.set(row.farmId, row)
+  }
+  const soilByFarm = new Map<
+    string,
+    {
+      farmName: string
+      ph: number
+      dateLabel: string
+      crops: { id: string; name: string; variety: string | null; rangeName: string; min: number; max: number }[]
+    }
+  >()
+  for (const crop of crops) {
+    if (!crop.farmId || !crop.farm) continue
+    if (isProposalDismissed(dismissed, 'soil-ph', crop.id)) continue
+    const diagnosis = latestByFarm.get(crop.farmId)
+    if (!diagnosis || diagnosis.ph == null) continue
+    const range = matchedSoilPh(crop.name, crop.variety)
+    if (!range) continue
+    if (diagnosis.ph >= range.min && diagnosis.ph <= range.max) continue
+    const diagnosed = new Date(diagnosis.diagnosedAt)
+    const dateLabel = `${diagnosed.getFullYear()}/${diagnosed.getMonth() + 1}/${diagnosed.getDate()}`
+    const group = soilByFarm.get(crop.farmId) ?? {
+      farmName: crop.farm.name,
+      ph: diagnosis.ph,
+      dateLabel,
+      crops: [],
+    }
+    group.crops.push({
+      id: crop.id,
+      name: crop.name,
+      variety: crop.variety,
+      rangeName: range.name,
+      min: range.min,
+      max: range.max,
+    })
+    soilByFarm.set(crop.farmId, group)
+  }
+
+  const soilCards: ScoredProposal[] = []
+  for (const [farmId, group] of soilByFarm) {
+    const conclusion = '次の作付け前に、pHの矯正を検討しましょう'
+    const rangeNames = [...new Set(group.crops.map((crop) => crop.rangeName))]
+    const subject =
+      rangeNames.length === 1
+        ? `${rangeNames[0]}${group.crops.length}作付け`
+        : `${group.crops.length}作付け`
+    const general = rangeNames
+      .map((name) => {
+        const sample = group.crops.find((crop) => crop.rangeName === name)!
+        return `${name}の目安は ${formatSoilPhRange(sample.min, sample.max)}`
+      })
+      .join('。')
+    soilCards.push({
+      id: `soil-ph-${farmId}`,
+      urgency: 'thisWeek',
+      score: 48,
+      trigger: 'soil-ph',
+      title: `${group.farmName}：土壌のpHが目安から外れています`,
+      farmId,
+      farmName: group.farmName,
+      conclusion,
+      action: { kind: 'work', taskType: '土づくり', title: `${group.farmName}の土壌pHの矯正を検討` },
+      lines: group.crops.map((crop) => ({
+        cropId: crop.id,
+        cropName: crop.name,
+        variety: crop.variety,
+        farmId,
+        farmName: group.farmName,
+        currentGDD: null,
+        targetGDD: 0,
+      })),
+      layers: mergeLayers({
+        personal: `${group.farmName}の土壌 pH は ${group.ph}（${group.dateLabel} 診断）。この農場の${subject}が対象です`,
+        general,
+        conclusion,
+      }),
+    })
+  }
+
+  const otherCards = cards.filter((card) => card.trigger !== 'soil-ph')
+  return [...groupSameSignal(otherCards), ...soilCards].sort(
+    (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
+  )
 }

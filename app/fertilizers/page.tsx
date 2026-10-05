@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
+import { RecordTabs } from '@/components/RecordTabs'
 import { WorkManagementTabs, buildWorkManagementQuery } from '@/components/WorkManagementTabs'
 
 export default async function FertilizersPage({
@@ -61,6 +62,7 @@ export default async function FertilizersPage({
           <div className="farms-header-text">
             <h1 className="farms-title">作業管理</h1>
             <p className="farms-subtitle">肥料名・使用量・成分など、施肥の記録一覧</p>
+            <RecordTabs active="work" />
             <WorkManagementTabs active="fertilizers" queryString={filterQuery} />
           </div>
           <Link href="/fertilizers/new" className="btn btn-primary farms-add-button">

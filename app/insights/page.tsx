@@ -22,6 +22,12 @@ const ENTRY_CARDS = [
     title: '栽培暦の目安',
     description: '品目ごとの教科書的な目安・今月の栽培暦ヒントを確認します',
   },
+  {
+    href: '/plan',
+    layer: '計画',
+    title: '来年の計画',
+    description: '終わった作付けから、来年同じ植付日にしたときの収穫見込みを見ます',
+  },
 ] as const
 
 export default async function InsightsPage() {
@@ -34,9 +40,9 @@ export default async function InsightsPage() {
       <main className="dashboard-main farms-page">
         <div className="farms-header">
           <div className="farms-header-text">
-            <h1 className="farms-title">分析・振り返り</h1>
+            <h1 className="farms-title">振り返りと計画</h1>
             <p className="farms-subtitle">
-              比較・地域・一般の入口です。詳細は各カードから。過去の生育グラフは生育ナビの「過去の生育データ」へ
+              比較・地域・一般と、来年の計画の入口です。過去の生育グラフは生育ナビの「過去の生育データ」へ
             </p>
           </div>
           <div className="insights-header-actions">
