@@ -3,7 +3,11 @@ import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import PesticideNewForm from './PesticideNewForm'
 
-export default async function NewPesticidePage() {
+export default async function NewPesticidePage({
+  searchParams,
+}: {
+  searchParams?: { cropId?: string; farmId?: string; date?: string }
+}) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
 
@@ -33,6 +37,12 @@ export default async function NewPesticidePage() {
   const farmsForSelect = farms.map((f) => ({ id: f.id, name: f.name }))
 
   return (
-    <PesticideNewForm crops={cropsForSelect} farms={farmsForSelect} />
+    <PesticideNewForm
+      crops={cropsForSelect}
+      farms={farmsForSelect}
+      initialCropId={searchParams?.cropId ?? ''}
+      initialFarmId={searchParams?.farmId ?? ''}
+      initialDate={searchParams?.date ?? ''}
+    />
   )
 }

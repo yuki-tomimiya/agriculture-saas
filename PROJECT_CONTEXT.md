@@ -28,7 +28,7 @@
 
 1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直してから出す
 2. 農場名「メイン➁」の文字替えと、雨の目安520mmを残すかは確認待ち
-3. 土壌診断は農場管理の下（`/soil`）。記録は `/records`。振り返りと計画に来年の計画を含む。モバイルはその次
+3. 生育ステージはトマト・ナス・キュウリ・ピーマン・ジャガイモにもある。防除の提案はトマトの7〜10日だけ。モバイルはその次
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
 → 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**（Obsidian）
@@ -83,6 +83,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 生育ナビ | `app/gdd/`, `app/gdd/past/`, `components/GDDCropList.tsx`, `lib/gdd.ts` |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
+| 生育ステージ・防除間隔 | `lib/proposals/stages.ts`, `lib/benchmarks/spray-interval.ts` |
 | サイドバー | `components/Sidebar.tsx` |
 | 議事録 | `docs/議事録/minutes-content.json`, `generate-minutes.mjs` |
 

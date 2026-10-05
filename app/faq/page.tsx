@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
 import { formatSoilPhRange, SOIL_PH_RANGES } from '@/lib/benchmarks/soil-ph'
+import { CROP_STAGE_CATALOG, formatStageCondition } from '@/lib/proposals/stages'
 
 export default async function FAQPage() {
   const user = await getCurrentUser()
@@ -32,6 +33,7 @@ export default async function FAQPage() {
               <li><a href="#radiation">日射量（MJ/㎡）とは？</a></li>
               <li><a href="#gdd-reference">主な作物の積算温度の目安</a></li>
               <li><a href="#soil-ph">適正pHとは？</a></li>
+              <li><a href="#stages">生育ステージとは？</a></li>
             </ul>
           </nav>
 
@@ -139,6 +141,39 @@ export default async function FAQPage() {
                       <td>{formatSoilPhRange(row.min, row.max)}</td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section id="stages" className="faq-section">
+            <h2 className="faq-section-title">生育ステージとは？</h2>
+            <p className="faq-section-text">
+              生育ステージは、植えてからの日数や積算温度で、今どの作業の時期かを見る目安です。
+              今日の提案の【一般】は、当てはまる段階があるときその文になります。ない品目は、月ごとのヒントのままです。
+            </p>
+            <p className="faq-section-note">
+              一般的な目安です。品種・地域・作型で変わります。
+            </p>
+            <div className="overflow-x-auto">
+              <table className="gdd-reference-table">
+                <thead>
+                  <tr>
+                    <th>作物</th>
+                    <th>段階</th>
+                    <th>いつ</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {CROP_STAGE_CATALOG.flatMap((crop) =>
+                    crop.stages.map((stage) => (
+                      <tr key={`${crop.name}-${stage.key}`}>
+                        <td>{crop.name}</td>
+                        <td>{stage.label}</td>
+                        <td>{formatStageCondition(stage)}</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>

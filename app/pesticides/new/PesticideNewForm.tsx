@@ -11,20 +11,28 @@ type FarmOption = { id: string; name: string }
 export default function PesticideNewForm({
   crops,
   farms,
+  initialCropId = '',
+  initialFarmId = '',
+  initialDate = '',
 }: {
   crops: CropOption[]
   farms: FarmOption[]
+  initialCropId?: string
+  initialFarmId?: string
+  initialDate?: string
 }) {
   const router = useRouter()
-  const [appliedAt, setAppliedAt] = useState(() => new Date().toISOString().slice(0, 10))
+  const [appliedAt, setAppliedAt] = useState(() =>
+    /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : new Date().toISOString().slice(0, 10)
+  )
   const [productName, setProductName] = useState('')
   const [amount, setAmount] = useState('')
   const [amountUnit, setAmountUnit] = useState('mL')
   const [dilution, setDilution] = useState('')
   const [applicationCount, setApplicationCount] = useState('')
   const [daysBeforeHarvest, setDaysBeforeHarvest] = useState('')
-  const [cropId, setCropId] = useState('')
-  const [farmId, setFarmId] = useState('')
+  const [cropId, setCropId] = useState(crops.some((crop) => crop.id === initialCropId) ? initialCropId : '')
+  const [farmId, setFarmId] = useState(farms.some((farm) => farm.id === initialFarmId) ? initialFarmId : '')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

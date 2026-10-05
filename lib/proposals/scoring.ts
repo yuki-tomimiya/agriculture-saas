@@ -10,6 +10,7 @@ import {
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh } from '@/lib/benchmarks/soil-ph'
+import { formatSprayInterval, matchedSprayInterval, sprayIntervalExceeded } from '@/lib/benchmarks/spray-interval'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
@@ -24,7 +25,7 @@ export type ProposalCropLine = {
   currentGDD: number | null
   targetGDD: number
   targetCaption?: string
-  action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
+  action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
 }
 
 export type ScoredProposal = {
@@ -46,7 +47,7 @@ export type ScoredProposal = {
   lines?: ProposalCropLine[]
   layers: ProposalLayers
   conclusion: string
-  action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
+  action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
 }
 
 type Hit = {
@@ -577,8 +578,55 @@ export async function scoreGrowingCrops(
     })
   }
 
-  const otherCards = cards.filter((card) => card.trigger !== 'soil-ph')
-  return [...groupSameSignal(otherCards), ...soilCards].sort(
+  const sprays = await prisma.pesticideRecord.findMany({
+    where: { OR: [{ userId }, { farm: { userId } }] },
+    select: { cropId: true, farmId: true, appliedAt: true },
+  })
+  const sprayCards: ScoredProposal[] = []
+  for (const crop of crops) {
+    const interval = matchedSprayInterval(crop.name, crop.variety)
+    if (!interval) continue
+    if (isProposalDismissed(dismissed, 'spray-interval', crop.id)) continue
+    const dates: Date[] = []
+    for (const row of sprays) {
+      const sameCrop = row.cropId === crop.id
+      const farmWide = row.cropId == null && row.farmId != null && row.farmId === crop.farmId
+      if (sameCrop || farmWide) dates.push(row.appliedAt)
+    }
+    for (const work of crop.workRecords) {
+      if (work.taskType.includes('防除')) dates.push(work.date)
+    }
+    if (dates.length === 0) continue
+    const last = dates.reduce((latest, date) => (date > latest ? date : latest))
+    const since = daysSince(last, today)
+    if (since == null || !sprayIntervalExceeded(since, interval)) continue
+    const conclusion = '天気を見て、次の防除を検討しましょう'
+    const farmName = crop.farm?.name ?? '農場未設定'
+    const regional = (crop.farmId ? regionalByFarm.get(crop.farmId) : undefined) ?? fallbackRegional
+    sprayCards.push({
+      id: `spray-interval-${crop.id}`,
+      urgency: 'thisWeek',
+      score: 46,
+      trigger: 'spray-interval',
+      title: `${crop.name}：前回の防除から${since}日たっています`,
+      cropId: crop.id,
+      cropName: crop.name,
+      farmId: crop.farmId ?? undefined,
+      farmName,
+      variety: crop.variety,
+      conclusion,
+      action: { kind: 'pesticide', title: `${crop.name}の防除を記録` },
+      layers: mergeLayers({
+        personal: `${crop.name}の前回の防除から${since}日です（${farmName}）。`,
+        regional,
+        general: `${interval.name}の目安は${formatSprayInterval(interval)}`,
+        conclusion,
+      }),
+    })
+  }
+
+  const otherCards = cards.filter((card) => card.trigger !== 'soil-ph' && card.trigger !== 'spray-interval')
+  return [...groupSameSignal(otherCards), ...soilCards, ...sprayCards].sort(
     (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
   )
 }

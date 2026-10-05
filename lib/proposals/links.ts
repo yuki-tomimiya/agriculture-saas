@@ -12,11 +12,18 @@ type LinkInput = {
   relatedFarmId?: string
   suggestedDate?: Date
   title: string
-  action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
+  action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
 }
 
 export function recordHref(proposal: LinkInput): string {
   const date = formatLocalYmd(proposal.suggestedDate ?? new Date())
+  if (proposal.action?.kind === 'pesticide') {
+    const params = new URLSearchParams()
+    if (proposal.relatedCropId) params.set('cropId', proposal.relatedCropId)
+    if (proposal.relatedFarmId) params.set('farmId', proposal.relatedFarmId)
+    params.set('date', date)
+    return `/pesticides/new?${params}`
+  }
   if (proposal.action?.kind === 'sale') {
     const params = new URLSearchParams()
     if (proposal.relatedCropId) params.set('cropId', proposal.relatedCropId)

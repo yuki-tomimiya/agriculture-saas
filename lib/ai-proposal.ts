@@ -31,7 +31,7 @@ export type Proposal = {
   urgency: ProposalUrgency
   /** 採点のきっかけ。作物のない提案の「今はしない」に使う */
   trigger?: string
-  action?: { kind: 'work' | 'task' | 'sale' | 'finish'; taskType?: string; title?: string }
+  action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
   lines?: ProposalCropLine[]
 }
 
