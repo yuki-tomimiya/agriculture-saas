@@ -4,6 +4,7 @@ import {
   hasWeatherCoordinates,
 } from '@/lib/weather-forecast'
 import { getLocationDailyNormals, sumNormalPrecip } from '@/lib/weather-normals'
+import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
 
 export type RegionalRainSummary = {
   farmId: string | null
@@ -94,18 +95,21 @@ function buildInterpretation(args: {
     args.normalMm > 0 ? Math.round((args.thisYearMm / args.normalMm) * 100) : null
   const diffPct =
     args.normalMm > 0 ? Math.round(((args.thisYearMm - args.normalMm) / args.normalMm) * 100) : null
-  const ratioText = normalRatioPct !== null ? `（平年の${normalRatioPct}%）` : ''
+  const ratioText = normalRatioPct !== null ? `${TEN_YEAR_MEAN}の${normalRatioPct}%` : ''
   let advice = '作業計画は予報の晴れ間を軸にしましょう。'
   if (args.normalMm === 0 && args.thisYearMm === 0) {
-    advice = '平年もほぼ降水なしです。乾燥が続く場合は灌水の優先度を上げましょう。'
+    advice = `${TEN_YEAR_MEAN}もほぼ降水なしです。乾燥が続く場合は灌水の優先度を上げましょう。`
   } else if (normalRatioPct !== null && normalRatioPct <= 75) {
     advice = '乾き気味なので灌水を早めに検討しましょう。'
   } else if (normalRatioPct !== null && normalRatioPct >= 125) {
-    advice = '平年より雨が多いので、排水と病害防除のタイミングに注意しましょう。'
+    advice = `${TEN_YEAR_MEAN}より雨が多いので、排水と病害防除のタイミングに注意しましょう。`
   }
-  const compare = `平年の同じ期間は約${args.normalMm}mm${ratioText}`
-  const shortLine = `${base}。${compare}。${lastNote}${advice}`
-  const interpretation = `${base}。${compare}。${lastNote}${advice}`
+  const compare =
+    ratioText !== ''
+      ? `降水量は${ratioText}です（推計では約${args.thisYearMm}mm、${TEN_YEAR_MEAN}は約${args.normalMm}mm）`
+      : `${TEN_YEAR_MEAN}の同じ期間は約${args.normalMm}mmです（推計）`
+  const shortLine = `${place}の${period}。${compare}。${lastNote}${advice}`
+  const interpretation = shortLine
   return { shortLine, interpretation, diffPct, normalRatioPct }
 }
 
@@ -117,7 +121,7 @@ function fallbackLastYear(args: {
 }): { shortLine: string; interpretation: string; diffPct: number | null; normalRatioPct: number | null } {
   const tooEarly = args.dayOfMonth < 7
   if (tooEarly) {
-    const line = `${args.base}。平年値を取得できなかったため、昨年との割合は7日分そろってから見ます。`
+    const line = `${args.base}。${TEN_YEAR_MEAN}を取得できなかったため、昨年との割合は7日分そろってから見ます。`
     return { shortLine: line, interpretation: line, diffPct: null, normalRatioPct: null }
   }
   let diffPct: number | null = null

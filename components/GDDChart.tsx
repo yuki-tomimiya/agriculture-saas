@@ -413,7 +413,7 @@ export default function GDDChart({
               <div className="dashboard-gdd-graph-marker-row">
                 <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#D97706' }} />
                 <span className="dashboard-gdd-graph-marker-text">
-                  平年（過去10年平均）：{Math.round(normalAtToday)} ℃日
+                  10年平均（推計）：{Math.round(normalAtToday)} ℃日
                 </span>
               </div>
             )}
@@ -436,8 +436,8 @@ export default function GDDChart({
       {normalGddByDay !== undefined && (
         <p className="dashboard-gdd-note">
           {normalGddByDay == null
-            ? '平年値を取得できなかったため、平年線は出していません。'
-            : `平年＝この地点の過去10年平均（Open-Meteo）。赤の破線は${basisLabel}です。`}
+            ? '10年平均を取得できなかったため、比較の線は出していません。'
+            : `10年平均（推計）＝この地点の過去10年を平均した再解析です。赤の破線は${basisLabel}です。`}
         </p>
       )}
 

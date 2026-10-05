@@ -9,7 +9,7 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { resolveCropStage } from '@/lib/proposals/stages'
-import { formatSoilPhRange, matchedSoilPh } from '@/lib/benchmarks/soil-ph'
+import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { formatSprayInterval, matchedSprayInterval, sprayIntervalExceeded } from '@/lib/benchmarks/spray-interval'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
 
@@ -507,7 +507,8 @@ export async function scoreGrowingCrops(
       farmName: string
       ph: number
       dateLabel: string
-      crops: { id: string; name: string; variety: string | null; rangeName: string; min: number; max: number }[]
+      kind: 'correct' | 'high-caution'
+      crops: { id: string; name: string; variety: string | null; rangeName: string; min: number; max: number; highCaution?: string }[]
     }
   >()
   for (const crop of crops) {
@@ -517,13 +518,16 @@ export async function scoreGrowingCrops(
     if (!diagnosis || diagnosis.ph == null) continue
     const range = matchedSoilPh(crop.name, crop.variety)
     if (!range) continue
-    if (diagnosis.ph >= range.min && diagnosis.ph <= range.max) continue
+    const signal = soilPhSignal(diagnosis.ph, range)
+    if (!signal) continue
     const diagnosed = new Date(diagnosis.diagnosedAt)
     const dateLabel = `${diagnosed.getFullYear()}/${diagnosed.getMonth() + 1}/${diagnosed.getDate()}`
-    const group = soilByFarm.get(crop.farmId) ?? {
+    const key = `${crop.farmId}|${signal}`
+    const group = soilByFarm.get(key) ?? {
       farmName: crop.farm.name,
       ph: diagnosis.ph,
       dateLabel,
+      kind: signal,
       crops: [],
     }
     group.crops.push({
@@ -533,13 +537,19 @@ export async function scoreGrowingCrops(
       rangeName: range.name,
       min: range.min,
       max: range.max,
+      highCaution: range.highCaution,
     })
-    soilByFarm.set(crop.farmId, group)
+    soilByFarm.set(key, group)
   }
 
   const soilCards: ScoredProposal[] = []
-  for (const [farmId, group] of soilByFarm) {
-    const conclusion = '次の作付け前に、pHの矯正を検討しましょう'
+  for (const [key, group] of soilByFarm) {
+    const farmId = key.split('|')[0]
+    const hasSweetPotato = crops.some((crop) => {
+      if (crop.farmId !== farmId) return false
+      const range = matchedSoilPh(crop.name, crop.variety)
+      return range != null && !range.adviseLow
+    })
     const rangeNames = [...new Set(group.crops.map((crop) => crop.rangeName))]
     const subject =
       rangeNames.length === 1
@@ -551,16 +561,31 @@ export async function scoreGrowingCrops(
         return `${name}の目安は ${formatSoilPhRange(sample.min, sample.max)}`
       })
       .join('。')
+    const caution = group.crops.find((crop) => crop.highCaution)?.highCaution
+    const conclusion =
+      group.kind === 'high-caution' && caution
+        ? caution
+        : hasSweetPotato
+          ? '次の作付け前に、対象の品目はpHの矯正を検討しましょう。さつまいもには石灰を入れないでください。'
+          : '次の作付け前に、pHの矯正を検討しましょう'
+    const title =
+      group.kind === 'high-caution'
+        ? `${group.farmName}：土壌のpHが高めです`
+        : `${group.farmName}：土壌のpHが目安から外れています`
     soilCards.push({
-      id: `soil-ph-${farmId}`,
+      id: `soil-ph-${key}`,
       urgency: 'thisWeek',
       score: 48,
       trigger: 'soil-ph',
-      title: `${group.farmName}：土壌のpHが目安から外れています`,
+      title,
       farmId,
       farmName: group.farmName,
       conclusion,
-      action: { kind: 'work', taskType: '土づくり', title: `${group.farmName}の土壌pHの矯正を検討` },
+      action: {
+        kind: 'work',
+        taskType: '土づくり',
+        title: group.kind === 'high-caution' ? `${group.farmName}の石灰を入れない` : `${group.farmName}の土壌pHの矯正を検討`,
+      },
       lines: group.crops.map((crop) => ({
         cropId: crop.id,
         cropName: crop.name,

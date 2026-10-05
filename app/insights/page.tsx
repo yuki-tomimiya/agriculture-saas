@@ -14,7 +14,7 @@ const ENTRY_CARDS = [
     href: '/insights/regional',
     layer: '地域',
     title: 'この地域の気象',
-    description: '今月と昨年同時期の降水量を比べ、地域のコンディションを確認します',
+    description: '今月の降水量を10年平均（推計）と比べ、地域のコンディションを確認します',
   },
   {
     href: '/insights/general',
@@ -65,7 +65,7 @@ export default async function InsightsPage() {
             <span className="insights-layer-tag">一般</span>
             品目ごとの教科書的な目安　
             <span className="insights-layer-tag">地域</span>
-            農場周辺の降水量（今月 vs 昨年同時期）
+            農場周辺の降水量（今月 vs 10年平均）
           </p>
         </section>
 

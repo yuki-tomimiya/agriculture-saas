@@ -11,7 +11,11 @@ export default function Home() {
             <TilltoLogo size={44} />
             <p className="home-brand">Tillto</p>
           </div>
-          <p className="home-cards-title">育てる、を変える。</p>
+          <p className="home-tagline">
+            見て、聞いて、
+            <br />
+            一緒に育てる。
+          </p>
           <div className="home-cta-wrap">
             <Link href="/auth/signup" className="home-cta-primary">
               無料ではじめる（新規登録）

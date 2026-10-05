@@ -87,6 +87,13 @@
   margin-bottom: 0.5rem;
   letter-spacing: 0.02em;
 }
+.home-page-root .home-tagline {
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.7;
+  color: #374151;
+  margin: 0.35rem auto 1.5rem;
+}
 .home-page-root .home-title {
   font-size: 3rem;
   font-weight: 700;
@@ -1932,10 +1939,13 @@
   font-weight: 800;
   letter-spacing: 0.05em;
   color: #16a34a;
+  text-align: center;
 }
 .auth-subtitle {
-  margin-top: 0.5rem;
+  margin-top: 0.4rem;
   font-size: 0.9rem;
+  line-height: 1.6;
+  text-align: center;
   color: #6b7280;
 }
 .auth-title {

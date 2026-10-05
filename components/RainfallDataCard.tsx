@@ -104,6 +104,10 @@ export default function RainfallDataCard({
     normalCumulativeMm && normalCumulativeMm.length > 0
       ? normalCumulativeMm[Math.min(thisDay, normalCumulativeMm.length - 1)] ?? null
       : null
+  const rainRatioPct =
+    normalAtThisDay != null && normalAtThisDay > 0
+      ? Math.round((currentCumulativeMm / normalAtThisDay) * 100)
+      : null
   const normalMax =
     normalCumulativeMm && normalCumulativeMm.length > 0
       ? Math.max(...normalCumulativeMm.slice(0, displayDays + 1))
@@ -149,7 +153,7 @@ export default function RainfallDataCard({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">
         {cropName}の積算雨量の推移
-        <Link href="/faq#normals" className="chart-help" aria-label="平年とは">？</Link>
+        <Link href="/faq#normals" className="chart-help" aria-label="10年平均とは">？</Link>
       </h2>
       <p className="dashboard-section-sub">
         {cropName}の圃場地点に基づき、植え付け日から今日までの実績雨量を表示しています。
@@ -158,8 +162,10 @@ export default function RainfallDataCard({
 
       <div className="dashboard-gdd-graph">
         <div className="dashboard-gdd-graph-header">
-          <span>植え付けからの推移（累積 mm）</span>
-          <span className="dashboard-gdd-graph-current">現在：{currentCumulativeMm.toFixed(1)} mm</span>
+          <span>植え付けからの推移</span>
+          <span className="dashboard-gdd-graph-current">
+            {rainRatioPct != null ? `10年平均の${rainRatioPct}%` : `推計 ${Math.round(currentCumulativeMm)} mm`}
+          </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">
           <svg className="dashboard-gdd-graph-svg" viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`} preserveAspectRatio="none">
@@ -212,7 +218,7 @@ export default function RainfallDataCard({
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot dashboard-gdd-graph-dot--standard" />
               <span className="dashboard-gdd-graph-marker-text">
-                {normalAtThisDay != null ? `平年（過去10年平均）：${Math.round(normalAtThisDay)} mm` : '平年値なし'}
+                {normalAtThisDay != null ? `10年平均（推計）：${Math.round(normalAtThisDay)} mm` : '10年平均なし'}
               </span>
             </div>
             {lastYearPath && (
@@ -225,28 +231,22 @@ export default function RainfallDataCard({
             )}
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#3b82f6' }} />
-              <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">現在：{currentCumulativeMm.toFixed(1)} mm</span>
+              <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">現在（推計）：{Math.round(currentCumulativeMm)} mm</span>
             </div>
           </div>
         </div>
       </div>
 
       <div className="dashboard-gdd-summary">
-        <p className="dashboard-gdd-summary-title">植え付け以降の累積雨量</p>
+        <p className="dashboard-gdd-summary-title">植え付け以降の雨</p>
         <p className="dashboard-gdd-summary-text">
-          {normalAtThisDay != null ? (
+          {rainRatioPct != null ? (
             <>
-              同じ日付時点の平年積算雨量：<span className="font-semibold">{Math.round(normalAtThisDay)} mm</span>
-              <br />
-              → 今年は平年より{' '}
-              <span className="font-semibold text-blue-700">
-                {Math.round(currentCumulativeMm - normalAtThisDay) >= 0 ? '+' : ''}
-                {Math.round(currentCumulativeMm - normalAtThisDay)} mm
-                {normalAtThisDay > 0 ? `（平年の${Math.round((currentCumulativeMm / normalAtThisDay) * 100)}%）` : ''}
-              </span>
+              10年平均の<span className="font-semibold">{rainRatioPct}%</span>です。
+              推計の積算は {Math.round(currentCumulativeMm)} mm、10年平均は {Math.round(normalAtThisDay ?? 0)} mm です。
             </>
           ) : (
-            <>平年値を取得できなかったため、比較線は出していません。</>
+            <>10年平均を取得できなかったため、比較は出していません。推計の積算は {Math.round(currentCumulativeMm)} mm です。</>
           )}
           <br />
           経過日数：<span className="font-semibold">{Math.max(0, daysFromPlanting)} 日</span>
@@ -270,7 +270,7 @@ export default function RainfallDataCard({
 
       <p className="dashboard-gdd-note">
         ※ 降雨前後は、防除・施肥・収穫タイミングを見直してください。単位は日降水量（mm）です。
-        平年＝この地点の過去10年平均（Open-Meteo）。
+        10年平均（推計）＝この地点の過去10年を平均した再解析です。ミリメートルは推計値です。
       </p>
     </section>
   )

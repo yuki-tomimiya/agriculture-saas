@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { getLocationDailyNormals, sumNormalGdd, type DayNormal } from '@/lib/weather-normals'
+import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
 import {
   chosenHarvestSamples,
   loadHarvestSamples,
@@ -117,9 +118,9 @@ function daysBetween(start: Date, end: Date): number {
 }
 
 function heatTone(pct: number): string {
-  if (pct >= 103) return '平年より暑く'
-  if (pct <= 97) return '平年より涼しく'
-  return '平年に近く'
+  if (pct >= 103) return `${TEN_YEAR_MEAN}より暑く`
+  if (pct <= 97) return `${TEN_YEAR_MEAN}より涼しく`
+  return `${TEN_YEAR_MEAN}に近く`
 }
 
 /** 年ごとの実績を、その年の同期間の平年積算へ引き直してから平均する。 */
@@ -153,8 +154,8 @@ async function adjustHarvestsToNormal(
   const avgDays = Math.round(years.reduce((sum, year) => sum + year.days, 0) / years.length)
   const note =
     years.length === 1
-      ? `${years[0].label}は${heatTone(years[0].pct)}（平年比${years[0].pct}%）、平年に引き直すと${gdd}℃日にあたります`
-      : `${years.map((year) => `${year.label}は平年比${year.pct}%`).join('、')}。引き直した平均は${gdd}℃日です`
+      ? `${years[0].label}は${heatTone(years[0].pct)}（${TEN_YEAR_MEAN}比${years[0].pct}%）、${TEN_YEAR_MEAN}に引き直すと${gdd}℃日にあたります`
+      : `${years.map((year) => `${year.label}は${TEN_YEAR_MEAN}比${year.pct}%`).join('、')}。引き直した平均は${gdd}℃日です`
   return { gdd, avgDays, note }
 }
 
@@ -239,14 +240,14 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         normalNote = '植付日がないので、来年の収穫日は出せません。'
       } else if (!hasWeatherCoordinates(point)) {
         normalStatus = 'no-place'
-        normalNote = '農場の位置がないので、平年の気温から収穫日は出せません。'
+        normalNote = '農場の位置がないので、10年平均の気温から収穫日は出せません。'
       } else {
         const normals = await normalsFor(Number(point.latitude), Number(point.longitude))
         const plantOn = nextPlantingDate(crop.plantingDate, today)
         nextPlant = plantOn
         if (!normals || normals.size < 300) {
           normalStatus = 'missing'
-          normalNote = '平年の気温を取れなかったので、収穫日は出せません。'
+          normalNote = '10年平均の気温を取れなかったので、収穫日は出せません。'
         } else {
           let walkTarget = targetGdd
           if (basis.source !== 'provisional') {
@@ -282,10 +283,10 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
             adjustNote = null
           } else if (reach.status === 'missing') {
             normalStatus = 'missing'
-            normalNote = '平年の気温を取れなかったので、収穫日は出せません。'
+            normalNote = '10年平均の気温を取れなかったので、収穫日は出せません。'
           } else {
             normalStatus = 'unreachable'
-            normalNote = '平年の気温は取れましたが、400日以内にこの基準の積算温度へ届きません。'
+            normalNote = '10年平均の気温は取れましたが、400日以内にこの基準の積算温度へ届きません。'
           }
         }
       }

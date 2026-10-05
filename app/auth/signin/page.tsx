@@ -48,7 +48,11 @@ export default function SignInPage() {
             <TilltoLogo size={52} title="Tillto" />
           </div>
           <div className="auth-brand">Tillto</div>
-          <div className="auth-subtitle">育てる、を変える。</div>
+          <div className="auth-subtitle">
+            見て、聞いて、
+            <br />
+            一緒に育てる。
+          </div>
         </div>
 
         <h1 className="auth-title">ログイン</h1>

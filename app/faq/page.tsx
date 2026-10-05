@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
-import { formatSoilPhRange, SOIL_PH_RANGES } from '@/lib/benchmarks/soil-ph'
+import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
 import { CROP_STAGE_CATALOG, formatStageCondition } from '@/lib/proposals/stages'
 
 export default async function FAQPage() {
@@ -29,7 +29,7 @@ export default async function FAQPage() {
             <ul className="faq-nav-list">
               <li><a href="#gdd">積算温度（GDD）とは？</a></li>
               <li><a href="#base-temp">基準温度とは？</a></li>
-              <li><a href="#normals">平年とは？</a></li>
+              <li><a href="#normals">10年平均（推計）とは？</a></li>
               <li><a href="#radiation">日射量（MJ/㎡）とは？</a></li>
               <li><a href="#gdd-reference">主な作物の積算温度の目安</a></li>
               <li><a href="#soil-ph">適正pHとは？</a></li>
@@ -46,7 +46,7 @@ export default async function FAQPage() {
             </p>
             <p className="faq-section-text">
               生育ナビでは、登録した作物の植え付け日と日々の気温から積算温度を計算し、
-              同じ地点の平年との比較や「あとどれくらいで収穫目安か」を確認できます。
+              同じ地点の10年平均（推計）との比較や「あとどれくらいで収穫目安か」を確認できます。
             </p>
             <p className="faq-section-text">
               <Link href="/gdd" className="faq-link">生育ナビページへ →</Link>
@@ -66,14 +66,21 @@ export default async function FAQPage() {
           </section>
 
           <section id="normals" className="faq-section">
-            <h2 className="faq-section-title">平年とは？</h2>
+            <h2 className="faq-section-title">10年平均（推計）とは？</h2>
             <p className="faq-section-text">
-              平年は、その農場の座標で、過去10年の同じ月日を平均した値です。
-              気温・降水量・日射量を Open-Meteo の過去データから取り、2月29日は除いています。
+              画面の「10年平均」は、その農場の座標で、過去10年の同じ月日を平均した値です。
+              出どころは Open-Meteo です。中身は ERA5 などの再解析で、観測所・衛星・レーダーを数値モデルで統合した推計です。実測そのものではありません。
             </p>
             <p className="faq-section-text">
-              生育ナビの折れ線は、植え付け日からの平年の積算です。
-              今日の提案の地域の文は、今月の降水量を、同じ日数の平年と比べます。昨年の値は、参考として添えます。
+              格子の大きさはおおよそ 9〜25km です。近い農場同士では、同じ値になることがあります。
+              館山のアメダスと照らしたところ、気温はだいたい ±1.5℃以内でした。降水量は 0.7〜2.1 倍までばらつき、方向も一定ではありません。そのため雨は、ミリメートルより 10年平均との割合を主に見せています。
+            </p>
+            <p className="faq-section-text">
+              気象庁の平年値は、1991〜2020年の30年・実測の平均です。Tillto の10年平均（推計）とは別物です。
+            </p>
+            <p className="faq-section-text">
+              生育ナビの折れ線は、植え付け日からの10年平均の積算です。
+              今日の提案の地域の文は、今月の降水量を、同じ日数の10年平均と比べます。昨年の値は、参考として添えます。
             </p>
           </section>
 
@@ -84,7 +91,7 @@ export default async function FAQPage() {
               日照時間（何時間晴れたか）とは別の単位で、曇りの日でも値はあります。
             </p>
             <p className="faq-section-text">
-              生育ナビの日射グラフは、植え付け日からこの値を足し合わせ、同じ地点の平年の積算と比べます。
+              生育ナビの日射グラフは、植え付け日からこの値を足し合わせ、同じ地点の10年平均（推計）と比べます。
             </p>
           </section>
 
@@ -119,12 +126,26 @@ export default async function FAQPage() {
           <section id="soil-ph" className="faq-section">
             <h2 className="faq-section-title">適正pHとは？</h2>
             <p className="faq-section-text">
-              適正pHは、その品目が育ちやすい土壌の酸性・アルカリ性の目安です。
+              適正pHは、その品目が育ちやすい土壌の酸性・アルカリ性の範囲です。
               今日の提案では、農場の最新の診断がこの範囲から外れているときだけ知らせます。
+              さつまいもは、pHが低いことを理由に石灰を勧めません。
             </p>
             <p className="faq-section-note">
-              一般的な目安です。地域・土壌型により変わります。都道府県の施肥基準がある場合はそちらを優先してください。
-              EC・窒素・リン酸・カリの良し悪しは、初版では判定しません。
+              出典は、{SOIL_PH_SOURCE_MAFF.publisher}「{SOIL_PH_SOURCE_MAFF.name}」{SOIL_PH_SOURCE_MAFF.detail}です。
+              {' '}
+              <a href={SOIL_PH_SOURCE_MAFF.url} className="text-green-700 hover:underline">
+                {SOIL_PH_SOURCE_MAFF.url}
+              </a>
+              さつまいもだけは、{SOIL_PH_SOURCE_CHIBA.publisher}「{SOIL_PH_SOURCE_CHIBA.name}」（{SOIL_PH_SOURCE_CHIBA.year}）です。
+              {' '}
+              <a href={SOIL_PH_SOURCE_CHIBA.url} className="text-green-700 hover:underline">
+                {SOIL_PH_SOURCE_CHIBA.url}
+              </a>
+            </p>
+            <p className="faq-section-note">
+              地域・土壌型により変わります。都道府県の施肥基準がある場合はそちらを優先してください。
+              さつまいもは生育できるpHが広く、pHが高いと立枯病が出やすいため、pH5.5以上では石灰を入れません。
+              EC・窒素・リン酸・カリの良し悪しは判定しません。
             </p>
             <div className="overflow-x-auto">
               <table className="gdd-reference-table">
@@ -138,7 +159,10 @@ export default async function FAQPage() {
                   {SOIL_PH_RANGES.map((row) => (
                     <tr key={row.name}>
                       <td>{row.name}</td>
-                      <td>{formatSoilPhRange(row.min, row.max)}</td>
+                      <td>
+                        {formatSoilPhRange(row.min, row.max)}
+                        {row.source === 'chiba' ? '（千葉県）' : ''}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
