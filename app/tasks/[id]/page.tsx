@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import RecordDeleteButton from '@/components/RecordDeleteButton'
 import { formatDateShort, formatDate } from '@/lib/utils'
 
 export default async function TaskDetailPage({
@@ -66,9 +67,16 @@ export default async function TaskDetailPage({
               </span>
             </div>
           </div>
-          <Link href="/tasks" className="btn btn-outline">
-            一覧に戻る
-          </Link>
+          <div className="flex gap-2">
+            <RecordDeleteButton
+              url={`/api/tasks/${task.id}`}
+              confirmMessage="このタスクを削除しますか？"
+              redirectTo="/tasks"
+            />
+            <Link href="/tasks" className="btn btn-outline">
+              一覧に戻る
+            </Link>
+          </div>
         </div>
 
         {task.description && (

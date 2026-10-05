@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import RecordDeleteButton from '@/components/RecordDeleteButton'
 import { formatDateShort, formatDate } from '@/lib/utils'
 
 export default async function HarvestDetailPage({
@@ -58,9 +59,16 @@ export default async function HarvestDetailPage({
               {formatDate(harvest.date)} ・ {harvest.quantity} {harvest.unit}
             </p>
           </div>
-          <Link href="/harvests" className="btn btn-outline">
-            一覧に戻る
-          </Link>
+          <div className="flex gap-2">
+            <RecordDeleteButton
+              url={`/api/harvests/${harvest.id}`}
+              confirmMessage="この収穫記録を削除しますか？"
+              redirectTo="/harvests"
+            />
+            <Link href="/harvests" className="btn btn-outline">
+              一覧に戻る
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white p-6 rounded-lg shadow mb-8">

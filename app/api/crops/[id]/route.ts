@@ -146,3 +146,32 @@ export async function PATCH(
     )
   }
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('userId')?.value
+    if (!userId) {
+      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
+    }
+    const { id } = await params
+    const existing = await prisma.crop.findFirst({
+      where: {
+        id,
+        OR: [{ userId }, { farm: { userId } }],
+      },
+      select: { id: true },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: '作物が見つかりません' }, { status: 404 })
+    }
+    await prisma.crop.delete({ where: { id: existing.id } })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Crop delete error:', error)
+    return NextResponse.json({ error: '作物の削除に失敗しました' }, { status: 500 })
+  }
+}

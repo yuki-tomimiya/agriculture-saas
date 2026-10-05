@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import BaseTempField from '@/components/BaseTempField'
+import CropNameInput from '@/components/CropNameInput'
 import { defaultBaseTemperature } from '@/lib/benchmarks/base-temperature'
 
 type FarmWithFields = { id: string; name: string; fields: { id: string; name: string }[] }
@@ -89,22 +90,16 @@ export default function CropNewForm({ farms }: { farms: FarmWithFields[] }) {
               <label htmlFor="crop-name" className="label">
                 作物名 <span className="farm-new-required">必須</span>
               </label>
-              <input
+              <CropNameInput
                 id="crop-name"
-                type="text"
                 value={name}
-                onChange={(e) => {
-                  const next = e.target.value
+                onChange={(next) => {
                   setName(next)
                   if (!baseTouched) {
                     const usual = defaultBaseTemperature(next, variety)
                     setBaseTemp(usual == null ? '' : String(usual))
                   }
                 }}
-                required
-                className="input"
-                placeholder="例：トマト"
-                maxLength={200}
               />
             </div>
 

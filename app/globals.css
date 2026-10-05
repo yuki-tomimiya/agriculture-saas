@@ -171,6 +171,11 @@
   grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
+@media (max-width: 640px) {
+  .home-page-root .home-cards-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .home-page-root .home-card {
   text-align: left;
   padding: 1rem;

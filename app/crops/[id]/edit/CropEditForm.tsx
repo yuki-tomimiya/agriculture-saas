@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import BaseTempField from '@/components/BaseTempField'
+import CropNameInput from '@/components/CropNameInput'
+import { defaultBaseTemperature } from '@/lib/benchmarks/base-temperature'
 
 type FarmWithFields = { id: string; name: string; fields: { id: string; name: string }[] }
 
@@ -38,6 +40,7 @@ export default function CropEditForm({
   const [fieldId, setFieldId] = useState(initial.fieldId)
   const [status, setStatus] = useState(initial.status)
   const [baseTemp, setBaseTemp] = useState(initial.baseTemperature)
+  const [baseTouched, setBaseTouched] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -117,15 +120,16 @@ export default function CropEditForm({
               <label htmlFor="crop-name" className="label">
                 作物名 <span className="farm-new-required">必須</span>
               </label>
-              <input
+              <CropNameInput
                 id="crop-name"
-                type="text"
                 value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                className="input"
-                placeholder="例：トマト"
-                maxLength={200}
+                onChange={(next) => {
+                  setName(next)
+                  if (!baseTouched) {
+                    const usual = defaultBaseTemperature(next, variety)
+                    setBaseTemp(usual == null ? '' : String(usual))
+                  }
+                }}
               />
             </div>
 
@@ -161,7 +165,14 @@ export default function CropEditForm({
                 id="crop-variety"
                 type="text"
                 value={variety}
-                onChange={(e) => setVariety(e.target.value)}
+                onChange={(e) => {
+                  const next = e.target.value
+                  setVariety(next)
+                  if (!baseTouched) {
+                    const usual = defaultBaseTemperature(name, next)
+                    setBaseTemp(usual == null ? '' : String(usual))
+                  }
+                }}
                 className="input"
                 placeholder="例：桃太郎"
                 maxLength={100}
@@ -172,7 +183,10 @@ export default function CropEditForm({
               value={baseTemp}
               cropName={name}
               variety={variety}
-              onChange={setBaseTemp}
+              onChange={(next) => {
+                setBaseTouched(true)
+                setBaseTemp(next)
+              }}
             />
 
             {fields.length > 0 && (

@@ -28,7 +28,7 @@
 
 1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直してから出す
 2. 農場名「メイン➁」の文字替えと、雨の目安520mmを残すかは確認待ち
-3. 適正pHは出典つき。雨は10年平均（推計）比を主にする。次は節目を聞くステージ。モバイルはその次
+3. 作物・農場・収穫・販売・タスクは1件ずつ削除できる。次は節目を聞くステージ。モバイルはその次
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
 → 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**（Obsidian）
@@ -84,7 +84,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 生育ステージ・防除間隔 | `lib/proposals/stages.ts`, `lib/benchmarks/spray-interval.ts` |
-| サイドバー | `components/Sidebar.tsx` |
+| 削除 | 作物・農場は詳細、収穫・タスクも詳細、販売は一覧。各 `app/api/.../[id]` の DELETE。作物が残る農場は消せない |
 | 議事録 | `docs/議事録/minutes-content.json`, `generate-minutes.mjs` |
 
 ```

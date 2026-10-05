@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
 import { RecordTabs } from '@/components/RecordTabs'
+import RecordDeleteButton from '@/components/RecordDeleteButton'
 
 export default async function SalesPage({
   searchParams,
@@ -106,6 +107,7 @@ export default async function SalesPage({
                     <th className="text-right py-3 px-4 font-semibold text-gray-900">単価</th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-900">販売金額</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-900">チャネル</th>
+                    <th className="py-3 px-4" />
                   </tr>
                 </thead>
                 <tbody>
@@ -140,6 +142,13 @@ export default async function SalesPage({
                       </td>
                       <td className="py-3 px-4 text-gray-600 text-sm">
                         {sale.channel ?? '-'}
+                      </td>
+                      <td className="py-3 px-4 text-right">
+                        <RecordDeleteButton
+                          url={`/api/sales/${sale.id}`}
+                          confirmMessage="この販売記録を削除しますか？"
+                          redirectTo="/sales"
+                        />
                       </td>
                     </tr>
                   ))}

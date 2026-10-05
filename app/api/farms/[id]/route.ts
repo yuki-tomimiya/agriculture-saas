@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { farmDeleteBlockMessage } from '@/lib/farms/delete-guard'
 
 export async function PATCH(
   request: NextRequest,
@@ -68,6 +69,49 @@ export async function PATCH(
       { error: '農場の更新に失敗しました' },
       { status: 500 }
     )
+  }
+}
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get('userId')?.value
+    if (!userId) {
+      return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
+    }
+    const { id } = await params
+    const existing = await prisma.farm.findFirst({
+      where: { id, userId },
+      include: {
+        _count: {
+          select: {
+            crops: true,
+            workRecords: true,
+            tasks: true,
+            soilDiagnoses: true,
+            pesticideRecords: true,
+            fertilizerRecords: true,
+            sales: true,
+            fields: true,
+          },
+        },
+      },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: '農場が見つかりません' }, { status: 404 })
+    }
+    const blocked = farmDeleteBlockMessage(existing._count)
+    if (blocked) {
+      return NextResponse.json({ error: blocked }, { status: 409 })
+    }
+    await prisma.farm.delete({ where: { id: existing.id } })
+    return NextResponse.json({ ok: true })
+  } catch (error) {
+    console.error('Farm delete error:', error)
+    return NextResponse.json({ error: '農場の削除に失敗しました' }, { status: 500 })
   }
 }
 

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import FarmDeleteButton from '@/components/FarmDeleteButton'
 import { formatDateShort } from '@/lib/utils'
 
 export default async function FarmDetailPage({
@@ -19,7 +20,18 @@ export default async function FarmDetailPage({
     where: { id, userId: user.id },
     include: {
       fields: true,
-      _count: { select: { crops: true, tasks: true, workRecords: true } },
+      _count: {
+        select: {
+          crops: true,
+          tasks: true,
+          workRecords: true,
+          soilDiagnoses: true,
+          pesticideRecords: true,
+          fertilizerRecords: true,
+          sales: true,
+          fields: true,
+        },
+      },
       crops: {
         include: { field: true },
         orderBy: { createdAt: 'desc' },
@@ -60,6 +72,7 @@ export default async function FarmDetailPage({
             <Link href="/farms" className="btn btn-outline">
               一覧に戻る
             </Link>
+            <FarmDeleteButton farmId={farm.id} counts={farm._count} />
           </div>
         </div>
 

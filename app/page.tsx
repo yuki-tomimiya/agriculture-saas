@@ -31,33 +31,32 @@ export default function Home() {
           <p className="home-cards-title">このサービスでできること</p>
           <div className="home-cards-grid">
             <div className="home-card-first">
-              <span className="home-card-title">🏡 農場管理</span>
+              <span className="home-card-title">今日の提案</span>
               <span className="home-card-desc">
-                農場・圃場ごとの面積、土壌、設備、作付状況を一元管理。
+                あなたの記録、この地域の気象、一般の目安を重ねて、今日の一手を出します。記録すると提案が変わります。
               </span>
             </div>
             <div className="home-card">
-              <span className="home-card-title">🌾 作物・作業管理</span>
+              <span className="home-card-title">生育と気象</span>
               <span className="home-card-desc">
-                作付計画から日々の作業記録、収穫までをスケジュールで把握。
+                積算温度・雨・日射を、その地点の10年平均（推計）と比べます。カレンダーでは昨年の同じ日も見られます。
               </span>
             </div>
             <div className="home-card">
-              <span className="home-card-title">📊 データ分析・収支</span>
+              <span className="home-card-title">記録</span>
               <span className="home-card-desc">
-                収量・売上・資材コスト・労務を集計し、作物別の収支を見える化。
+                作業、農薬、収穫、販売と、農場ごとの土壌診断を残します。pHが目安から外れると提案に出ます。
               </span>
             </div>
             <div className="home-card">
-              <span className="home-card-title">🌤 気象データ連携</span>
+              <span className="home-card-title">振り返りと計画</span>
               <span className="home-card-desc">
-                1週間先までの気象予報から、作業スケジュールを自動で提案。
+                前回の作付けと比べ、来年の植付日と収穫見込みを出します。
               </span>
             </div>
           </div>
           <p className="home-note">
-            ※ ログイン後は、これらのカードがサイドメニューとなり、<br />
-            クリックすると農場管理・作物管理・分析画面などに切り替わります。
+            ログイン後は、左のメニューから今日の提案、記録、生育ナビ、振り返りと計画へ進めます。
           </p>
         </div>
       </div>

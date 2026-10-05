@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import CropDeleteButton from '@/components/CropDeleteButton'
 import { formatDateShort } from '@/lib/utils'
 
 export default async function CropDetailPage({
@@ -20,6 +21,16 @@ export default async function CropDetailPage({
     field: true,
     harvests: { orderBy: { date: 'desc' as const }, take: 20 },
     tasks: { orderBy: { dueDate: 'asc' as const } },
+    _count: {
+      select: {
+        harvests: true,
+        workRecords: true,
+        pesticideRecords: true,
+        fertilizerRecords: true,
+        sales: true,
+        tasks: true,
+      },
+    },
   } as const
 
   let crop = await prisma.crop.findFirst({
@@ -91,6 +102,11 @@ export default async function CropDetailPage({
             <Link href="/crops" className="btn btn-outline">
               一覧に戻る
             </Link>
+            <CropDeleteButton
+              cropId={crop.id}
+              counts={crop._count}
+              suggestComplete={crop.status === 'growing'}
+            />
           </div>
         </div>
 
