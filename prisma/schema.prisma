@@ -81,6 +81,23 @@ model Crop {
   fertilizerRecords FertilizerRecord[]
   sales             Sale[]
   proposalDismissals ProposalDismissal[]
+  milestones         CropMilestone[]
+}
+
+/// 作付けに紐づく生育の節目。同じ key は1件（やり直したら上書き）。
+/// 観察時点の積算温度は保存しない。observedAt から毎回計算する。
+model CropMilestone {
+  id         String   @id @default(cuid())
+  cropId     String
+  crop       Crop     @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  key        String
+  observedAt DateTime
+  source     String // answered（問いかけに答えた） / manual（自分で記録した）
+  notes      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([cropId, key])
 }
 
 model Harvest {

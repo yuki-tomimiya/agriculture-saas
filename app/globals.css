@@ -769,6 +769,35 @@
   font-size: 0.8125rem;
   color: #4b5563;
 }
+.ai-proposal-milestone-term,
+.ai-proposal-milestone-advice,
+.ai-proposal-milestone-source {
+  margin: 0.35rem 0 0;
+}
+.ai-proposal-milestone-term,
+.ai-proposal-milestone-source {
+  font-size: 0.8125rem;
+  color: #4b5563;
+}
+.ai-proposal-milestone-advice {
+  color: #111827;
+}
+.ai-proposal-howto {
+  margin: 0.5rem 0 0;
+  padding-left: 1.15rem;
+  font-size: 0.8125rem;
+  color: #374151;
+}
+.ai-proposal-milestone-row .ai-proposal-actions {
+  margin-top: 0.35rem;
+}
+.ai-proposal-milestone-date {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: #374151;
+}
 .ai-proposal-actions {
   display: flex;
   flex-wrap: wrap;

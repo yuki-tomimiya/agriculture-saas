@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { proposalRemindAfter } from '@/lib/proposals/dismissal'
-import { SEASON_FINISH_DISMISS_DAYS, SEASON_FINISH_TRIGGER } from '@/lib/proposals/constants'
+import { PROPOSAL_DISMISS_DAYS, SEASON_FINISH_DISMISS_DAYS, SEASON_FINISH_TRIGGER } from '@/lib/proposals/constants'
+import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,15 +35,24 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const seasonFinish = trigger === SEASON_FINISH_TRIGGER
-    const remindAfter = proposalRemindAfter(new Date(), seasonFinish ? SEASON_FINISH_DISMISS_DAYS : undefined)
+    const exactRow = trigger === SEASON_FINISH_TRIGGER || isMilestoneTrigger(trigger)
+    const remindAfter = proposalRemindAfter(
+      new Date(),
+      trigger === SEASON_FINISH_TRIGGER ? SEASON_FINISH_DISMISS_DAYS : PROPOSAL_DISMISS_DAYS
+    )
     const targets = cropIds.length > 0 ? cropIds : [null]
     for (const cropId of targets) {
       const existing = cropId
         ? await prisma.proposalDismissal.findFirst({
-            where: seasonFinish
-              ? { userId, cropId, trigger: SEASON_FINISH_TRIGGER }
-              : { userId, cropId, NOT: { trigger: SEASON_FINISH_TRIGGER } },
+            where: exactRow
+              ? { userId, cropId, trigger }
+              : {
+                  userId,
+                  cropId,
+                  NOT: {
+                    OR: [{ trigger: SEASON_FINISH_TRIGGER }, { trigger: { startsWith: 'milestone:' } }],
+                  },
+                },
           })
         : await prisma.proposalDismissal.findFirst({ where: { userId, trigger, cropId: null } })
       if (existing) {

@@ -13,22 +13,34 @@ export type CropStage = {
   expectedWorkTypes: string[]
   generalLine: string
   nextHint: string
+  /**
+   * 日数で当たった段階。作業の抜けを断定しない。
+   * この日数に出典はない。条件つきの文を選ぶためだけに使う。
+   */
+  windowOnly?: boolean
 }
 
 export type StageProgress = {
   daysSincePlanting?: number | null
   gddRatio?: number | null
   hasHarvest?: boolean
+  /** 記録済みの節目。積算温度は持たず、観察日からその場で日数を出す */
+  milestones?: { key: string; observedAt: Date }[]
+  today?: Date
 }
 
-/** 先に書いた段階を優先する（片付け → 収穫 → 試し掘り → 日数の段階） */
+/**
+ * 先に書いた段階を優先する（片付け → 収穫）。
+ * 活着・試し掘りは lib/proposals/milestones.ts。つる返しは段階にしない
+ * （千葉県の指針に記載がないため）。
+ */
 const SWEET_POTATO_STAGES: CropStage[] = [
   {
     key: 'cleanup',
     label: '片付け',
     requiresHarvest: true,
     expectedWorkTypes: ['片付け', '貯蔵'],
-    generalLine: '収穫のあとは、片付け・貯蔵と次作の準備に入る時期です',
+    generalLine: '収穫の記録があるので、片付けと貯蔵、次の作付けの準備に入れます',
     nextHint: '残さの処理と貯蔵条件の確認',
   },
   {
@@ -38,33 +50,6 @@ const SWEET_POTATO_STAGES: CropStage[] = [
     expectedWorkTypes: ['収穫'],
     generalLine: 'さつまいもは積算温度が収穫の目安に達しています。雨の前の掘り取りが安心です',
     nextHint: '収穫と出荷の段取り',
-  },
-  {
-    key: 'test-dig',
-    label: '試し掘り',
-    fromGddRatio: 0.9,
-    toGddRatio: 1,
-    expectedWorkTypes: ['試し掘り', '病害確認'],
-    generalLine: 'さつまいもは収穫の目安に近づいており、試し掘りで肥大を確かめる時期です',
-    nextHint: '試し掘りと、問題があれば収穫の前倒し',
-  },
-  {
-    key: 'vine-turning',
-    label: 'つる返し期',
-    fromDays: 45,
-    toDays: 60,
-    expectedWorkTypes: ['つる返し', '除草'],
-    generalLine: 'さつまいもはつるを返して、イモの肥大を促す時期です',
-    nextHint: 'つる返しと除草',
-  },
-  {
-    key: 'rooting',
-    label: '活着',
-    fromDays: 5,
-    toDays: 10,
-    expectedWorkTypes: ['植え付け', '灌水'],
-    generalLine: 'さつまいもは苗の活着を確認する時期です',
-    nextHint: '欠株の確認と、乾いていれば灌水',
   },
 ]
 
@@ -78,7 +63,10 @@ function isSweetPotato(cropName: string, variety?: string | null): boolean {
   return nameIncludes(cropName, variety, ['さつまいも', 'サツマイモ', '薩摩芋', 'かんしょ'])
 }
 
-/** 月次ヒントの「定植・誘引」を、植付直後の短い期間にした */
+/**
+ * 芽かきは段階にしない（腋芽は随時。摘心は目標段数の1回で、別作業）。
+ * 第3花房は milestones.ts。ここにある日数に出典はない。
+ */
 const TOMATO_STAGES: CropStage[] = [
   {
     key: 'harvest',
@@ -89,21 +77,13 @@ const TOMATO_STAGES: CropStage[] = [
     nextHint: '収穫',
   },
   {
-    key: 'pinching',
-    label: '芽かき・摘芯',
-    fromDays: 30,
-    toDays: 60,
-    expectedWorkTypes: ['摘花・除葉', '芽かき'],
-    generalLine: 'トマトは芽かき・摘芯で茎を整理する時期です',
-    nextHint: '芽かき・摘芯',
-  },
-  {
     key: 'rooting',
     label: '定植・誘引',
     fromDays: 0,
     toDays: 21,
+    windowOnly: true,
     expectedWorkTypes: ['植え付け', '誘引・仕立て'],
-    generalLine: 'トマトは定植のあと、誘引を始める時期です',
+    generalLine: 'トマトは、植えていれば風で折れないよう誘引をします',
     nextHint: '誘引',
   },
 ]
@@ -123,8 +103,9 @@ const EGGPLANT_STAGES: CropStage[] = [
     label: '整枝',
     fromDays: 30,
     toDays: 60,
+    windowOnly: true,
     expectedWorkTypes: ['誘引・仕立て', '整枝'],
-    generalLine: 'ナスは整枝・摘葉で風通しを確保する時期です',
+    generalLine: 'ナスは、茂って風通しが悪ければ、整枝・摘葉をします',
     nextHint: '整枝・摘葉',
   },
   {
@@ -132,8 +113,9 @@ const EGGPLANT_STAGES: CropStage[] = [
     label: '定植・活着',
     fromDays: 0,
     toDays: 21,
+    windowOnly: true,
     expectedWorkTypes: ['植え付け'],
-    generalLine: 'ナスは定植後、活着を確認する時期です',
+    generalLine: 'ナスは、苗が根付いていれば活着しています。乾いていれば灌水をします',
     nextHint: '活着の確認',
   },
 ]
@@ -153,8 +135,9 @@ const CUCUMBER_STAGES: CropStage[] = [
     label: '定植・誘引',
     fromDays: 0,
     toDays: 21,
+    windowOnly: true,
     expectedWorkTypes: ['植え付け', '誘引・仕立て'],
-    generalLine: 'キュウリは定植のあと、誘引を始める時期です',
+    generalLine: 'キュウリは、定植していれば誘引を始めます',
     nextHint: '誘引',
   },
 ]
@@ -174,8 +157,9 @@ const PEPPER_STAGES: CropStage[] = [
     label: '定植',
     fromDays: 0,
     toDays: 21,
+    windowOnly: true,
     expectedWorkTypes: ['植え付け'],
-    generalLine: 'ピーマンは定植後の初期管理の時期です',
+    generalLine: 'ピーマンは、苗が根付いていれば初期の灌水と誘引をします',
     nextHint: '活着の確認',
   },
 ]
@@ -187,8 +171,9 @@ const POTATO_STAGES: CropStage[] = [
     label: '土寄せ',
     fromDays: 20,
     toDays: 45,
+    windowOnly: true,
     expectedWorkTypes: ['土寄せ'],
-    generalLine: 'ジャガイモは土寄せでイモの緑化を防ぐ時期です',
+    generalLine: 'ジャガイモは、茎が伸びていれば土寄せでイモの緑化を防ぎます',
     nextHint: '土寄せ',
   },
   {
@@ -196,8 +181,9 @@ const POTATO_STAGES: CropStage[] = [
     label: '植付け',
     fromDays: 0,
     toDays: 14,
+    windowOnly: true,
     expectedWorkTypes: ['植え付け'],
-    generalLine: 'ジャガイモは植付け直後です',
+    generalLine: 'ジャガイモは、植えたばかりなら萌芽を確認します',
     nextHint: '萌芽の確認',
   },
 ]

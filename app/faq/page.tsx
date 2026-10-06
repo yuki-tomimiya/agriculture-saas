@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
 import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
-import { CROP_STAGE_CATALOG, formatStageCondition } from '@/lib/proposals/stages'
+import { MILESTONE_SOURCE_AKITA, MILESTONE_SOURCE_CHIBA, milestoneFaqRows } from '@/lib/proposals/milestones'
 
 export default async function FAQPage() {
   const user = await getCurrentUser()
@@ -173,34 +173,54 @@ export default async function FAQPage() {
           <section id="stages" className="faq-section">
             <h2 className="faq-section-title">生育ステージとは？</h2>
             <p className="faq-section-text">
-              生育ステージは、植えてからの日数や積算温度で、今どの作業の時期かを見る目安です。
-              今日の提案の【一般】は、当てはまる段階があるときその文になります。ない品目は、月ごとのヒントのままです。
+              Tillto は、植えてからの日数で段階を決めません。教科書の作業判断は日数ではなく、
+              花が何段目まで咲いたか、試し掘りでどうだったか、で書かれているためです。作型や地域でも日数は変わります。
+            </p>
+            <p className="faq-section-text">
+              畑を見られないので、節目は本人に聞いて確かめます。聞くのは、答えで助言が変わるときだけです。
+              収穫を始めたかどうかのように、記録を見れば分かることは聞きません。
             </p>
             <p className="faq-section-note">
-              一般的な目安です。品種・地域・作型で変わります。
+              トマトの出典は、{MILESTONE_SOURCE_AKITA.publisher}「{MILESTONE_SOURCE_AKITA.name}」{MILESTONE_SOURCE_AKITA.detail}です。
+              {' '}
+              <a href={MILESTONE_SOURCE_AKITA.url} className="text-green-700 hover:underline">
+                {MILESTONE_SOURCE_AKITA.url}
+              </a>
+              さつまいもの出典は、{MILESTONE_SOURCE_CHIBA.publisher}「{MILESTONE_SOURCE_CHIBA.name}」（{MILESTONE_SOURCE_CHIBA.year}）です。
+              {' '}
+              <a href={MILESTONE_SOURCE_CHIBA.url} className="text-green-700 hover:underline">
+                {MILESTONE_SOURCE_CHIBA.url}
+              </a>
             </p>
             <div className="overflow-x-auto">
               <table className="gdd-reference-table">
                 <thead>
                   <tr>
                     <th>作物</th>
-                    <th>段階</th>
-                    <th>いつ</th>
+                    <th>聞くこと</th>
+                    <th>出典</th>
+                    <th>いつ聞くか</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {CROP_STAGE_CATALOG.flatMap((crop) =>
-                    crop.stages.map((stage) => (
-                      <tr key={`${crop.name}-${stage.key}`}>
-                        <td>{crop.name}</td>
-                        <td>{stage.label}</td>
-                        <td>{formatStageCondition(stage)}</td>
-                      </tr>
-                    ))
-                  )}
+                  {milestoneFaqRows().map((row) => (
+                    <tr key={`${row.crop}-${row.term}`}>
+                      <td>{row.crop}</td>
+                      <td>
+                        {row.question}
+                        <span className="block text-gray-500">（{row.term}）</span>
+                      </td>
+                      <td>{row.source}</td>
+                      <td>{row.windowNote}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
+            <p className="faq-section-note">
+              上の「いつ聞くか」の日数は暫定で、出典がありません。この日数で「今がその作業の時期です」とは言いません。
+              日数は、尋ねるかどうかの窓にだけ使います。記録があれば断定し、窓の外で記録がなければ「〜していれば」と条件つきで書きます。
+            </p>
           </section>
         </div>
       </main>

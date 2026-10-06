@@ -33,6 +33,15 @@ export type Proposal = {
   trigger?: string
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
   lines?: ProposalCropLine[]
+  milestone?: {
+    key: string
+    question: string
+    term: string
+    ifYes: string
+    sourceLabel: string
+    howTo: string[]
+    yesLabel: string
+  }
 }
 
 function getTodayStart(): Date {
@@ -98,6 +107,22 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
     take: 2,
   })
 
+  const taskCropIds = dueTasks
+    .map((task) => task.cropId)
+    .filter((id): id is string => !!id)
+  const taskMilestoneRows = taskCropIds.length
+    ? await prisma.cropMilestone.findMany({
+        where: { cropId: { in: taskCropIds } },
+        select: { cropId: true, key: true, observedAt: true },
+      })
+    : []
+  const milestonesByCrop = new Map<string, { key: string; observedAt: Date }[]>()
+  for (const row of taskMilestoneRows) {
+    const list = milestonesByCrop.get(row.cropId) ?? []
+    list.push({ key: row.key, observedAt: row.observedAt })
+    milestonesByCrop.set(row.cropId, list)
+  }
+
   for (const task of dueTasks) {
     const isOverdue = task.dueDate && new Date(task.dueDate) < todayStart
     const point = {
@@ -110,6 +135,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
       Promise.resolve(
         buildGeneralLayer(task.crop?.name, task.crop?.variety, {
           daysSincePlanting: daysSince(task.crop?.plantingDate ?? null),
+          milestones: task.cropId ? milestonesByCrop.get(task.cropId) : undefined,
         })
       ),
       buildPersonalLayerForTask({
@@ -165,6 +191,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
       trigger: card.trigger,
       action: card.action,
       lines: card.lines,
+      milestone: card.milestone,
     })
   }
 

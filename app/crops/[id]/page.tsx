@@ -4,6 +4,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import CropDeleteButton from '@/components/CropDeleteButton'
+import CropMilestones from '@/components/CropMilestones'
+import { milestoneFormItems } from '@/lib/proposals/milestones'
 import { formatDateShort } from '@/lib/utils'
 
 export default async function CropDetailPage({
@@ -20,6 +22,7 @@ export default async function CropDetailPage({
     farm: true,
     field: true,
     harvests: { orderBy: { date: 'desc' as const }, take: 20 },
+    milestones: { orderBy: { observedAt: 'asc' as const } },
     tasks: { orderBy: { dueDate: 'asc' as const } },
     _count: {
       select: {
@@ -150,6 +153,11 @@ export default async function CropDetailPage({
             )}
           </dl>
         </div>
+
+        <CropMilestones
+          cropId={crop.id}
+          items={milestoneFormItems(crop.name, crop.variety, crop.milestones)}
+        />
 
         {/* 収穫履歴 */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">

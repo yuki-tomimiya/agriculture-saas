@@ -28,7 +28,7 @@
 
 1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直してから出す
 2. 農場名「メイン➁」の文字替えと、雨の目安520mmを残すかは確認待ち
-3. 作物・農場・収穫・販売・タスクは1件ずつ削除できる。次は節目を聞くステージ。モバイルはその次
+3. トマトは第3花房、さつまいもは活着と試し掘りを聞いてから助言する。日数では断定しない。次はモバイル
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
 → 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**（Obsidian）
@@ -73,7 +73,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | 領域 | パス |
 |------|------|
-| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
+| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
 | 平年値 | `lib/weather-normals.ts`（生育ナビ、提案の地域層、来年の計画） |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準） |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
@@ -83,7 +83,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 生育ナビ | `app/gdd/`, `app/gdd/past/`, `components/GDDCropList.tsx`, `lib/gdd.ts` |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
-| 生育ステージ・防除間隔 | `lib/proposals/stages.ts`, `lib/benchmarks/spray-interval.ts` |
+| 生育の節目 | `lib/proposals/milestones.ts`, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。窓の日数は問いかけにだけ使う。防除間隔は `lib/benchmarks/spray-interval.ts` |
 | 削除 | 作物・農場は詳細、収穫・タスクも詳細、販売は一覧。各 `app/api/.../[id]` の DELETE。作物が残る農場は消せない |
 | 議事録 | `docs/議事録/minutes-content.json`, `generate-minutes.mjs` |
 

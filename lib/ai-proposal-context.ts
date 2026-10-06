@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { findCropBenchmark } from '@/lib/benchmarks/crops'
 import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
+import { formatMilestoneGeneral } from '@/lib/proposals/milestones'
 import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 
@@ -159,6 +160,16 @@ export function buildGeneralLayer(
   if (!cropName) return null
 
   if (progress) {
+    const fromMilestone = formatMilestoneGeneral({
+      cropName,
+      variety,
+      daysSincePlanting: progress.daysSincePlanting,
+      gddRatio: progress.gddRatio,
+      hasHarvest: progress.hasHarvest,
+      records: progress.milestones ?? [],
+      today: progress.today,
+    })
+    if (fromMilestone) return fromMilestone
     const stage = resolveCropStage(cropName, variety, progress)
     if (stage) return formatStageGeneralLine(stage)
   }

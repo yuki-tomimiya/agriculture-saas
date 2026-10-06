@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { PROPOSAL_DISMISS_DAYS, SEASON_FINISH_TRIGGER } from '@/lib/proposals/constants'
+import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 export { PROPOSAL_DISMISS_DAYS, SEASON_FINISH_DISMISS_DAYS, SEASON_FINISH_TRIGGER } from '@/lib/proposals/constants'
 
@@ -17,6 +18,11 @@ export async function listActiveDismissals(userId: string, now = new Date()) {
   })
 }
 
+/** 終了確認と節目の［まだ］は、そのカードだけを隠す。それ以外の1件は作付け全体を隠す */
+function hidesWholeCrop(trigger: string): boolean {
+  return trigger !== SEASON_FINISH_TRIGGER && !isMilestoneTrigger(trigger)
+}
+
 export function isProposalDismissed(
   rows: { trigger: string; cropId: string | null }[],
   trigger: string | undefined,
@@ -24,8 +30,9 @@ export function isProposalDismissed(
 ): boolean {
   if (cropId) {
     const cropRows = rows.filter((row) => row.cropId === cropId)
-    if (cropRows.some((row) => row.trigger !== SEASON_FINISH_TRIGGER)) return true
-    return trigger === SEASON_FINISH_TRIGGER && cropRows.some((row) => row.trigger === SEASON_FINISH_TRIGGER)
+    if (cropRows.some((row) => hidesWholeCrop(row.trigger))) return true
+    if (!trigger) return false
+    return cropRows.some((row) => row.trigger === trigger)
   }
   if (!trigger) return false
   return rows.some((row) => row.trigger === trigger && (row.cropId ?? null) === null)

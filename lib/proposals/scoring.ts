@@ -8,6 +8,7 @@ import {
   type ProposalLayers,
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
+import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { formatSprayInterval, matchedSprayInterval, sprayIntervalExceeded } from '@/lib/benchmarks/spray-interval'
@@ -48,6 +49,15 @@ export type ScoredProposal = {
   layers: ProposalLayers
   conclusion: string
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
+  milestone?: {
+    key: string
+    question: string
+    term: string
+    ifYes: string
+    sourceLabel: string
+    howTo: string[]
+    yesLabel: string
+  }
 }
 
 type Hit = {
@@ -157,6 +167,47 @@ function groupRegionalText(head: ScoredProposal, list: ScoredProposal[]): string
   return base ? `${base} ${note}` : `農場ごとに異なります（${farms.join('、')}）。`
 }
 
+/** 節目は作物名が違っても、同じ質問なら1枚。1件のときはまとめない */
+function groupMilestoneCards(cards: ScoredProposal[]): ScoredProposal[] {
+  const buckets = new Map<string, ScoredProposal[]>()
+  for (const card of cards) {
+    const list = buckets.get(card.trigger) ?? []
+    list.push(card)
+    buckets.set(card.trigger, list)
+  }
+  const grouped: ScoredProposal[] = []
+  for (const list of buckets.values()) {
+    if (list.length < 2) {
+      grouped.push(list[0])
+      continue
+    }
+    const head = list[0]
+    grouped.push({
+      ...head,
+      id: `group-${head.trigger}`,
+      title: `${head.title}（${list.length}件）`,
+      cropId: undefined,
+      cropName: undefined,
+      farmId: undefined,
+      farmName: undefined,
+      daysSincePlanting: undefined,
+      lines: list.map((card) => ({
+        cropId: card.cropId!,
+        cropName: card.cropName!,
+        variety: card.variety ?? null,
+        farmId: card.farmId,
+        farmName: card.farmName,
+        daysSincePlanting: card.daysSincePlanting,
+        currentGDD: card.currentGDD ?? null,
+        targetGDD: card.targetGDD ?? 0,
+        targetCaption: card.targetCaption,
+        action: card.action,
+      })),
+    })
+  }
+  return grouped
+}
+
 function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
   const alone: ScoredProposal[] = []
   const buckets = new Map<string, ScoredProposal[]>()
@@ -233,6 +284,7 @@ export async function scoreGrowingCrops(
       workRecords: { select: { date: true, taskType: true } },
       harvests: { select: { id: true } },
       sales: { select: { id: true } },
+      milestones: { select: { key: true, observedAt: true } },
     },
     orderBy: { plantingDate: 'desc' },
   })
@@ -286,6 +338,7 @@ export async function scoreGrowingCrops(
   )
 
   const cards: ScoredProposal[] = []
+  const milestoneCards: ScoredProposal[] = []
 
   for (const { crop, currentGDD } of measured) {
     const days = daysSince(crop.plantingDate, today)
@@ -327,17 +380,34 @@ export async function scoreGrowingCrops(
         action: { kind: 'work', taskType: '収穫', title: `${crop.name}の収穫` },
       })
     } else if (!hasHarvest && gddRatio != null && gddRatio >= 0.9) {
-      hits.push({
-        trigger: 'harvest-window',
-        urgency: 'thisWeek',
-        score: 80,
-        title: '試し掘りの時期です',
-        conclusion: '肥大を確認し、問題があれば収穫を前倒ししましょう。',
-        action: { kind: 'work', taskType: '試し掘り', title: `${crop.name}の試し掘り` },
-      })
+      const waitingForTestDig = crop.milestones.every((row) => row.key !== 'test-dig')
+      const sweetPotatoAsk =
+        waitingForTestDig &&
+        pickMilestoneAsk({
+          cropName: crop.name,
+          variety: crop.variety,
+          daysSincePlanting: days,
+          gddRatio,
+          hasHarvest,
+          records: crop.milestones,
+        })?.key === 'test-dig'
+      if (!sweetPotatoAsk) {
+        hits.push({
+          trigger: 'harvest-window',
+          urgency: 'thisWeek',
+          score: 80,
+          title: '収穫の目安に近づいています',
+          conclusion: '試し掘りで太りを見て、問題があれば収穫を前倒ししましょう。',
+          action: { kind: 'work', taskType: '試し掘り', title: `${crop.name}の試し掘り` },
+        })
+      }
     }
 
-    if (stage && !stage.expectedWorkTypes.some((expected) => workCovers(taskTypes, expected, hasHarvest))) {
+    if (
+      stage &&
+      !stage.windowOnly &&
+      !stage.expectedWorkTypes.some((expected) => workCovers(taskTypes, expected, hasHarvest))
+    ) {
       const early = stage.key === 'rooting' || stage.key === 'harvest'
       hits.push({
         trigger: 'stage-work-gap',
@@ -397,9 +467,52 @@ export async function scoreGrowingCrops(
     const best = pickHit(
       hits.filter((hit) => !isProposalDismissed(dismissed, hit.trigger, crop.id))
     )
+    const farmName = crop.farm?.name ?? '農場未設定'
+    const hiddenKeys = dismissed
+      .filter((row) => row.cropId === crop.id && isMilestoneTrigger(row.trigger))
+      .map((row) => row.trigger.slice('milestone:'.length))
+    const ask = pickMilestoneAsk({
+      cropName: crop.name,
+      variety: crop.variety,
+      daysSincePlanting: days,
+      gddRatio,
+      hasHarvest,
+      records: crop.milestones,
+      hiddenKeys,
+    })
+    if (ask && !isProposalDismissed(dismissed, ask.trigger, crop.id)) {
+      milestoneCards.push({
+        id: `${ask.trigger}-${crop.id}`,
+        urgency: 'today',
+        score: 1,
+        trigger: ask.trigger,
+        title: ask.question,
+        cropId: crop.id,
+        cropName: crop.name,
+        farmId: crop.farmId ?? undefined,
+        farmName,
+        daysSincePlanting: days,
+        variety: crop.variety,
+        conclusion: ask.ifYes,
+        milestone: {
+          key: ask.key,
+          question: ask.question,
+          term: ask.term,
+          ifYes: ask.ifYes,
+          sourceLabel: ask.sourceLabel,
+          howTo: ask.howTo,
+          yesLabel: ask.yesLabel,
+        },
+        layers: mergeLayers({
+          personal: null,
+          regional: null,
+          general: ask.ifYes,
+          conclusion: ask.ifYes,
+        }),
+      })
+    }
     if (!best) continue
 
-    const farmName = crop.farm?.name ?? '農場未設定'
     const regional =
       (crop.farmId ? regionalByFarm.get(crop.farmId) : undefined) ?? fallbackRegional
     const [personal, general] = await Promise.all([
@@ -417,6 +530,8 @@ export async function scoreGrowingCrops(
           daysSincePlanting: days,
           gddRatio,
           hasHarvest,
+          milestones: crop.milestones,
+          today,
         })
       ),
     ])
@@ -651,7 +766,7 @@ export async function scoreGrowingCrops(
   }
 
   const otherCards = cards.filter((card) => card.trigger !== 'soil-ph' && card.trigger !== 'spray-interval')
-  return [...groupSameSignal(otherCards), ...soilCards, ...sprayCards].sort(
+  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...soilCards, ...sprayCards].sort(
     (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
   )
 }

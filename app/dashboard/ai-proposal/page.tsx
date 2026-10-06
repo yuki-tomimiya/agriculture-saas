@@ -6,6 +6,8 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import ProposalDismissButton from './ProposalDismissButton'
 import ProposalSeasonActions from './ProposalSeasonActions'
+import MilestoneAskActions from './MilestoneAskActions'
+import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 const typeLabel: Record<ProposalType, string> = {
   task_due: 'タスク',
@@ -40,11 +42,59 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
               <div className="ai-proposal-card-inner">
                 <span className="ai-proposal-card-icon">{typeIcon[p.type]}</span>
                 <div className="ai-proposal-card-body">
-                  <span className="ai-proposal-card-type">{typeLabel[p.type]}</span>
+                  <span className="ai-proposal-card-type">{p.milestone ? '節目' : typeLabel[p.type]}</span>
                   <h3 className="ai-proposal-card-title">{p.title}</h3>
                   {!(p.lines && p.lines.length > 1) && <ProposalMeta proposal={p} />}
-                  <ProposalLayersBlock layers={p.layers} />
-                  {p.lines && p.lines.length > 1 && p.trigger !== 'soil-ph' ? (
+                  {p.milestone && p.lines && p.lines.length > 1 && p.trigger ? (
+                    <div className="ai-proposal-milestone">
+                      <p className="ai-proposal-milestone-term">（{p.milestone.term}）</p>
+                      <p className="ai-proposal-milestone-advice">{p.milestone.ifYes}</p>
+                      {p.milestone.howTo.length > 0 && (
+                        <ul className="ai-proposal-howto">
+                          {p.milestone.howTo.map((line) => (
+                            <li key={line}>{line}</li>
+                          ))}
+                        </ul>
+                      )}
+                      <p className="ai-proposal-milestone-source">出典: {p.milestone.sourceLabel}</p>
+                      <ul className="ai-proposal-lines">
+                        {p.lines.map((line) => (
+                          <li key={line.cropId} className="ai-proposal-line">
+                            <span>
+                              {line.cropName}
+                              {line.farmName ? ` · ${line.farmName}` : ''}
+                              {line.daysSincePlanting != null ? ` · 植付から${line.daysSincePlanting}日` : ''}
+                            </span>
+                            <MilestoneAskActions
+                              cropId={line.cropId}
+                              milestoneKey={p.milestone!.key}
+                              trigger={p.trigger!}
+                              term={p.milestone!.term}
+                              ifYes={p.milestone!.ifYes}
+                              sourceLabel={p.milestone!.sourceLabel}
+                              howTo={p.milestone!.howTo}
+                              yesLabel={p.milestone!.yesLabel}
+                              variant="row"
+                            />
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : p.milestone && p.relatedCropId && p.trigger ? (
+                    <MilestoneAskActions
+                      cropId={p.relatedCropId}
+                      milestoneKey={p.milestone.key}
+                      trigger={p.trigger}
+                      term={p.milestone.term}
+                      ifYes={p.milestone.ifYes}
+                      sourceLabel={p.milestone.sourceLabel}
+                      howTo={p.milestone.howTo}
+                      yesLabel={p.milestone.yesLabel}
+                    />
+                  ) : (
+                    <ProposalLayersBlock layers={p.layers} />
+                  )}
+                  {p.milestone ? null : p.lines && p.lines.length > 1 && p.trigger !== 'soil-ph' ? (
                     <ul className="ai-proposal-lines">
                       {p.lines.map((line) => (
                         <li key={line.cropId} className="ai-proposal-line">
@@ -110,7 +160,7 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                       )}
                     </div>
                   )}
-                  {p.trigger && p.trigger !== 'season-finish' && (
+                  {p.trigger && p.trigger !== 'season-finish' && !p.milestone && (
                     <div className="ai-proposal-actions">
                       <ProposalDismissButton
                         trigger={p.trigger}
@@ -213,9 +263,10 @@ export default async function AiProposalPage() {
   if (!user) redirect('/auth/signin')
 
   const proposals = await getTodayProposals(user.id)
-  const confirmItems = proposals.filter((item) => item.trigger === 'season-finish')
-  const todayItems = proposals.filter((item) => item.urgency === 'today' && item.trigger !== 'season-finish')
-  const weekItems = proposals.filter((item) => item.urgency === 'thisWeek' && item.trigger !== 'season-finish')
+  const isConfirm = (trigger?: string) => trigger === 'season-finish' || isMilestoneTrigger(trigger)
+  const confirmItems = proposals.filter((item) => isConfirm(item.trigger))
+  const todayItems = proposals.filter((item) => item.urgency === 'today' && !isConfirm(item.trigger))
+  const weekItems = proposals.filter((item) => item.urgency === 'thisWeek' && !isConfirm(item.trigger))
   const watchCount = proposals.filter((item) => item.urgency === 'watch').length
   const visible = todayItems.length + weekItems.length + confirmItems.length
 
