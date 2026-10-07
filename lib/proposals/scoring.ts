@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma'
 import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
+  forecastAvgByYmd,
+  formatHarvestWindow,
+  projectHarvestWindow,
+} from '@/lib/insights/harvest-date-window'
+import {
   buildGeneralLayer,
   buildPersonalLayerForCrop,
   buildRegionalLayer,
@@ -14,7 +19,7 @@ import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { formatSprayInterval, matchedSprayInterval, sprayIntervalExceeded } from '@/lib/benchmarks/spray-interval'
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
-import { getLocationDailyNormals, type DayNormal } from '@/lib/weather-normals'
+import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
 import { getLocationFirstFrost, type FirstFrostSummary } from '@/lib/weather-frost'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
@@ -383,7 +388,7 @@ export async function scoreGrowingCrops(
     {
       frost: FirstFrostSummary | null
       forecast: Awaited<ReturnType<typeof getForecastDays>>
-      normals: Map<string, DayNormal> | null
+      archive: LocationArchive | null
     }
   >()
   const regionalEntries = await Promise.all(
@@ -392,7 +397,7 @@ export async function scoreGrowingCrops(
         latitude: Number(farm.latitude),
         longitude: Number(farm.longitude),
       }
-      const [text, frost, forecast, normals] = await Promise.all([
+      const [text, frost, forecast, archive] = await Promise.all([
         buildRegionalLayer({
           latitude: farm.latitude,
           longitude: farm.longitude,
@@ -400,9 +405,9 @@ export async function scoreGrowingCrops(
         }),
         getLocationFirstFrost(point),
         getForecastDays(point),
-        getLocationDailyNormals(point),
+        loadLocationArchive(point),
       ])
-      climateByFarm.set(farm.id, { frost, forecast, normals })
+      climateByFarm.set(farm.id, { frost, forecast, archive })
       return [farm.id, text] as const
     })
   )
@@ -443,6 +448,23 @@ export async function scoreGrowingCrops(
     const basis = pickHarvestBasis(harvestSamples, crop.name, crop.variety)
     const targetGDD = basis.gdd
     const gddRatio = currentGDD != null && targetGDD > 0 ? currentGDD / targetGDD : null
+    const climate = crop.farmId ? climateByFarm.get(crop.farmId) : undefined
+    const harvestWindowReady = Boolean(climate?.archive && currentGDD != null && targetGDD > 0)
+    const harvestWindow = harvestWindowReady
+      ? projectHarvestWindow({
+          today,
+          currentGdd: currentGDD ?? 0,
+          targetGdd: targetGDD,
+          baseTemp: crop.baseTemperature ?? 10,
+          archive: climate!.archive!,
+          forecastByYmd: forecastAvgByYmd(climate!.forecast),
+        })
+      : null
+    const windowSentence = harvestWindow
+      ? `収穫の目安に届くのは${formatHarvestWindow(harvestWindow, {
+          provisional: basis.source === 'provisional',
+        })}。`
+      : ''
     const stage = resolveCropStage(crop.name, crop.variety, {
       daysSincePlanting: days,
       gddRatio,
@@ -493,7 +515,7 @@ export async function scoreGrowingCrops(
           urgency: 'thisWeek',
           score: 80,
           title: '収穫の目安に近づいています',
-          conclusion: '試し掘りで太りを見て、問題があれば収穫を前倒ししましょう。',
+          conclusion: `試し掘りで太りを見て、問題があれば収穫を前倒ししましょう。${windowSentence}`,
           action: { kind: 'work', taskType: '試し掘り', title: `${crop.name}の試し掘り` },
         })
       }
@@ -576,7 +598,6 @@ export async function scoreGrowingCrops(
       records: crop.milestones,
       hiddenKeys,
     })
-    const climate = crop.farmId ? climateByFarm.get(crop.farmId) : undefined
     const hasSeenRoots = hasHarvest || crop.milestones.some((row) => row.key === 'test-dig')
     const frost: SweetPotatoFrost | null =
       climate && isSweetPotatoCrop(crop.name, crop.variety)
@@ -586,13 +607,19 @@ export async function scoreGrowingCrops(
             firstFrost: climate.frost,
             currentGdd: currentGDD,
             targetGdd: targetGDD,
-            baseTemp: crop.baseTemperature ?? 10,
-            normals: climate.normals,
             hasSeenRoots,
+            harvestWindow,
+            harvestWindowReady,
           })
         : null
     if (frost && !isProposalDismissed(dismissed, frost.trigger, crop.id)) {
-      frostNoteByCrop.set(crop.id, frost.generalLine)
+      const mentionsTarget = frost.conclusion.includes('収穫の目安') || frost.title.includes('届かない')
+      const provisionalNote =
+        basis.source === 'provisional' && mentionsTarget
+          ? '目安が暫定のため、これより大きくずれることがあります。'
+          : ''
+      const frostConclusion = `${frost.conclusion}${provisionalNote}`
+      frostNoteByCrop.set(crop.id, `${frost.generalLine}${provisionalNote}`)
       const withinWeek = frost.urgency === 'today'
       frostCards.push({
         id: `${frost.trigger}-${crop.id}`,
@@ -609,13 +636,13 @@ export async function scoreGrowingCrops(
         currentGDD,
         targetGDD,
         targetCaption: basis.summary,
-        conclusion: frost.conclusion,
+        conclusion: frostConclusion,
         action: { kind: 'work', taskType: '収穫', title: `${crop.name}を霜の前に掘り上げる` },
         layers: mergeLayers({
           personal: `${crop.name}は栽培中です（${farmName}）。`,
           regional: null,
           general: frost.sourceLine,
-          conclusion: frost.conclusion,
+          conclusion: frostConclusion,
         }),
       })
     }

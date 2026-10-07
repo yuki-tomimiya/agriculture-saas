@@ -30,7 +30,8 @@ export function computeGDDProjection(
   currentGDD: number,
   baseTemp: number,
   forecastDailyTemps: { date: Date; avgTemp: number }[],
-  targetGDD: number = DEFAULT_TARGET_GDD
+  targetGDD: number = DEFAULT_TARGET_GDD,
+  options?: { harvestWindowText?: string | null; seasonUnreachable?: boolean }
 ): GDDProjectionResult {
   let cumulative = currentGDD
   const dailyProjections: GDDProjectionResult['dailyProjections'] = []
@@ -60,6 +61,8 @@ export function computeGDDProjection(
     daysToTarget,
     endCumulativeGDD,
     baseTemp,
+    harvestWindowText: options?.harvestWindowText,
+    seasonUnreachable: options?.seasonUnreachable,
   })
 
   return {
@@ -78,9 +81,24 @@ function buildSuggestions(args: {
   daysToTarget: number | null
   endCumulativeGDD: number
   baseTemp: number
+  harvestWindowText?: string | null
+  seasonUnreachable?: boolean
 }): string[] {
-  const { currentGDD, targetGDD, targetReachDate, daysToTarget, endCumulativeGDD } = args
+  const { currentGDD, targetGDD, targetReachDate, daysToTarget, endCumulativeGDD, harvestWindowText, seasonUnreachable } = args
   const list: string[] = []
+
+  if (harvestWindowText) {
+    list.push(`収穫の目安に届くのは${harvestWindowText}。`)
+    return list
+  }
+  if (currentGDD >= targetGDD) {
+    list.push('収穫の目安には、すでに届いています。')
+    return list
+  }
+  if (seasonUnreachable) {
+    list.push('今季は、収穫の目安に届かない見込みです。')
+    return list
+  }
 
   if (targetReachDate && daysToTarget != null) {
     const dateStr = targetReachDate.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })

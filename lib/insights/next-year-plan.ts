@@ -1,8 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
-import { getLocationDailyNormals, sumNormalGdd, type DayNormal } from '@/lib/weather-normals'
+import { getLocationDailyNormals, loadLocationArchive, sumNormalGdd, type DayNormal } from '@/lib/weather-normals'
 import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
+import { formatHarvestWindow, projectHarvestWindow } from '@/lib/insights/harvest-date-window'
 import {
   chosenHarvestSamples,
   loadHarvestSamples,
@@ -43,6 +44,10 @@ export type NextYearPlanCard = {
   /** 日付の出し方。adjusted は平年換算、season-days は栽培日数 */
   forecastKind: 'adjusted' | 'season-days' | 'provisional' | 'actual' | 'none'
   adjustNote: string | null
+  /** 平年換算した℃日は変えない。日付だけ、年ごとの幅で出す */
+  windowLabel: string | null
+  windowEarly: Date | null
+  windowLate: Date | null
   workHints: PlanWorkHint[]
   workCount: number
 }
@@ -198,6 +203,15 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
     normalCache.set(key, pending)
     return pending
   }
+  const archiveCache = new Map<string, ReturnType<typeof loadLocationArchive>>()
+  const archiveFor = (latitude: number, longitude: number) => {
+    const key = `${latitude.toFixed(4)},${longitude.toFixed(4)}`
+    const existing = archiveCache.get(key)
+    if (existing) return existing
+    const pending = loadLocationArchive({ latitude, longitude })
+    archiveCache.set(key, pending)
+    return pending
+  }
 
   const today = new Date()
   const harvestSamples = await loadHarvestSamples(userId)
@@ -234,6 +248,10 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       let normalNote: string | null = null
       let forecastKind: NextYearPlanCard['forecastKind'] = 'none'
       let adjustNote: string | null = null
+      let windowLabel: string | null = null
+      let windowEarly: Date | null = null
+      let windowLate: Date | null = null
+      let windowAdjustNote: string | null = null
       let seasonDayFallback: number | null = seasonDays
       if (!crop.plantingDate) {
         normalStatus = 'no-date'
@@ -256,6 +274,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
               walkTarget = adjusted.gdd
               seasonDayFallback = adjusted.avgDays
               adjustNote = adjusted.note
+              windowAdjustNote = adjusted.note
             }
           }
           const reach = daysToTargetGdd({
@@ -287,6 +306,23 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
           } else {
             normalStatus = 'unreachable'
             normalNote = '10年平均の気温は取れましたが、400日以内にこの基準の積算温度へ届きません。'
+          }
+          const archive = await archiveFor(Number(point.latitude), Number(point.longitude))
+          if (archive) {
+            const window = projectHarvestWindow({
+              today: plantOn,
+              currentGdd: 0,
+              targetGdd: walkTarget,
+              baseTemp,
+              archive,
+              includeToday: true,
+            })
+            if (window) {
+              windowLabel = formatHarvestWindow(window, { provisional: basis.source === 'provisional' })
+              windowEarly = window.early
+              windowLate = window.late
+              if (forecastKind === 'season-days' && windowAdjustNote) adjustNote = windowAdjustNote
+            }
           }
         }
       }
@@ -345,6 +381,9 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         normalNote,
         forecastKind,
         adjustNote,
+        windowLabel,
+        windowEarly,
+        windowLate,
         workHints,
         workCount: crop.workRecords.length,
       }

@@ -1,6 +1,6 @@
 import { normalizeCropNameForMatch } from '@/lib/benchmarks/crops'
+import { formatHarvestWindow, type HarvestDateWindow } from '@/lib/insights/harvest-date-window'
 import { MILESTONE_SOURCE_CHIBA } from '@/lib/proposals/milestones'
-import type { DayNormal } from '@/lib/weather-normals'
 import type { ForecastDay } from '@/lib/weather-forecast'
 import {
   FROST_RISK_MAX_C,
@@ -68,39 +68,6 @@ function forecastConclusion(hasSeenRoots: boolean): string {
     : '霜のおそれがあるので、まず試し掘りで太りを確かめて、その前に掘り上げましょう。'
 }
 
-/**
- * 今日の積算温度は endDate に今日を含む。見込みは明日から、今年の12月31日までに平年を足す。
- * 翌年の夏まで足すと、北海道では「7月3日ごろ」のように今季と関係のない日になる。
- * 年内に届かないときは null。
- */
-export function projectHarvestDate(args: {
-  today: Date
-  currentGdd: number
-  targetGdd: number
-  baseTemp: number
-  normals: Map<string, DayNormal>
-}): Date | null {
-  const today = new Date(args.today)
-  today.setHours(12, 0, 0, 0)
-  if (args.currentGdd >= args.targetGdd) return today
-  const seasonEnd = new Date(today.getFullYear(), 11, 31, 12, 0, 0, 0)
-  let heat = args.currentGdd
-  const cursor = new Date(today)
-  cursor.setDate(cursor.getDate() + 1)
-  while (cursor <= seasonEnd) {
-    let month = cursor.getMonth() + 1
-    let day = cursor.getDate()
-    if (month === 2 && day === 29) day = 28
-    const row = args.normals.get(`${month}-${day}`)
-    if (row && Number.isFinite(row.tempMean)) {
-      heat += Math.max(0, row.tempMean - args.baseTemp)
-    }
-    if (heat >= args.targetGdd) return new Date(cursor)
-    cursor.setDate(cursor.getDate() + 1)
-  }
-  return null
-}
-
 function frostWhen(frost: FirstFrostSummary): string {
   const early = formatMonthDay(frost.earliest)
   if (frost.years < FROST_ARCHIVE_YEARS) {
@@ -119,9 +86,11 @@ export function assessSweetPotatoFrost(args: {
   firstFrost: FirstFrostSummary | null
   currentGdd: number | null
   targetGdd: number
-  baseTemp: number
-  normals: Map<string, DayNormal> | null
   hasSeenRoots: boolean
+  /** 年ごとの気温で出した幅。null は年内に届いた年が0 */
+  harvestWindow: HarvestDateWindow | null
+  /** false のときは季節のカードを出さない（年ごとの気温が無い） */
+  harvestWindowReady: boolean
 }): SweetPotatoFrost | null {
   const upcoming = args.forecast.find((day) => day.minTemp <= FROST_RISK_MAX_C)
   if (upcoming) {
@@ -139,18 +108,12 @@ export function assessSweetPotatoFrost(args: {
   }
 
   const frost = args.firstFrost
-  if (!frost || args.currentGdd == null || !args.normals || args.targetGdd <= 0) return null
+  if (!frost || args.currentGdd == null || !args.harvestWindowReady || args.targetGdd <= 0) return null
   if (daysUntilMonthDay(args.today, frost.earliest) > SEASON_LEAD_DAYS) return null
-  const projected = projectHarvestDate({
-    today: args.today,
-    currentGdd: args.currentGdd,
-    targetGdd: args.targetGdd,
-    baseTemp: args.baseTemp,
-    normals: args.normals,
-  })
   const when = frostWhen(frost)
   const action = digLine(args.hasSeenRoots)
-  if (!projected) {
+  const window = args.harvestWindow
+  if (!window) {
     return {
       trigger: FROST_SEASON_TRIGGER,
       urgency: 'thisWeek',
@@ -160,15 +123,16 @@ export function assessSweetPotatoFrost(args: {
       sourceLine: sourceLine(),
     }
   }
-  if (projected.getTime() <= earliestDateThisYear(args.today, frost).getTime()) return null
+  if (window.late.getTime() <= earliestDateThisYear(args.today, frost).getTime()) return null
 
-  const arrival = `${projected.getMonth() + 1}月${projected.getDate()}日`
+  const span = formatHarvestWindow(window)
+  const after = args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'
   return {
     trigger: FROST_SEASON_TRIGGER,
     urgency: 'thisWeek',
     title: when,
-    conclusion: `収穫の目安に届く見込み（${arrival}ごろ）より、霜が先になる年があります。${action}。`,
-    generalLine: `${when}。収穫の目安に届く見込み（${arrival}ごろ）より、霜が先になる年があります。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。`,
+    conclusion: `収穫の目安に届くのは${span}。それより、霜が先になる年があります。${action}。`,
+    generalLine: `${when}。収穫の目安に届くのは${span}。それより、霜が先になる年があります。${after}。`,
     sourceLine: sourceLine(),
   }
 }

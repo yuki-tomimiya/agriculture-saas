@@ -31,6 +31,7 @@ export default async function FAQPage() {
               <li><a href="#gdd">積算温度（GDD）とは？</a></li>
               <li><a href="#base-temp">基準温度とは？</a></li>
               <li><a href="#normals">10年平均（推計）とは？</a></li>
+              <li><a href="#harvest-window">収穫の見込みの幅とは？</a></li>
               <li><a href="#radiation">日射量（MJ/㎡）とは？</a></li>
               <li><a href="#gdd-reference">主な作物の積算温度の目安</a></li>
               <li><a href="#soil-ph">適正pHとは？</a></li>
@@ -83,6 +84,25 @@ export default async function FAQPage() {
             <p className="faq-section-text">
               生育ナビの折れ線は、植え付け日からの10年平均の積算です。
               今日の提案の地域の文は、今月の降水量を、同じ日数の10年平均と比べます。昨年の値は、参考として添えます。
+            </p>
+          </section>
+
+          <section id="harvest-window" className="faq-section">
+            <h2 className="faq-section-title">収穫の見込みの幅とは？</h2>
+            <p className="faq-section-text">
+              収穫の見込みは、1つの日付では言い切りません。今日までの積算温度に、過去10年それぞれの気温を足して、目安に届く日を年ごとに出します。いちばん早い年と遅い年を1つずつ除いた範囲を、「9月26日〜9月30日」のように出します。10年すべて届くときは「10年中8年がこの間」です。
+            </p>
+            <p className="faq-section-text">
+              先の日付ほど幅は広く、収穫が近づくほど狭くなります。年ごとの気温の振れを、そのまま幅にしています。
+            </p>
+            <p className="faq-section-text">
+              明日から14日先までは、その年の過去の気温ではなく、いまの予報の平均気温を足します。15日目以降は、その年の同じ月日の気温です。年内に届かない年は、幅に入れません。1年も届かないときは「今季は、収穫の目安に届かない見込みです」と出します。
+            </p>
+            <p className="faq-section-text">
+              目安が暫定のときは、この幅より大きくずれることがあります。そのときは「目安が暫定のため、これより大きくずれることがあります」と添えます。
+            </p>
+            <p className="faq-section-text">
+              気温は推計です。くわしくは<a href="#normals" className="faq-link">10年平均（推計）とは？</a>
             </p>
           </section>
 

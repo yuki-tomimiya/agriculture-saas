@@ -13,7 +13,12 @@ import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDail
 import { computeGDDProjection } from '@/lib/gdd'
 import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
-import { accumulateNormals, getLocationDailyNormals } from '@/lib/weather-normals'
+import { accumulateNormals, getLocationDailyNormals, loadLocationArchive } from '@/lib/weather-normals'
+import {
+  forecastAvgByDate,
+  formatHarvestWindow,
+  projectHarvestWindow,
+} from '@/lib/insights/harvest-date-window'
 
 export default async function GDDPage({
   searchParams,
@@ -126,13 +131,13 @@ export default async function GDDPage({
     ? pickHarvestBasis(harvestSamples, selectedCrop.name, selectedCrop.variety)
     : null
   const targetGDD = harvestBasis?.gdd ?? 1000
-  const normalTable =
-    canFetchWeather
-      ? await getLocationDailyNormals({
-          latitude: Number(point.latitude),
-          longitude: Number(point.longitude),
-        })
-      : undefined
+  const weatherPoint = canFetchWeather
+    ? { latitude: Number(point.latitude), longitude: Number(point.longitude) }
+    : null
+  const [normalTable, archive] = await Promise.all([
+    weatherPoint ? getLocationDailyNormals(weatherPoint) : Promise.resolve(undefined),
+    weatherPoint ? loadLocationArchive(weatherPoint) : Promise.resolve(null),
+  ])
   const normalSeries =
     normalTable && selectedCrop?.plantingDate
       ? accumulateNormals({
@@ -146,13 +151,32 @@ export default async function GDDPage({
     selectedCrop?.plantingDate != null
       ? Math.floor((today.getTime() - new Date(selectedCrop.plantingDate).getTime()) / (24 * 60 * 60 * 1000))
       : 0
+  const provisionalTarget = harvestBasis?.source === 'provisional'
+  const harvestWindow =
+    archive && selectedCrop?.plantingDate && targetGDD > 0
+      ? projectHarvestWindow({
+          today,
+          currentGdd: currentGDD,
+          targetGdd: targetGDD,
+          baseTemp,
+          archive,
+          forecastByYmd: forecastAvgByDate(forecastTemps),
+        })
+      : null
   const projection =
     selectedCrop && selectedCrop.plantingDate && canFetchWeather
       ? computeGDDProjection(
           currentGDD,
           baseTemp,
           forecastTemps,
-          targetGDD
+          targetGDD,
+          {
+            harvestWindowText:
+              harvestWindow && currentGDD < targetGDD
+                ? formatHarvestWindow(harvestWindow, { provisional: provisionalTarget })
+                : null,
+            seasonUnreachable: Boolean(archive) && !harvestWindow && currentGDD < targetGDD,
+          }
         )
       : null
   const heavyRainDays = forecastRainfall.filter((d) => d.precipitationMm >= 20)
@@ -264,6 +288,11 @@ export default async function GDDPage({
             lastYearLabel={lastYearShortLabel}
             normalGddByDay={canFetchWeather ? normalSeries?.gdd ?? null : undefined}
           />
+          {projection?.suggestions[0] ? (
+            <p className="dashboard-gdd-summary-text">
+              {projection.suggestions[0].replace(/<\/?strong>/g, '')}
+            </p>
+          ) : null}
 
           {selectedCrop && canFetchWeather && (
             <RainfallDataCard

@@ -30,6 +30,7 @@
 - 起動: `npm run dev`（http://localhost:3000）または `アプリを起動.bat`
 - DB: `npx prisma migrate dev` / `npx prisma generate`
 - 議事録Word再生成: `node docs/議事録/generate-minutes.mjs`
+- **開発サーバーが動いているあいだに `npm run build` を実行しない**。開発用のキャッシュ（`.next`）が上書きされ、画面の見た目（CSS）が読み込まれなくなる。型の確認は `npx tsc --noEmit` で行う。もし崩れたら、サーバーを止めて `.next` を消し、起動し直す（2026-10-07 に発生）
 
 ## ドキュメント更新ルール（重要・指示がなくても自律的に行う）
 

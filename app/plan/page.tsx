@@ -73,8 +73,26 @@ export default async function NextYearPlanPage() {
                   : '収量は記録なし',
                 plan.salesRecorded ? `売上 ${formatYen(plan.salesAmount ?? 0)}` : '売上は記録なし',
               ].join('。')
-              const conclusion =
-                plan.forecastKind === 'season-days' && plan.nextPlantingDate && plan.normalHarvestDate && plan.normalDays !== null
+              const conclusion = plan.nextPlantingDate && plan.windowLabel
+                ? `来年も${formatYearMonthDay(plan.nextPlantingDate)}に植えると、${
+                    plan.basis.source === 'provisional'
+                      ? '一般の目安（暫定）までなら'
+                      : plan.adjustNote
+                        ? '10年平均に引き直した積算温度までなら'
+                        : '過去の収穫と同じ積算温度までなら'
+                  }、${plan.windowLabel}です。${
+                    plan.seasonDays !== null ? `この作付けは植付から${plan.seasonDays}日で収穫しています。` : ''
+                  }${
+                    plan.forecastKind !== 'season-days' &&
+                    plan.normalHarvestDate &&
+                    plan.windowEarly &&
+                    plan.windowLate &&
+                    plan.normalHarvestDate.getTime() >= plan.windowEarly.getTime() &&
+                    plan.normalHarvestDate.getTime() <= plan.windowLate.getTime()
+                      ? `10年平均の1本の線では${formatYearMonthDay(plan.normalHarvestDate)}ごろです。`
+                      : ''
+                  }`
+                : plan.forecastKind === 'season-days' && plan.nextPlantingDate && plan.normalHarvestDate && plan.normalDays !== null
                   ? `来年も${formatYearMonthDay(plan.nextPlantingDate)}に植えると、10年平均の気温では同じ積算温度に季節内では届きません。これまでの栽培日数（平均${plan.normalDays}日）で見ると、${formatYearMonthDay(plan.normalHarvestDate)}ごろです。`
                   : plan.nextPlantingDate && plan.normalHarvestDate && plan.normalDays !== null
                     ? `来年も${formatYearMonthDay(plan.nextPlantingDate)}に植えると、${
@@ -99,7 +117,9 @@ export default async function NextYearPlanPage() {
                   </p>
                   <p className="insights-regional-text">
                     <span className="insights-layer-tag">地域</span>
-                    {plan.forecastKind === 'season-days' || plan.normalStatus === 'unreachable'
+                    {plan.windowLabel
+                      ? `この農場の過去10年それぞれの気温を、植付日から足しています。基準温度は${plan.baseTemp}℃です。`
+                      : plan.forecastKind === 'season-days' || plan.normalStatus === 'unreachable'
                       ? `10年平均の気温は取れています。基準温度は${plan.baseTemp}℃です。`
                       : plan.normalStatus === 'reached'
                         ? `この農場の過去10年の日平均気温を、植付日から足しています。基準温度は${plan.baseTemp}℃です。`

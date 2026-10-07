@@ -26,9 +26,9 @@
 
 ## 次にやること（要約のみ）
 
-1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直してから出す
+1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直した℃日から、過去10年それぞれの幅で出す
 2. 農場名「メイン➁」の文字替えは確認待ち。出典のない必要雨量（520mm）は、使われていなかったので削除した
-3. さつまいもは最低気温4℃以下を霜のおそれとして、目安より先なら掘り上げを言う。次は推定を幅で言うこと
+3. 収穫の見込みは10年中8年の日付の幅。明日から14日は予報。霜より先かは幅の遅い側。上限温度は出典待ち。次は品目を2つの型に分けること
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
 → 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\obsidian_desktop\Tillto\`**（Obsidian）
@@ -74,7 +74,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 領域 | パス |
 |------|------|
 | 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
-| 平年値・初霜 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切） |
+| 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/insights/harvest-date-window.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切） |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準） |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
