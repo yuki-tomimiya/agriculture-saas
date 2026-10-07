@@ -13,7 +13,7 @@
 - 直近の合意・未着手 → **Obsidian SESSION_HANDOFF**
 - 方針・優先順 → **議事録**
 - どのファイルを触るか → **このファイル**
-- 日報・調査メモ → **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**
+- 日報・調査メモ → **`C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\`**
 
 ---
 
@@ -31,7 +31,7 @@
 3. トマトは第3花房、さつまいもは活着と試し掘りを聞いてから助言する。日数では断定しない。次はモバイル
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
-→ 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\`**（Obsidian）
+→ 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\`**（Obsidian）
 
 ---
 

@@ -2,7 +2,7 @@
 
 **新しい置き場（正本）:**
 
-`C:\Users\yukit\Desktop\cursor_obsidian\Tillto\daily\`
+`C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\daily\`
 
 Obsidian で日報を管理する。Cursor / Claude も作業開始時はそちらに `YYYY-MM-DD.md` を作成する。
 

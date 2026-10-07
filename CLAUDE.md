@@ -2,19 +2,19 @@
 
 ## 作業開始時に必ず読む（この順）
 
-1. `C:\Users\yukit\Desktop\cursor_obsidian\Tillto\SESSION_HANDOFF.md` — 直近チャットの文脈・合意・未着手（Obsidian）
+1. `C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\SESSION_HANDOFF.md` — 直近チャットの文脈・合意・未着手（Obsidian）
 2. `PROJECT_CONTEXT.md` — コードの地図・ルート・主要 lib（このリポジトリ）
 3. `docs/議事録/minutes-content.json` — 方針・Phase・次にやることの正本（このリポジトリ）
-4. `C:\Users\yukit\Desktop\cursor_obsidian\Tillto\daily\` の当日メモ（あれば）— Obsidian 日報
+4. `C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\daily\` の当日メモ（あれば）— Obsidian 日報
 
 ### 作業開始時に必ず作る（日報・Obsidian）
 
-実装・調査の**前に** `C:\Users\yukit\Desktop\cursor_obsidian\Tillto\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
+実装・調査の**前に** `C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
 
 必須: **日付** / **現在の課題** / **今日やること**  
-詳細は `cursor_obsidian/Tillto/daily/README.md` および `Tillto/README.md`。
+詳細は `obsidian×Claude＆cursor/Tillto/daily/README.md` および `Tillto/README.md`。
 
-**ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `cursor_obsidian/Tillto/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。
+**ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `obsidian×Claude＆cursor/Tillto/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。
 
 ## サービス概要
 
