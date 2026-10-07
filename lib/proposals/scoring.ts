@@ -9,10 +9,13 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones'
+import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { formatSprayInterval, matchedSprayInterval, sprayIntervalExceeded } from '@/lib/benchmarks/spray-interval'
-import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
+import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
+import { getLocationDailyNormals, type DayNormal } from '@/lib/weather-normals'
+import { getLocationFirstFrost, type FirstFrostSummary } from '@/lib/weather-frost'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 
@@ -49,6 +52,8 @@ export type ScoredProposal = {
   layers: ProposalLayers
   conclusion: string
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
+  /** この作付けだけの霜の一文。農場が混ざるまとめカードには、全員同じときだけ載せる */
+  frostNote?: string
   milestone?: {
     key: string
     question: string
@@ -208,6 +213,74 @@ function groupMilestoneCards(cards: ScoredProposal[]): ScoredProposal[] {
   return grouped
 }
 
+function withFrostNote(card: ScoredProposal): ScoredProposal {
+  if (!card.frostNote) return card
+  return {
+    ...card,
+    frostNote: undefined,
+    layers: {
+      ...card.layers,
+      general: appendFrostNote(card.layers.general, card.frostNote),
+    },
+  }
+}
+
+function appendFrostNote(general: string | null, note: string | undefined): string | null {
+  if (!note) return general
+  if (!general) return note
+  const glue = general.endsWith('。') ? ' ' : '。'
+  return `${general}${glue}${note}`
+}
+
+/** 同じ地点・同じ文言の霜は1枚。地点が違うと日付が違うので、文言が同じときだけまとめる */
+function groupFrostCards(cards: ScoredProposal[]): ScoredProposal[] {
+  const buckets = new Map<string, ScoredProposal[]>()
+  for (const card of cards) {
+    const key = `${card.trigger}|${card.title}|${card.conclusion}`
+    const list = buckets.get(key) ?? []
+    list.push(card)
+    buckets.set(key, list)
+  }
+  const grouped: ScoredProposal[] = []
+  for (const list of buckets.values()) {
+    if (list.length < 2) {
+      grouped.push(list[0])
+      continue
+    }
+    const head = list.some((card) => card.urgency === 'today')
+      ? list.find((card) => card.urgency === 'today')!
+      : list[0]
+    grouped.push({
+      ...head,
+      id: `group-${head.trigger}-${list.length}-${grouped.length}`,
+      title: `${head.title}（${list.length}件）`,
+      score: Math.max(...list.map((card) => card.score)),
+      cropId: undefined,
+      cropName: undefined,
+      farmId: undefined,
+      farmName: undefined,
+      daysSincePlanting: undefined,
+      layers: {
+        ...head.layers,
+        personal: null,
+      },
+      lines: list.map((card) => ({
+        cropId: card.cropId!,
+        cropName: card.cropName!,
+        variety: card.variety ?? null,
+        farmId: card.farmId,
+        farmName: card.farmName,
+        daysSincePlanting: card.daysSincePlanting,
+        currentGDD: card.currentGDD ?? null,
+        targetGDD: card.targetGDD ?? 0,
+        targetCaption: card.targetCaption,
+        action: card.action,
+      })),
+    })
+  }
+  return grouped
+}
+
 function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
   const alone: ScoredProposal[] = []
   const buckets = new Map<string, ScoredProposal[]>()
@@ -224,12 +297,15 @@ function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
   const grouped: ScoredProposal[] = []
   for (const list of buckets.values()) {
     if (list.length < 2) {
-      grouped.push(list[0])
+      grouped.push(withFrostNote(list[0]))
       continue
     }
     const head = [...list].sort((a, b) => b.score - a.score)[0]
+    const notes = new Set(list.map((card) => card.frostNote ?? ''))
+    const sharedNote = notes.size === 1 ? list[0].frostNote : undefined
     grouped.push({
       ...head,
+      frostNote: undefined,
       id: `group-${head.trigger}-${head.cropName}`,
       title: groupTitle(head.cropName ?? '', list.length, head.title),
       farmId: undefined,
@@ -237,7 +313,7 @@ function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
       layers: mergeLayers({
         personal: groupPersonalSummary(list),
         regional: groupRegionalText(head, list),
-        general: head.layers.general,
+        general: appendFrostNote(head.layers.general, sharedNote),
         conclusion: head.conclusion,
       }),
       lines: list.map((card) => ({
@@ -254,7 +330,7 @@ function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
       })),
     })
   }
-  return [...grouped, ...alone].sort(
+  return [...grouped, ...alone.map(withFrostNote)].sort(
     (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
   )
 }
@@ -302,13 +378,31 @@ export async function scoreGrowingCrops(
     if (crop.farm && hasWeatherCoordinates(crop.farm)) farmsWithCoords.set(crop.farm.id, crop.farm)
   }
   const farmList = [...farmsWithCoords.values()]
+  const climateByFarm = new Map<
+    string,
+    {
+      frost: FirstFrostSummary | null
+      forecast: Awaited<ReturnType<typeof getForecastDays>>
+      normals: Map<string, DayNormal> | null
+    }
+  >()
   const regionalEntries = await Promise.all(
     farmList.map(async (farm) => {
-      const text = await buildRegionalLayer({
-        latitude: farm.latitude,
-        longitude: farm.longitude,
-        farmName: farm.name,
-      })
+      const point = {
+        latitude: Number(farm.latitude),
+        longitude: Number(farm.longitude),
+      }
+      const [text, frost, forecast, normals] = await Promise.all([
+        buildRegionalLayer({
+          latitude: farm.latitude,
+          longitude: farm.longitude,
+          farmName: farm.name,
+        }),
+        getLocationFirstFrost(point),
+        getForecastDays(point),
+        getLocationDailyNormals(point),
+      ])
+      climateByFarm.set(farm.id, { frost, forecast, normals })
       return [farm.id, text] as const
     })
   )
@@ -339,6 +433,8 @@ export async function scoreGrowingCrops(
 
   const cards: ScoredProposal[] = []
   const milestoneCards: ScoredProposal[] = []
+  const frostCards: ScoredProposal[] = []
+  const frostNoteByCrop = new Map<string, string>()
 
   for (const { crop, currentGDD } of measured) {
     const days = daysSince(crop.plantingDate, today)
@@ -480,6 +576,49 @@ export async function scoreGrowingCrops(
       records: crop.milestones,
       hiddenKeys,
     })
+    const climate = crop.farmId ? climateByFarm.get(crop.farmId) : undefined
+    const hasSeenRoots = hasHarvest || crop.milestones.some((row) => row.key === 'test-dig')
+    const frost: SweetPotatoFrost | null =
+      climate && isSweetPotatoCrop(crop.name, crop.variety)
+        ? assessSweetPotatoFrost({
+            today,
+            forecast: climate.forecast,
+            firstFrost: climate.frost,
+            currentGdd: currentGDD,
+            targetGdd: targetGDD,
+            baseTemp: crop.baseTemperature ?? 10,
+            normals: climate.normals,
+            hasSeenRoots,
+          })
+        : null
+    if (frost && !isProposalDismissed(dismissed, frost.trigger, crop.id)) {
+      frostNoteByCrop.set(crop.id, frost.generalLine)
+      const withinWeek = frost.urgency === 'today'
+      frostCards.push({
+        id: `${frost.trigger}-${crop.id}`,
+        urgency: frost.urgency,
+        score: withinWeek ? 96 : frost.trigger === 'frost-forecast' ? 88 : 84,
+        trigger: frost.trigger,
+        title: frost.title,
+        cropId: crop.id,
+        cropName: crop.name,
+        farmId: crop.farmId ?? undefined,
+        farmName,
+        daysSincePlanting: days,
+        variety: crop.variety,
+        currentGDD,
+        targetGDD,
+        targetCaption: basis.summary,
+        conclusion: frost.conclusion,
+        action: { kind: 'work', taskType: '収穫', title: `${crop.name}を霜の前に掘り上げる` },
+        layers: mergeLayers({
+          personal: `${crop.name}は栽培中です（${farmName}）。`,
+          regional: null,
+          general: frost.sourceLine,
+          conclusion: frost.conclusion,
+        }),
+      })
+    }
     if (ask && !isProposalDismissed(dismissed, ask.trigger, crop.id)) {
       milestoneCards.push({
         id: `${ask.trigger}-${crop.id}`,
@@ -570,6 +709,7 @@ export async function scoreGrowingCrops(
       targetCaption: basis.summary,
       conclusion: best.conclusion,
       action: best.action,
+      frostNote: frostNoteByCrop.get(crop.id),
       layers: mergeLayers({
         personal: personalText,
         regional,
@@ -766,7 +906,7 @@ export async function scoreGrowingCrops(
   }
 
   const otherCards = cards.filter((card) => card.trigger !== 'soil-ph' && card.trigger !== 'spray-interval')
-  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...soilCards, ...sprayCards].sort(
+  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...groupFrostCards(frostCards), ...soilCards, ...sprayCards].sort(
     (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
   )
 }

@@ -246,7 +246,10 @@ export function pickMilestoneAsk(input: {
   return null
 }
 
-/** 記録があれば断定。無ければ、窓の中か窓を過ぎたときだけ条件つき。それ以外は null */
+/**
+ * 記録があれば断定。記録が無く窓の中なら条件つき。
+ * 窓を過ぎたあとは言わない。活着の「根付いていれば」を、植付150日でも出し続けていた。
+ */
 export function formatMilestoneGeneral(input: {
   cropName: string
   variety?: string | null
@@ -268,8 +271,7 @@ export function formatMilestoneGeneral(input: {
       return item.recordedLine(days)
     }
     if (item.skipWhenHarvest && input.hasHarvest) continue
-    const place = windowPlace(item.window, input)
-    if (place === 'inside' || place === 'after') return item.conditional
+    if (windowPlace(item.window, input) === 'inside') return item.conditional
   }
   return null
 }

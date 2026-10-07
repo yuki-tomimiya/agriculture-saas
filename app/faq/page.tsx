@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
 import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
+import { FROST_SOURCE_FUKUOKA, FROST_SOURCE_JMA } from '@/lib/proposals/frost'
 import { MILESTONE_SOURCE_AKITA, MILESTONE_SOURCE_CHIBA, milestoneFaqRows } from '@/lib/proposals/milestones'
 
 export default async function FAQPage() {
@@ -34,6 +35,7 @@ export default async function FAQPage() {
               <li><a href="#gdd-reference">主な作物の積算温度の目安</a></li>
               <li><a href="#soil-ph">適正pHとは？</a></li>
               <li><a href="#stages">生育ステージとは？</a></li>
+              <li><a href="#frost">霜の締切とは？</a></li>
             </ul>
           </nav>
 
@@ -220,6 +222,45 @@ export default async function FAQPage() {
             <p className="faq-section-note">
               上の「いつ聞くか」の日数は暫定で、出典がありません。この日数で「今がその作業の時期です」とは言いません。
               日数は、尋ねるかどうかの窓にだけ使います。記録があれば断定し、窓の外で記録がなければ「〜していれば」と条件つきで書きます。
+            </p>
+          </section>
+
+          <section id="frost" className="faq-section">
+            <h2 className="faq-section-title">霜の締切とは？</h2>
+            <p className="faq-section-text">
+              さつまいもは寒さに弱いので、収穫は霜がおりる前に終わらせます。積算温度の目安より、霜が先に来ることがあります。
+              Tillto は最低気温4℃以下を「霜のおそれ」とします。初版の対象はさつまいもだけです。
+            </p>
+            <p className="faq-section-text">
+              気象台は、晴れて風が弱いと気温が3〜4℃まで下がると霜がおりやすく、地上1.5mの気温が4℃くらいでも地面付近は0℃以下になる、と説明しています。
+              気象庁の霜注意報の基準は市町村ごとに違い、おおよそ2〜4℃です。
+              Tillto が使う気温は推計で、冬は実測より高く出ることがあります。谷や盆地の冷え込みも拾えません。
+              見逃すと作物を失いうるので、安全側の4℃にしています。
+            </p>
+            <p className="faq-section-text">
+              例年の初霜は、その地点の過去10年の推計から出しています。年ごとに、8月15日から12月31日までに初めて最低気温4℃以下になった日を取り、その平均と早い年を示します。
+              気象庁が観測した初霜ではありません。この期間に4℃以下まで下がらない地点では、霜の締切は出しません。
+            </p>
+            <p className="faq-section-text">
+              谷・盆地・くぼ地は、表示より早く霜がおりることがあります。
+            </p>
+            <p className="faq-section-note">
+              出典は、{FROST_SOURCE_FUKUOKA.publisher}「{FROST_SOURCE_FUKUOKA.name}」{FROST_SOURCE_FUKUOKA.detail}
+              {' '}
+              <a href={FROST_SOURCE_FUKUOKA.url} className="text-green-700 hover:underline">
+                {FROST_SOURCE_FUKUOKA.url}
+              </a>
+              、{FROST_SOURCE_JMA.publisher}「{FROST_SOURCE_JMA.name}」
+              {' '}
+              <a href={FROST_SOURCE_JMA.url} className="text-green-700 hover:underline">
+                {FROST_SOURCE_JMA.url}
+              </a>
+              、{MILESTONE_SOURCE_CHIBA.publisher}「{MILESTONE_SOURCE_CHIBA.name}」（{MILESTONE_SOURCE_CHIBA.year}）p.28
+              {' '}
+              <a href={MILESTONE_SOURCE_CHIBA.url} className="text-green-700 hover:underline">
+                {MILESTONE_SOURCE_CHIBA.url}
+              </a>
+              です。
             </p>
           </section>
         </div>

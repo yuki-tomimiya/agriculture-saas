@@ -9,6 +9,7 @@ import {
   type ProposalLayers,
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed, listActiveDismissals } from '@/lib/proposals/dismissal'
+import { isFrostTrigger } from '@/lib/proposals/frost'
 import { scoreGrowingCrops, type ProposalCropLine, type ProposalUrgency } from '@/lib/proposals/scoring'
 
 export type ProposalType = 'task_due' | 'schedule' | 'weather'
@@ -177,7 +178,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
   for (const card of scored) {
     pushProposal(proposals, {
       id: card.id,
-      type: card.trigger === 'weather-pull-forward' ? 'weather' : 'schedule',
+      type: card.trigger === 'weather-pull-forward' || isFrostTrigger(card.trigger) ? 'weather' : 'schedule',
       title: card.title,
       layers: card.layers,
       suggestedDate: todayStart,

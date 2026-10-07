@@ -3,6 +3,8 @@
  * Open-Meteo APIから取得。失敗時はフォールバックを返す。
  */
 export type ForecastDay = {
+  /** Asia/Tokyo の YYYY-MM-DD。最低気温の日付を提案に使う */
+  date: string
   dayLabel: string
   weather: string
   weatherCode: number
@@ -122,6 +124,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
     }
 
     return d.weathercode.slice(0, 14).map((code, i) => ({
+      date: d.time![i],
       dayLabel: labelFromDateString(d.time![i]),
       weather: weatherCodeToJa(code),
       weatherCode: code,

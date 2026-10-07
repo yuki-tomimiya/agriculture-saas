@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar'
 import ProposalDismissButton from './ProposalDismissButton'
 import ProposalSeasonActions from './ProposalSeasonActions'
 import MilestoneAskActions from './MilestoneAskActions'
+import { isFrostTrigger } from '@/lib/proposals/frost'
 import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 const typeLabel: Record<ProposalType, string> = {
@@ -42,7 +43,9 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
               <div className="ai-proposal-card-inner">
                 <span className="ai-proposal-card-icon">{typeIcon[p.type]}</span>
                 <div className="ai-proposal-card-body">
-                  <span className="ai-proposal-card-type">{p.milestone ? '節目' : typeLabel[p.type]}</span>
+                  <span className="ai-proposal-card-type">
+                    {p.milestone ? '節目' : isFrostTrigger(p.trigger) ? '締切' : typeLabel[p.type]}
+                  </span>
                   <h3 className="ai-proposal-card-title">{p.title}</h3>
                   {!(p.lines && p.lines.length > 1) && <ProposalMeta proposal={p} />}
                   {p.milestone && p.lines && p.lines.length > 1 && p.trigger ? (
@@ -160,7 +163,7 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                       )}
                     </div>
                   )}
-                  {p.trigger && p.trigger !== 'season-finish' && !p.milestone && (
+                  {p.trigger && p.trigger !== 'season-finish' && !p.milestone && !isFrostTrigger(p.trigger) && (
                     <div className="ai-proposal-actions">
                       <ProposalDismissButton
                         trigger={p.trigger}

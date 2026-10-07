@@ -16,25 +16,51 @@ function monthDayKey(month: number, day: number): string {
   return `${month}-${day}`
 }
 
+export type LocationArchive = {
+  times: string[]
+  precip: Array<number | null>
+  radiation: Array<number | null>
+  tempMean: Array<number | null>
+  /** 最低気温。無いときは null。初霜は年ごとに見るので、ここでは平均しない */
+  tempMin: Array<number | null> | null
+}
+
+const archiveInflight = new Map<string, Promise<LocationArchive | null>>()
+
 /**
- * 地点の過去10年（昨年まで）を1回で取り、月日ごとの平均にする。
- * 失敗したときは null。直線の目安には戻さない。
+ * 地点の過去10年（昨年まで）を1回で取る。平年値と初霜が同じ応答を使う。
+ * 失敗したときは null。
  */
-export async function getLocationDailyNormals(
-  point?: Partial<WeatherPoint>
-): Promise<Map<string, DayNormal> | null> {
-  if (!hasWeatherCoordinates(point)) return null
+export function loadLocationArchive(point?: Partial<WeatherPoint>): Promise<LocationArchive | null> {
+  if (!hasWeatherCoordinates(point)) return Promise.resolve(null)
   const endYear = new Date().getFullYear() - 1
   const startYear = endYear - 9
+  const latitude = Number(point!.latitude)
+  const longitude = Number(point!.longitude)
+  const key = `${latitude}|${longitude}|${startYear}`
+  const existing = archiveInflight.get(key)
+  if (existing) return existing
+  const pending = fetchLocationArchive(latitude, longitude, startYear, endYear).finally(() => {
+    archiveInflight.delete(key)
+  })
+  archiveInflight.set(key, pending)
+  return pending
+}
+
+async function fetchLocationArchive(
+  latitude: number,
+  longitude: number,
+  startYear: number,
+  endYear: number
+): Promise<LocationArchive | null> {
   const params = new URLSearchParams({
-    latitude: String(Number(point!.latitude)),
-    longitude: String(Number(point!.longitude)),
+    latitude: String(latitude),
+    longitude: String(longitude),
     start_date: `${startYear}-01-01`,
     end_date: `${endYear}-12-31`,
-    daily: 'precipitation_sum,shortwave_radiation_sum,temperature_2m_mean',
+    daily: 'precipitation_sum,shortwave_radiation_sum,temperature_2m_mean,temperature_2m_min',
     timezone: 'Asia/Tokyo',
   })
-
   try {
     const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?${params.toString()}`, {
       next: { revalidate: 86400 },
@@ -46,50 +72,67 @@ export async function getLocationDailyNormals(
         precipitation_sum?: Array<number | null>
         shortwave_radiation_sum?: Array<number | null>
         temperature_2m_mean?: Array<number | null>
+        temperature_2m_min?: Array<number | null>
       }
     }
     const times = json.daily?.time
     const precip = json.daily?.precipitation_sum
     const radiation = json.daily?.shortwave_radiation_sum
     const temps = json.daily?.temperature_2m_mean
+    const mins = json.daily?.temperature_2m_min
     if (!times || !precip || !radiation || !temps) return null
     if (times.length !== precip.length || times.length !== radiation.length || times.length !== temps.length) {
       return null
     }
-
-    const sums = new Map<string, { precip: number; radiation: number; temp: number; count: number }>()
-    for (let i = 0; i < times.length; i++) {
-      const [year, monthText, dayText] = times[i].split('-')
-      const month = Number(monthText)
-      const day = Number(dayText)
-      if (!year || !month || !day) continue
-      if (month === 2 && day === 29) continue
-      const p = precip[i]
-      const r = radiation[i]
-      const t = temps[i]
-      if (p == null || r == null || t == null) continue
-      const key = monthDayKey(month, day)
-      const row = sums.get(key) ?? { precip: 0, radiation: 0, temp: 0, count: 0 }
-      row.precip += p
-      row.radiation += r
-      row.temp += t
-      row.count += 1
-      sums.set(key, row)
-    }
-    if (sums.size < 300) return null
-
-    const normals = new Map<string, DayNormal>()
-    for (const [key, row] of sums) {
-      normals.set(key, {
-        precipMm: row.precip / row.count,
-        radiationMj: row.radiation / row.count,
-        tempMean: row.temp / row.count,
-      })
-    }
-    return normals
+    const tempMin = mins && mins.length === times.length ? mins : null
+    return { times, precip, radiation, tempMean: temps, tempMin }
   } catch {
     return null
   }
+}
+
+/**
+ * 地点の過去10年（昨年まで）を1回で取り、月日ごとの平均にする。
+ * 失敗したときは null。直線の目安には戻さない。
+ * 最低気温は平均しない。初霜は年ごとの初日が要る。
+ */
+export async function getLocationDailyNormals(
+  point?: Partial<WeatherPoint>
+): Promise<Map<string, DayNormal> | null> {
+  const archive = await loadLocationArchive(point)
+  if (!archive) return null
+  const { times, precip, radiation, tempMean: temps } = archive
+
+  const sums = new Map<string, { precip: number; radiation: number; temp: number; count: number }>()
+  for (let i = 0; i < times.length; i++) {
+    const [year, monthText, dayText] = times[i].split('-')
+    const month = Number(monthText)
+    const day = Number(dayText)
+    if (!year || !month || !day) continue
+    if (month === 2 && day === 29) continue
+    const p = precip[i]
+    const r = radiation[i]
+    const t = temps[i]
+    if (p == null || r == null || t == null) continue
+    const key = monthDayKey(month, day)
+    const row = sums.get(key) ?? { precip: 0, radiation: 0, temp: 0, count: 0 }
+    row.precip += p
+    row.radiation += r
+    row.temp += t
+    row.count += 1
+    sums.set(key, row)
+  }
+  if (sums.size < 300) return null
+
+  const normals = new Map<string, DayNormal>()
+  for (const [key, row] of sums) {
+    normals.set(key, {
+      precipMm: row.precip / row.count,
+      radiationMj: row.radiation / row.count,
+      tempMean: row.temp / row.count,
+    })
+  }
+  return normals
 }
 
 /** 暦日の範囲（両端を含む）で、平年降水量を合計する。 */

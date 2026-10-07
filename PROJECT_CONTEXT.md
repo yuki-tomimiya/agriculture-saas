@@ -13,7 +13,7 @@
 - 直近の合意・未着手 → **Obsidian SESSION_HANDOFF**
 - 方針・優先順 → **議事録**
 - どのファイルを触るか → **このファイル**
-- 日報・調査メモ → **`C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\`**
+- 日報・調査メモ → **`C:\Users\yukit\Desktop\obsidian_desktop\Tillto\`**
 
 ---
 
@@ -27,11 +27,11 @@
 ## 次にやること（要約のみ）
 
 1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直してから出す
-2. 農場名「メイン➁」の文字替えと、雨の目安520mmを残すかは確認待ち
-3. トマトは第3花房、さつまいもは活着と試し掘りを聞いてから助言する。日数では断定しない。次はモバイル
+2. 農場名「メイン➁」の文字替えは確認待ち。出典のない必要雨量（520mm）は、使われていなかったので削除した
+3. さつまいもは最低気温4℃以下を霜のおそれとして、目安より先なら掘り上げを言う。次は推定を幅で言うこと
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
-→ 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\`**（Obsidian）
+→ 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\obsidian_desktop\Tillto\`**（Obsidian）
 
 ---
 
@@ -74,7 +74,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 領域 | パス |
 |------|------|
 | 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
-| 平年値 | `lib/weather-normals.ts`（生育ナビ、提案の地域層、来年の計画） |
+| 平年値・初霜 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切） |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準） |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
@@ -125,8 +125,10 @@ AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ 
 - 起動: `npm run dev` または `アプリを起動.bat`
 - UI 確認は本番アプリのみ（静的 `ui-preview-*.html` は廃止済み）
 - `.env` / `node_modules` はコミットしない
-- 直近チャットの文脈は `docs/SESSION_HANDOFF.md`
+- 直近チャットの文脈は Obsidian の `obsidian_desktop/Tillto/SESSION_HANDOFF.md`
+- 起動できないとき：`npm install` → `npx prisma generate` → `npx prisma migrate dev`。ポート3000が埋まっていれば `サーバー停止.bat`。`.env` と `prisma/dev.db` があるか確認（旧 SETUP.md の要点。2026-10-07 に統合）
+- 公開前のチェックリストは Obsidian の `調査/RELEASE_CHECKLIST.md`（2026-10-07 にリポジトリから移動）
 
 ---
 
-*最終更新: 2026-09-16 — プレビュー HTML 廃止を反映。*
+*最終更新: 2026-10-07 — 不要ファイルを整理（git 用 bat・初期手順書・案内メモを削除、SETUP.md を統合、RELEASE_CHECKLIST を Obsidian へ）。*

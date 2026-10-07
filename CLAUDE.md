@@ -2,19 +2,19 @@
 
 ## 作業開始時に必ず読む（この順）
 
-1. `C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\SESSION_HANDOFF.md` — 直近チャットの文脈・合意・未着手（Obsidian）
+1. `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\SESSION_HANDOFF.md` — 直近チャットの文脈・合意・未着手（Obsidian）
 2. `PROJECT_CONTEXT.md` — コードの地図・ルート・主要 lib（このリポジトリ）
 3. `docs/議事録/minutes-content.json` — 方針・Phase・次にやることの正本（このリポジトリ）
-4. `C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\daily\` の当日メモ（あれば）— Obsidian 日報
+4. `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\daily\` の当日メモ（あれば）— Obsidian 日報
 
 ### 作業開始時に必ず作る（日報・Obsidian）
 
-実装・調査の**前に** `C:\Users\yukit\Desktop\obsidian×Claude＆cursor\Tillto\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
+実装・調査の**前に** `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
 
 必須: **日付** / **現在の課題** / **今日やること**  
-詳細は `obsidian×Claude＆cursor/Tillto/daily/README.md` および `Tillto/README.md`。
+詳細は `obsidian_desktop/Tillto/daily/README.md` および `Tillto/README.md`。
 
-**ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `obsidian×Claude＆cursor/Tillto/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。
+**ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `obsidian_desktop/Tillto/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。
 
 ## サービス概要
 
@@ -54,6 +54,17 @@
 更新しないもの: 単なるバグ修正・文言微調整のみの作業、未確定のブレインストーミング。
 
 議事録を更新したら、返答の末尾で1行触れる（例:「開発議事録を更新しました」）。
+
+## 数字・基準の根拠（根拠台帳・必ず守る）
+
+利用者に見せる農業上の数字・判断の基準（積算温度の目安、適正pH、霜の気温、節目、しきい値など）は、**すべて `obsidian_desktop/Tillto/調査/根拠台帳.md` に1行ずつ記録する**。
+
+- 足す・変えるときは、**出典（資料名・発行元・年・ページ・URL）／選んだ理由／状態／決定日／見直す条件**を台帳に書く
+- 出典が無いものは「⚠ 暫定」か「❓ 由来不明」と正直に書く。空欄にしない。由来不明の値は断定に使わない
+- アプリの使い勝手で決めた値（隠す日数など）は「⚙ 運用の値」として区別する
+- 指示書には、台帳のどの行を足す／直すかを書く。レビューでは台帳が更新されたかを確かめる
+
+理由：どこから来た基準か分からない数字は、あとで精査も見直しもできない。Tillto は「根拠を重ねて今日の一手を出す」ツールなので、根拠が辿れないのは致命的（2026-10-07 ユーザー）。
 
 ## Cursor との往復（一方通行にしない）
 
