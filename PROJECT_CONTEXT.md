@@ -59,7 +59,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | `/insights` | 振り返りと計画（入口カード。来年の計画を含む） |
 | `/insights/compare` | 作付け比較（あなた） |
 | `/insights/regional` | この地域の気象（地域） |
-| `/insights/general` | 栽培暦の目安。月次ヒントは出典が付くまで出さない（入口カードも外した） |
+| `/insights/general` | 外した。出典の付いた栽培暦ができたら戻す（いまは `/insights` へ送る） |
 | `/crops` | 作物管理・栽培中 |
 | `/crops/archive` | 過去の作付け（収穫済み・完了） |
 | `/crops/[id]/retrospective` | 作付け終了時の振り返り1枚 |
