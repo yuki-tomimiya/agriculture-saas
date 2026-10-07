@@ -135,7 +135,7 @@ export default function SunshineChart({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">
         {cropLabel}の積算日射量の推移
-        <Link href="/faq#radiation" className="chart-help" aria-label="日射量の単位とは">？</Link>
+        <Link href="/faq/radiation" className="chart-help" aria-label="日射量の単位とは">？</Link>
       </h2>
       <p className="dashboard-section-sub">
         植え付け日からの積算日射量の推移を、10年平均（推計）と今年

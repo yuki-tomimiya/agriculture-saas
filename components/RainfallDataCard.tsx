@@ -153,7 +153,7 @@ export default function RainfallDataCard({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">
         {cropName}の積算雨量の推移
-        <Link href="/faq#normals" className="chart-help" aria-label="10年平均とは">？</Link>
+        <Link href="/faq/normals" className="chart-help" aria-label="10年平均とは">？</Link>
       </h2>
       <p className="dashboard-section-sub">
         {cropName}の圃場地点に基づき、植え付け日から今日までの実績雨量を表示しています。

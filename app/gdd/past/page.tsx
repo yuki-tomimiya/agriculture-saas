@@ -98,7 +98,7 @@ export default async function GddPastPage() {
                         作物詳細
                       </Link>
                       <Link
-                        href={`/gdd?cropId=${crop.id}`}
+                        href={`/gdd/${crop.id}`}
                         className="btn btn-primary"
                         style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
                       >

@@ -28,7 +28,7 @@
 
 1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直した℃日から、過去10年それぞれの幅で出す
 2. 農場名「メイン➁」の文字替えは確認待ち。出典のない必要雨量（520mm）は、使われていなかったので削除した
-3. 収穫の見込みは10年中8年の日付の幅。明日から14日は予報。霜より先かは幅の遅い側。上限温度は出典待ち。次は品目を2つの型に分けること
+3. 生育ナビとよくある質問は、入口と詳細に分けた。次は品目を2つの型に分けること。上限温度は出典待ち
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
 → 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\obsidian_desktop\Tillto\`**（Obsidian）
@@ -48,9 +48,11 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | パス | 役割 |
 |------|------|
 | `/dashboard/ai-proposal` | 今日の一手（3層提案） |
-| `/gdd` | 生育ナビ・栽培中 |
+| `/gdd` | 生育ナビの入口（栽培中を選ぶ。1件だけならその作付けへ） |
+| `/gdd/[cropId]` | その作付けの積算温度・雨量・日射。過去の作付けも開ける |
 | `/gdd/past` | 過去の生育データ（2階層目） |
-| `/gdd?cropId=…` | 作付け別グラフ（過去時はバナー） |
+| `/faq` | よくある質問の入口 |
+| `/faq/[slug]` | 1つの質問の答え |
 | `/plan` | 来年の計画（振り返りと計画のカード。詳細ページはなし） |
 | `/records` | 記録の入口（作業・農薬・収穫・販売。施肥は作業のタブ） |
 | `/soil` | 土壌診断（農場管理の下。写真・圃場あり。詳細ページはなし） |
@@ -80,7 +82,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
 | 地域（降水量） | `lib/insights/regional-context.ts` |
 | 一般目安 | `lib/benchmarks/crops.ts`, `lib/benchmarks/base-temperature.ts`（基準温度。FAQ の表もここ） |
-| 生育ナビ | `app/gdd/`, `app/gdd/past/`, `components/GDDCropList.tsx`, `lib/gdd.ts` |
+| 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`, `lib/gdd.ts` |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 生育の節目 | `lib/proposals/milestones.ts`, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。窓の日数は問いかけにだけ使う。防除間隔は `lib/benchmarks/spray-interval.ts` |

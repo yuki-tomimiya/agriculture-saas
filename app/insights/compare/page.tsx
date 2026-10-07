@@ -210,12 +210,12 @@ function CompareCard({
           作物を見る →
         </Link>
         {row.plantingDate && (
-          <Link href={`/gdd?cropId=${row.currentCropId}#gdd-detail`} className="text-green-700 hover:underline text-sm">
+          <Link href={`/gdd/${row.currentCropId}`} className="text-green-700 hover:underline text-sm">
             {row.currentStatus === 'growing' ? '生育ナビで見る →' : '積算温度など（過去）→'}
           </Link>
         )}
         {row.previousCropId && row.previousPlantingDate && (
-          <Link href={`/gdd?cropId=${row.previousCropId}#gdd-detail`} className="text-green-700 hover:underline text-sm">
+          <Link href={`/gdd/${row.previousCropId}`} className="text-green-700 hover:underline text-sm">
             前回の生育データ →
           </Link>
         )}

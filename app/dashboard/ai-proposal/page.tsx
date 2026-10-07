@@ -188,7 +188,7 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                       </Link>
                     )}
                     {p.relatedCropId && (
-                      <Link href={`/gdd?cropId=${p.relatedCropId}`} className="ai-proposal-card-link">
+                      <Link href={`/gdd/${p.relatedCropId}`} className="ai-proposal-card-link">
                         生育ナビで見る →
                       </Link>
                     )}

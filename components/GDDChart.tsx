@@ -250,7 +250,7 @@ export default function GDDChart({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">
         {cropLabel}の積算温度（GDD）の推移
-        <Link href="/faq#gdd" className="chart-help" aria-label="積算温度とは">？</Link>
+        <Link href="/faq/gdd" className="chart-help" aria-label="積算温度とは">？</Link>
       </h2>
       <p className="dashboard-section-sub">
         上段は実績（緑）と予報（青破線）

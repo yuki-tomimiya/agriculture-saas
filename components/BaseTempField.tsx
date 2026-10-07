@@ -24,7 +24,7 @@ export default function BaseTempField({
     <div className="auth-field">
       <label htmlFor="crop-base-temp" className="label">
         基準温度
-        <Link href="/faq#base-temp" className="chart-help" aria-label="基準温度とは">
+        <Link href="/faq/base-temp" className="chart-help" aria-label="基準温度とは">
           ？
         </Link>
       </label>

@@ -303,7 +303,7 @@ export default async function CropRetrospectivePage({
           </Link>
           {data.plantingDate && (
             <Link
-              href={`/gdd?cropId=${id}`}
+              href={`/gdd/${id}`}
               className="text-green-700 hover:underline text-sm"
             >
               生育データ →

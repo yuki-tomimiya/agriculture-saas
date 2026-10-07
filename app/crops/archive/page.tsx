@@ -189,7 +189,7 @@ export default async function CropsArchivePage({
                   </Link>
                   {crop.plantingDate && (
                     <Link
-                      href={`/gdd?cropId=${crop.id}`}
+                      href={`/gdd/${crop.id}`}
                       className="btn btn-outline farms-card-button"
                     >
                       生育データ

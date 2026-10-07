@@ -11,7 +11,8 @@
 
 実装・調査の**前に** `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
 
-必須: **日付** / **現在の課題** / **今日やること**  
+必須: **日付** / **現在の課題** / **今日やること**
+- **日報を作る前に、同じ名前のファイルが無いか必ず確かめる。既存の日報は上書きしない**（Claude と Cursor が同じ日に `-b` `-c` …を使うため。2026-10-07 に -h が上書きされた）  
 詳細は `obsidian_desktop/Tillto/daily/README.md` および `Tillto/README.md`。
 
 **ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `obsidian_desktop/Tillto/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。

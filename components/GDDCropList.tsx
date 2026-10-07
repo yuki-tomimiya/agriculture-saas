@@ -19,19 +19,17 @@ function sortByPlantingDesc(a: Crop, b: Crop): number {
   return tb - ta
 }
 
-function CropCard({
-  crop,
-  selectedCropId,
-}: {
-  crop: Crop
-  selectedCropId?: string
-}) {
-  const selected = crop.id === selectedCropId
+function daysFromPlanting(date: Date): number {
+  const start = new Date(date)
+  start.setHours(0, 0, 0, 0)
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return Math.max(0, Math.floor((today.getTime() - start.getTime()) / (24 * 60 * 60 * 1000)))
+}
+
+function CropCard({ crop }: { crop: Crop }) {
   return (
-    <li
-      className="gdd-crop-card"
-      style={selected ? { borderColor: '#16a34a', boxShadow: '0 0 0 1px #16a34a inset' } : undefined}
-    >
+    <li className="gdd-crop-card">
       <div className="gdd-crop-card-main">
         <Link href={`/crops/${crop.id}`} className="gdd-crop-card-name">
           {crop.name}
@@ -40,10 +38,11 @@ function CropCard({
         <span className="gdd-crop-card-meta">
           {crop.farm?.name ?? '農場未設定'} ・ 植え付け{' '}
           {crop.plantingDate ? formatDateShort(crop.plantingDate) : '-'}
+          {crop.plantingDate ? `（植付から${daysFromPlanting(crop.plantingDate)}日）` : ''}
         </span>
       </div>
       <div className="gdd-crop-card-extra">
-        <Link href="/faq#base-temp" className="gdd-crop-card-base">
+        <Link href="/faq/base-temp" className="gdd-crop-card-base">
           基準温度 {crop.baseTemperature ?? 10}℃
         </Link>
         {(() => {
@@ -54,24 +53,18 @@ function CropCard({
         })()}
         <span className="gdd-crop-card-status">栽培中</span>
         <Link
-          href={`/gdd?cropId=${crop.id}#gdd-detail`}
+          href={`/gdd/${crop.id}`}
           className="btn btn-outline"
           style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }}
         >
-          {selected ? '選択中' : 'この作物で見る'}
+          生育データを見る
         </Link>
       </div>
     </li>
   )
 }
 
-export default function GDDCropList({
-  crops,
-  selectedCropId,
-}: {
-  crops: Crop[]
-  selectedCropId?: string
-}) {
+export default function GDDCropList({ crops }: { crops: Crop[] }) {
   const growing = crops.filter((c) => c.status === 'growing')
   const growingWithPlanting = growing
     .filter((c) => c.plantingDate != null)
@@ -89,13 +82,13 @@ export default function GDDCropList({
     <section className="card gdd-crop-list">
       <h2 className="gdd-section-title">栽培中の作物</h2>
       <p className="gdd-crop-list-desc">
-        いま栽培中の作付けの進捗確認用です。過去作付けの生育データは下のリンクから開けます。
+        いま栽培中の作付けです。選ぶと、その作付けの積算温度・雨量・日射を表示します。
       </p>
 
       {growingWithPlanting.length > 0 ? (
         <ul className="gdd-crop-cards">
           {growingWithPlanting.map((crop) => (
-            <CropCard key={crop.id} crop={crop} selectedCropId={selectedCropId} />
+            <CropCard key={crop.id} crop={crop} />
           ))}
         </ul>
       ) : (

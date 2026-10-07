@@ -134,7 +134,7 @@ export default async function NextYearPlanPage() {
                     {plan.basis.spreadNote ? ` ${plan.basis.spreadNote}` : ''}
                     {plan.adjustNote ? ` ${plan.adjustNote}。` : ''}
                     {plan.basis.source === 'provisional' && (
-                      <Link href="/faq#gdd-reference" className="faq-link">
+                      <Link href="/faq/gdd-reference" className="faq-link">
                         {' '}
                         目安の説明
                       </Link>
