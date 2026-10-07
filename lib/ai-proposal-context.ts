@@ -1,5 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import { findCropBenchmark } from '@/lib/benchmarks/crops'
 import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
 import { formatMilestoneGeneral } from '@/lib/proposals/milestones'
 import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
@@ -156,34 +155,23 @@ export function buildGeneralLayer(
   variety?: string | null,
   progress?: StageProgress
 ): string | null {
-  const month = new Date().getMonth() + 1
   if (!cropName) return null
 
-  if (progress) {
-    const fromMilestone = formatMilestoneGeneral({
-      cropName,
-      variety,
-      daysSincePlanting: progress.daysSincePlanting,
-      gddRatio: progress.gddRatio,
-      hasHarvest: progress.hasHarvest,
-      records: progress.milestones ?? [],
-      today: progress.today,
-    })
-    if (fromMilestone) return fromMilestone
-    const stage = resolveCropStage(cropName, variety, progress)
-    if (stage) return formatStageGeneralLine(stage)
-  }
+  if (!progress) return null
 
-  const benchmark = findCropBenchmark(cropName, variety)
-  if (!benchmark) return null
-  const parts: string[] = []
-  const monthly = benchmark.monthlyWorkHints[month]
-  if (monthly) parts.push(`${benchmark.displayName}は${month}月、${monthly}`)
-  if (benchmark.generalTips[0]) parts.push(benchmark.generalTips[0])
-  if (parts.length === 0) {
-    return `${benchmark.displayName}の一般目安：${benchmark.yieldHint}`
-  }
-  return parts.join('。') + '。'
+  const fromMilestone = formatMilestoneGeneral({
+    cropName,
+    variety,
+    daysSincePlanting: progress.daysSincePlanting,
+    gddRatio: progress.gddRatio,
+    hasHarvest: progress.hasHarvest,
+    records: progress.milestones ?? [],
+    today: progress.today,
+  })
+  if (fromMilestone) return fromMilestone
+  const stage = resolveCropStage(cropName, variety, progress)
+  if (stage) return formatStageGeneralLine(stage)
+  return null
 }
 
 export async function buildRegionalLayer(point?: {

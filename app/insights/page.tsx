@@ -17,12 +17,6 @@ const ENTRY_CARDS = [
     description: '今月の降水量を10年平均（推計）と比べ、地域のコンディションを確認します',
   },
   {
-    href: '/insights/general',
-    layer: '一般',
-    title: '栽培暦の目安',
-    description: '品目ごとの教科書的な目安・今月の栽培暦ヒントを確認します',
-  },
-  {
     href: '/plan',
     layer: '計画',
     title: '来年の計画',
@@ -42,7 +36,7 @@ export default async function InsightsPage() {
           <div className="farms-header-text">
             <h1 className="farms-title">振り返りと計画</h1>
             <p className="farms-subtitle">
-              比較・地域・一般と、来年の計画の入口です。過去の生育グラフは生育ナビの「過去の生育データ」へ
+              比較・地域と、来年の計画の入口です。過去の生育グラフは生育ナビの「過去の生育データ」へ
             </p>
           </div>
           <div className="insights-header-actions">
@@ -63,7 +57,7 @@ export default async function InsightsPage() {
             <span className="insights-layer-tag">あなた</span>
             前回の同じ作付けとの比較　
             <span className="insights-layer-tag">一般</span>
-            品目ごとの教科書的な目安　
+            節目の記録があるときの目安　
             <span className="insights-layer-tag">地域</span>
             農場周辺の降水量（今月 vs 10年平均）
           </p>

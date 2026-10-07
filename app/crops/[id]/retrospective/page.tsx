@@ -259,11 +259,7 @@ export default async function CropRetrospectivePage({
             <span className="insights-layer-tag">一般</span>
             目安・生育
           </h2>
-          <p className="insights-regional-text">
-            {data.yieldComment ??
-              '一般目安との比較は、収量（kg）が記録されると表示されます。'}
-          </p>
-          <div className="insights-regional-stats" style={{ marginTop: '0.75rem' }}>
+          <div className="insights-regional-stats">
             <div>
               <span className="insights-regional-stat-label">
                 {data.gddAsOf === 'harvest' ? '積算温度（収穫日時点）' : '積算温度（今日まで）'}

@@ -212,39 +212,6 @@ export default function GDDChart({
     projectedProgressPct != null ? Math.min(100, projectedProgressPct) : null
 
   const basisLabel = targetCaption ?? `目標 ${Math.round(targetGDD)}℃日`
-  const suggestionItems =
-    currentProgressPct >= 100
-      ? [
-          <>
-            {basisLabel}に到達しています。圃場の様子を見て、<span className="font-semibold">収穫適期・出荷計画</span>
-            を確認しましょう。
-          </>,
-          <>
-            これからの天候（特に降雨）も踏まえ、<span className="font-semibold">掘り取りや選別の日程</span>
-            を前倒しで調整すると安心です。
-          </>,
-        ]
-      : currentProgressPct >= 70
-        ? [
-            <>
-              {basisLabel}まで残りわずかです。<span className="font-semibold">収穫・出荷の準備</span>
-              （人員・資材・保管）を早めに整えましょう。
-            </>,
-            <>
-              高温や過湿が続く日は、<span className="font-semibold">生育・病害の見回り</span>
-              を優先すると安心です。
-            </>,
-          ]
-        : [
-            <>
-              生育前半〜中盤です。潅水や追肥のタイミングを、<span className="font-semibold">気象ナビの予報</span>
-              とあわせて見直しましょう。
-            </>,
-            <>
-              株の様子（葉色・草勢）を定期的に確認し、<span className="font-semibold">異常があれば作業記録</span>
-              に残しておくと後から振り返りやすくなります。
-            </>,
-          ]
 
   return (
     <section className="dashboard-card">
@@ -480,14 +447,6 @@ export default function GDDChart({
             {basisLabel}を超えています（現在 {Math.round(currentGDD)} ℃日）。
           </p>
         )}
-      </div>
-      <div className="dashboard-gdd-suggestions">
-        <p className="dashboard-gdd-suggestions-title">今すぐ検討したいこと</p>
-        <ul className="dashboard-gdd-suggestions-list">
-          {suggestionItems.map((item, i) => (
-            <li key={i}>{item}</li>
-          ))}
-        </ul>
       </div>
       <p className="dashboard-gdd-note">
         ※ 日々の気温データと連携すると積算温度が自動で更新されます。詳細な作物比較は生育ナビで確認できます。

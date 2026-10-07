@@ -1,10 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
-import {
-  commentYieldVsBenchmark,
-  findCropBenchmark,
-  type CropBenchmark,
-} from '@/lib/benchmarks/crops'
+import { findCropBenchmark, type CropBenchmark } from '@/lib/benchmarks/crops'
 
 export type SeasonCompareRow = {
   currentCropId: string
@@ -176,10 +172,7 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
         : null
 
     const benchmark = findCropBenchmark(current.name, current.variety)
-    const yieldComment =
-      harvestUnit === 'kg' && harvestQty > 0
-        ? commentYieldVsBenchmark(harvestQty, benchmark)
-        : null
+    const yieldComment = null
 
     rows.push({
       currentCropId: current.id,

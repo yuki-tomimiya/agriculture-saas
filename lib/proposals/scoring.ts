@@ -21,6 +21,14 @@ import { formatSprayInterval, matchedSprayInterval, sprayIntervalExceeded } from
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
 import { getLocationFirstFrost, type FirstFrostSummary } from '@/lib/weather-frost'
+import {
+  askSeasonFinish,
+  cropHarvestKind,
+  isTomatoCrop,
+  TOMATO_NIGHT_SOURCE,
+  TOMATO_POLLEN_MIN_C,
+} from '@/lib/proposals/crop-kind'
+import { firstMeanMinBelow, isOnOrAfterCoolNight } from '@/lib/weather-night'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 
@@ -163,7 +171,7 @@ function groupPersonalSummary(list: ScoredProposal[]): string {
       : `積算温度は ${formatMeasure(min)}〜${formatMeasure(max)}℃日`
     parts.push(targetText ? `${valueText}（${targetText}）` : valueText)
   }
-  if (list[0]?.trigger === 'season-finish') {
+  if (list[0]?.title.includes('終了しましたか')) {
     parts.push('収穫の記録があるか、収穫予定日を過ぎています')
   }
   return `${parts.join('。')}。`
@@ -476,8 +484,8 @@ export async function scoreGrowingCrops(
     const harvestDatePast =
       crop.harvestDate != null && new Date(crop.harvestDate).setHours(0, 0, 0, 0) < today.getTime()
     const overTarget = gddRatio != null && gddRatio >= 1
-    const daysFarPast = days >= 180
-    if ((hasHarvest || harvestDatePast) && (overTarget || daysFarPast)) {
+    const kind = cropHarvestKind(crop.name, crop.variety)
+    if (askSeasonFinish({ kind, hasHarvest, harvestDatePast, overTarget })) {
       hits.push({
         trigger: 'season-finish',
         urgency: 'today',
@@ -488,7 +496,34 @@ export async function scoreGrowingCrops(
       })
     }
 
-    if (!hasHarvest && gddRatio != null && gddRatio >= 1) {
+    const coolNight =
+      isTomatoCrop(crop.name, crop.variety) && climate?.archive
+        ? firstMeanMinBelow(climate.archive)
+        : null
+    if (coolNight && isOnOrAfterCoolNight(today, coolNight)) {
+      hits.push({
+        trigger: 'season-finish',
+        urgency: 'today',
+        score: 112,
+        title: `夜の気温が${TOMATO_POLLEN_MIN_C}℃を下回る時期に入りました`,
+        conclusion:
+          '新しい花は実になりにくくなります。いまついている実の収穫が終わったら、作付けを終了してください。',
+        action: { kind: 'finish', title: `${crop.name}の作付けを終える` },
+      })
+    }
+
+    if (kind === 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 0.9) {
+      hits.push({
+        trigger: 'harvest-window',
+        urgency: gddRatio >= 1 ? 'today' : 'thisWeek',
+        score: gddRatio >= 1 ? 100 : 80,
+        title: '収穫が始まるころです',
+        conclusion: windowSentence
+          ? `採り始めの準備をしましょう。${windowSentence}`
+          : '採り始めの準備をしましょう。',
+        action: { kind: 'work', taskType: '収穫', title: `${crop.name}の収穫` },
+      })
+    } else if (kind !== 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 1) {
       hits.push({
         trigger: 'harvest-window',
         urgency: 'today',
@@ -497,7 +532,7 @@ export async function scoreGrowingCrops(
         conclusion: '試し掘りや収穫を、雨の前に段取りしましょう。',
         action: { kind: 'work', taskType: '収穫', title: `${crop.name}の収穫` },
       })
-    } else if (!hasHarvest && gddRatio != null && gddRatio >= 0.9) {
+    } else if (kind !== 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 0.9) {
       const waitingForTestDig = crop.milestones.every((row) => row.key !== 'test-dig')
       const sweetPotatoAsk =
         waitingForTestDig &&
@@ -705,16 +740,19 @@ export async function scoreGrowingCrops(
       currentGDD != null
         ? `${crop.name}の積算温度は ${currentGDD}℃日です（${basis.summary}、植付から${days}日）。`
         : `${crop.name}は植付から${days}日目です（${farmName}）。`
-    const finishReason = hasHarvest
-      ? `収穫を${crop.harvests.length}回記録しています。`
-      : harvestDatePast && crop.harvestDate
-        ? `収穫予定日 ${new Date(crop.harvestDate).toLocaleDateString('ja-JP')} を過ぎています。`
-        : `植付から${days}日たち、目安を大きく超えています。`
+    const coolFinish = best.title.includes('下回る時期')
+    const finishReason = coolFinish
+      ? ''
+      : hasHarvest
+        ? `収穫を${crop.harvests.length}回記録しています。`
+        : harvestDatePast && crop.harvestDate
+          ? `収穫予定日 ${new Date(crop.harvestDate).toLocaleDateString('ja-JP')} を過ぎています。`
+          : ''
     const personalText =
       best.trigger === 'sale-missing'
         ? personal
         : best.trigger === 'season-finish'
-          ? `${personal ? `${personal} ` : ''}${measuredLine} ${finishReason}`
+          ? `${personal ? `${personal} ` : ''}${measuredLine}${finishReason ? ` ${finishReason}` : ''}`
           : personal
             ? `${personal} ${measuredLine}`
             : measuredLine
@@ -740,7 +778,7 @@ export async function scoreGrowingCrops(
       layers: mergeLayers({
         personal: personalText,
         regional,
-        general,
+        general: coolFinish ? TOMATO_NIGHT_SOURCE : general,
         conclusion: best.conclusion,
       }),
     })

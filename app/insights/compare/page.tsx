@@ -190,13 +190,6 @@ function CompareCard({
           <span className="insights-layer-tag">あなた</span>
           {row.summaryLine}
         </p>
-        {row.benchmark ? (
-          <p>
-            <span className="insights-layer-tag">一般</span>
-            {row.benchmark.yieldHint}
-            {row.benchmark.generalTips[0] ? ` ／ ${row.benchmark.generalTips[0]}` : ''}
-          </p>
-        ) : null}
         {farmRegional && (
           <p>
             <span className="insights-layer-tag">地域</span>

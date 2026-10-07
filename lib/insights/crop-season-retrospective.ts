@@ -1,8 +1,4 @@
 import { prisma } from '@/lib/prisma'
-import {
-  commentYieldVsBenchmark,
-  findCropBenchmark,
-} from '@/lib/benchmarks/crops'
 import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-season-compare'
 import { loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
@@ -198,11 +194,7 @@ export async function getCropSeasonRetrospective(
       salesCount > 0 && previousSalesCount > 0 ? pctDiff(salesAmount, previousSalesAmount) : null
   }
 
-  const benchmark = findCropBenchmark(crop.name, crop.variety)
-  const yieldComment =
-    harvestUnit === 'kg' && harvestQty > 0
-      ? commentYieldVsBenchmark(harvestQty, benchmark)
-      : null
+  const yieldComment = null
 
   const endDate =
     crop.harvestDate ??
