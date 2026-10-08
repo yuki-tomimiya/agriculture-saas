@@ -91,6 +91,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
     latitude: String(p.latitude),
     longitude: String(p.longitude),
     daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max',
+    wind_speed_unit: 'ms',
     timezone: 'Asia/Tokyo',
     start_date: todayYmd,
     end_date: addDaysToYmd(todayYmd, 13),
