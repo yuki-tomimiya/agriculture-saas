@@ -1,5 +1,11 @@
 import Link from 'next/link'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
+import { getLocationDailyNormals, meanNormalMaxTemp } from '@/lib/weather-normals'
+import {
+  FORECAST_RAIN_HIGHLIGHT_PCT,
+  FORECAST_TEMP_DIFF_RATIO,
+  FORECAST_WIND_HIGHLIGHT_MS,
+} from '@/lib/weather-thresholds'
 
 type Props = {
   farmName?: string | null
@@ -14,6 +20,14 @@ type Props = {
 function mean(values: number[]): number {
   if (values.length === 0) return 0
   return values.reduce((a, b) => a + b, 0) / values.length
+}
+
+function tempCompareLabel(avgMax: number, normalMax: number | null): string | null {
+  if (normalMax == null || normalMax <= 0) return null
+  const diff = avgMax - normalMax
+  if (Math.abs(diff) / normalMax < FORECAST_TEMP_DIFF_RATIO) return '10年平均並み'
+  const rounded = Math.round(Math.abs(diff) * 10) / 10
+  return diff > 0 ? `10年平均より${rounded}℃高い` : `10年平均より${rounded}℃低い`
 }
 
 export default async function WeatherNav({
@@ -75,7 +89,7 @@ export default async function WeatherNav({
         <div className="dashboard-weather-header">
           <div className="dashboard-weather-header-text">
             <h2>今週の気象ナビ</h2>
-            <p>直近7日間の予報（Open-Meteo）をもとに、今週の作業判断に使える要点を表示しています。</p>
+            <p>直近7日間の予報（Open-Meteo）です。</p>
           </div>
           <div className="dashboard-weather-tags">
             <span className="dashboard-weather-tag-green">
@@ -95,23 +109,26 @@ export default async function WeatherNav({
   const week = forecast.slice(0, 7)
   const avgMax = mean(week.map((d) => d.maxTemp))
   const avgRain = mean(week.map((d) => d.precipitation))
+  const normals = await getLocationDailyNormals({
+    latitude: latitude ?? undefined,
+    longitude: longitude ?? undefined,
+  })
+  const normalMax = normals ? meanNormalMaxTemp(normals, week.map((d) => d.date)) : null
+  const tempLabel = tempCompareLabel(avgMax, normalMax)
   // 週内で最も風が強い日（＝週内の最大風速）を注意日にも使う
   const windiestDay = week.reduce((best, d) => (d.wind > best.wind ? d : best), week[0])
   const maxWind = windiestDay.wind
   const heavyRainDay = week
-    .filter((d) => d.precipitation >= 60)
+    .filter((d) => d.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT)
     .sort((a, b) => b.precipitation - a.precipitation)[0]
-  const strongWindDay = maxWind >= 10 ? windiestDay : null
-
-  const diffLabel =
-    avgMax >= 26 ? '高温傾向' : avgMax <= 12 ? '低温傾向' : '平年並み'
+  const strongWindDay = maxWind >= FORECAST_WIND_HIGHLIGHT_MS ? windiestDay : null
 
   return (
     <section className="dashboard-weather-box">
       <div className="dashboard-weather-header">
         <div className="dashboard-weather-header-text">
           <h2>今週の気象ナビ</h2>
-          <p>直近7日間の予報（Open-Meteo）をもとに、今週の作業判断に使える要点を表示しています。</p>
+          <p>直近7日間の予報（Open-Meteo）です。</p>
         </div>
         <div className="dashboard-weather-tags">
           <span className="dashboard-weather-tag-green">
@@ -126,7 +143,10 @@ export default async function WeatherNav({
         <div className="dashboard-weather-col dashboard-weather-col--green">
           <h3>今週の見通し</h3>
           <ul>
-            <li>・最高気温の週平均は <span className="font-semibold">{avgMax.toFixed(1)}℃</span> で、{diffLabel} です。</li>
+            <li>
+              ・最高気温の週平均は <span className="font-semibold">{avgMax.toFixed(1)}℃</span>
+              {tempLabel ? <> で、{tempLabel}です。</> : <>です。</>}
+            </li>
             <li>・降水確率の週平均は <span className="font-semibold">{avgRain.toFixed(0)}%</span> です。</li>
             <li>
               ・週内の最大風速（日最大）は{' '}
@@ -135,34 +155,25 @@ export default async function WeatherNav({
             </li>
           </ul>
         </div>
-        <div className="dashboard-weather-col dashboard-weather-col--yellow">
-          <h3>今週やっておきたいこと</h3>
-          <ol>
-            <li>最高気温が高めの日は、<span className="font-semibold">潅水時間を早朝・夕方に寄せる</span>運用を優先。</li>
-            <li>降水確率が高い日は、<span className="font-semibold">防除・施肥を前倒し</span>にして作業ロスを回避。</li>
-            <li>風が強い予報の日までに、<span className="font-semibold">ハウス・資材の固定確認</span>を実施。</li>
-          </ol>
-        </div>
         <div className="dashboard-weather-col dashboard-weather-col--blue">
-          <h3>注意すべき日</h3>
+          <h3>取り上げる予報</h3>
           <ul>
             <li>
-              ・降水警戒：
+              ・降水確率{FORECAST_RAIN_HIGHLIGHT_PCT}%以上：
               <span className="font-semibold">
                 {heavyRainDay
                   ? `${heavyRainDay.dayLabel}（降水確率 ${heavyRainDay.precipitation}%）`
-                  : '大雨レベルの日はなし'}
+                  : '該当する日はありません'}
               </span>
             </li>
             <li>
-              ・強風警戒：
+              ・最大風速{FORECAST_WIND_HIGHLIGHT_MS}m/s以上：
               <span className="font-semibold">
                 {strongWindDay
                   ? `${strongWindDay.dayLabel}（日最大 ${strongWindDay.wind.toFixed(1)}m/s）`
-                  : '強風レベルの日はなし'}
+                  : '該当する日はありません'}
               </span>
             </li>
-            <li>・前日までに、<span className="font-semibold">排水路・換気・作業順序</span>の見直しを推奨。</li>
           </ul>
         </div>
       </div>

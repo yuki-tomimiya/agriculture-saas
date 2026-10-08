@@ -3,6 +3,8 @@ import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
 import { formatMilestoneGeneral } from '@/lib/proposals/milestones'
 import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
+import { LAST_YEAR_SAME_DAY_WINDOW_DAYS } from '@/lib/proposals/constants'
+import { FORECAST_RAIN_HIGHLIGHT_PCT, FORECAST_WIND_HIGHLIGHT_MS } from '@/lib/weather-thresholds'
 
 export type ProposalLayers = {
   personal: string | null
@@ -52,11 +54,11 @@ export async function getLastYearSameDayWorkSummary(
   options?: {
     farmId?: string | null
     cropId?: string | null
-    /** 前年同日の前後何日を含めるか（デフォルト 2） */
+    /** 前年同日の前後何日を含めるか */
     windowDays?: number
   }
 ): Promise<LastYearSameDaySummary> {
-  const windowDays = options?.windowDays ?? 2
+  const windowDays = options?.windowDays ?? LAST_YEAR_SAME_DAY_WINDOW_DAYS
   const today = getTodayStart()
   const lastYearAnchor = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
   // 2/29 → 非うるう年はスキップ（カレンダーと同趣旨）
@@ -198,27 +200,13 @@ export async function buildRegionalLayer(point?: {
   let forecastLine: string | null = null
   if (forecast.length > 0) {
     const near = forecast.slice(0, 5)
-    const heavyRain = near.find((d) => d.precipitation >= 55)
+    const heavyRain = near.find((d) => d.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT)
     if (heavyRain) {
-      forecastLine = `${heavyRain.dayLabel}は降水${heavyRain.precipitation}%の予報です。この地域では防除・収穫などは前日までに済ませると安心です。`
+      forecastLine = `${heavyRain.dayLabel}は降水確率${heavyRain.precipitation}%の予報です。`
     } else {
-      const strongWind = near.find((d) => d.wind >= 10)
+      const strongWind = near.find((d) => d.wind >= FORECAST_WIND_HIGHLIGHT_MS)
       if (strongWind) {
-        forecastLine = `${strongWind.dayLabel}は最大風速${strongWind.wind}m/sの予報です。ハウス・資材の固定を早めに確認しましょう。`
-      } else {
-        const rainyDays = near.filter((d) => d.precipitation >= 35).length
-        if (rainyDays >= 2) {
-          forecastLine =
-            '今後数日、雨の日が続く見込みです。屋外作業は晴れ間を優先すると効率的です。'
-        } else {
-          const tomorrow = near[1]
-          if (tomorrow && tomorrow.precipitation >= 40) {
-            forecastLine = `${tomorrow.dayLabel}は降水${tomorrow.precipitation}%の予報です。今日中にできる屋外作業を先に。`
-          } else {
-            forecastLine =
-              '今週の天候は大きな荒天予報は少なめです。屋外作業の計画を立てやすい時期です。'
-          }
-        }
+        forecastLine = `${strongWind.dayLabel}は最大風速${strongWind.wind}m/sの予報です。`
       }
     }
   }

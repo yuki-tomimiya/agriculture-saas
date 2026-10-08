@@ -4,6 +4,8 @@ export type DayNormal = {
   precipMm: number
   radiationMj: number
   tempMean: number
+  /** 同じ暦日の最高気温の10年平均。取得できない日は null */
+  tempMax: number | null
 }
 
 export type NormalSeries = {
@@ -23,6 +25,8 @@ export type LocationArchive = {
   tempMean: Array<number | null>
   /** 最低気温。無いときは null。初霜は年ごとに見るので、ここでは平均しない */
   tempMin: Array<number | null> | null
+  /** 最高気温。無いときは null。気象ナビの10年平均との比較に使う */
+  tempMax: Array<number | null> | null
 }
 
 const archiveInflight = new Map<string, Promise<LocationArchive | null>>()
@@ -58,7 +62,7 @@ async function fetchLocationArchive(
     longitude: String(longitude),
     start_date: `${startYear}-01-01`,
     end_date: `${endYear}-12-31`,
-    daily: 'precipitation_sum,shortwave_radiation_sum,temperature_2m_mean,temperature_2m_min',
+    daily: 'precipitation_sum,shortwave_radiation_sum,temperature_2m_mean,temperature_2m_min,temperature_2m_max',
     timezone: 'Asia/Tokyo',
   })
   try {
@@ -73,6 +77,7 @@ async function fetchLocationArchive(
         shortwave_radiation_sum?: Array<number | null>
         temperature_2m_mean?: Array<number | null>
         temperature_2m_min?: Array<number | null>
+        temperature_2m_max?: Array<number | null>
       }
     }
     const times = json.daily?.time
@@ -80,12 +85,14 @@ async function fetchLocationArchive(
     const radiation = json.daily?.shortwave_radiation_sum
     const temps = json.daily?.temperature_2m_mean
     const mins = json.daily?.temperature_2m_min
+    const maxes = json.daily?.temperature_2m_max
     if (!times || !precip || !radiation || !temps) return null
     if (times.length !== precip.length || times.length !== radiation.length || times.length !== temps.length) {
       return null
     }
     const tempMin = mins && mins.length === times.length ? mins : null
-    return { times, precip, radiation, tempMean: temps, tempMin }
+    const tempMax = maxes && maxes.length === times.length ? maxes : null
+    return { times, precip, radiation, tempMean: temps, tempMin, tempMax }
   } catch {
     return null
   }
@@ -101,9 +108,12 @@ export async function getLocationDailyNormals(
 ): Promise<Map<string, DayNormal> | null> {
   const archive = await loadLocationArchive(point)
   if (!archive) return null
-  const { times, precip, radiation, tempMean: temps } = archive
+  const { times, precip, radiation, tempMean: temps, tempMax: maxes } = archive
 
-  const sums = new Map<string, { precip: number; radiation: number; temp: number; count: number }>()
+  const sums = new Map<
+    string,
+    { precip: number; radiation: number; temp: number; count: number; tempMax: number; maxCount: number }
+  >()
   for (let i = 0; i < times.length; i++) {
     const [year, monthText, dayText] = times[i].split('-')
     const month = Number(monthText)
@@ -115,11 +125,16 @@ export async function getLocationDailyNormals(
     const t = temps[i]
     if (p == null || r == null || t == null) continue
     const key = monthDayKey(month, day)
-    const row = sums.get(key) ?? { precip: 0, radiation: 0, temp: 0, count: 0 }
+    const row = sums.get(key) ?? { precip: 0, radiation: 0, temp: 0, count: 0, tempMax: 0, maxCount: 0 }
     row.precip += p
     row.radiation += r
     row.temp += t
     row.count += 1
+    const mx = maxes?.[i]
+    if (mx != null) {
+      row.tempMax += mx
+      row.maxCount += 1
+    }
     sums.set(key, row)
   }
   if (sums.size < 300) return null
@@ -130,9 +145,29 @@ export async function getLocationDailyNormals(
       precipMm: row.precip / row.count,
       radiationMj: row.radiation / row.count,
       tempMean: row.temp / row.count,
+      tempMax: row.maxCount > 0 ? row.tempMax / row.maxCount : null,
     })
   }
   return normals
+}
+
+/** 予報の各日と同じ暦日の、最高気温の10年平均。取れなければ null */
+export function meanNormalMaxTemp(normals: Map<string, DayNormal>, dates: string[]): number | null {
+  let sum = 0
+  let count = 0
+  for (const ymd of dates) {
+    const parts = ymd.split('-')
+    const month = Number(parts[1])
+    let day = Number(parts[2])
+    if (!month || !day) continue
+    if (month === 2 && day === 29) day = 28
+    const row = normals.get(`${month}-${day}`)
+    if (row?.tempMax == null) continue
+    sum += row.tempMax
+    count += 1
+  }
+  if (count === 0) return null
+  return sum / count
 }
 
 /** 暦日の範囲（両端を含む）で、平年降水量を合計する。 */

@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { FORECAST_HEAVY_RAIN_MM } from '@/lib/weather-thresholds'
 
 type RainPoint = {
   dayLabel: string
@@ -254,7 +255,7 @@ export default function RainfallDataCard({
       </div>
 
       <div className="dashboard-gdd-suggestions">
-        <p className="dashboard-gdd-suggestions-title">強い雨が予報される日（20mm以上）</p>
+        <p className="dashboard-gdd-suggestions-title">日降水量{FORECAST_HEAVY_RAIN_MM}mm以上の予報</p>
         {rainyDays.length === 0 ? (
           <p className="dashboard-gdd-note">該当日はありません。</p>
         ) : (
@@ -269,7 +270,7 @@ export default function RainfallDataCard({
       </div>
 
       <p className="dashboard-gdd-note">
-        ※ 降雨前後は、防除・施肥・収穫タイミングを見直してください。単位は日降水量（mm）です。
+        ※ 単位は日降水量（mm）です。
         10年平均（推計）＝この地点の過去10年を平均した再解析です。ミリメートルは推計値です。
       </p>
     </section>

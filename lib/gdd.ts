@@ -101,16 +101,9 @@ function buildSuggestions(args: {
   }
 
   if (targetReachDate && daysToTarget != null) {
-    const dateStr = targetReachDate.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric' })
-    list.push(`予報どおりなら <strong>${dateStr}頃</strong> に収穫適期の目安（約${targetGDD}℃日）に達する見込みです。`)
-    list.push(`収穫・出荷の準備を前倒しで検討してください。`)
-    if (daysToTarget <= 7) {
-      list.push(`あと約${daysToTarget}日です。パートさんのシフトや出荷計画の最終調整をおすすめします。`)
-    }
+    list.push('過去の気温が取れないため、収穫の見込みは日付で出していません。')
   } else if (endCumulativeGDD < targetGDD) {
-    const remaining = Math.round((targetGDD - endCumulativeGDD) / 10) * 10
     list.push(`今後2週間の予報では、まだ目標の${targetGDD}℃日に届きません（見込み：約${Math.round(endCumulativeGDD)}℃日）。`)
-    list.push(`あと約${remaining}℃日程度必要です。気象ナビで週間予報を確認し、収穫時期の目安を更新してください。`)
   }
 
   if (list.length === 0) {

@@ -37,7 +37,7 @@ export default async function WeatherPage({
           <div className="farms-header-text">
             <h1 className="farms-title">気象ナビ</h1>
             <p className="farms-subtitle">
-              今週の気象アドバイスと今後2週間の予報を確認します
+              今週と今後2週間の予報を確認します
             </p>
           </div>
         </div>

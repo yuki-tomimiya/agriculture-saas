@@ -12,6 +12,7 @@ import { computeGDDProjection } from '@/lib/gdd'
 import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
 import { accumulateNormals, getLocationDailyNormals, loadLocationArchive } from '@/lib/weather-normals'
+import { FORECAST_HEAVY_RAIN_MM } from '@/lib/weather-thresholds'
 import {
   forecastAvgByDate,
   formatHarvestWindow,
@@ -160,7 +161,7 @@ export default async function GddCropPage({
         seasonUnreachable: Boolean(archive) && !harvestWindow && currentGDD < targetGDD,
       })
     : null
-  const heavyRainDays = forecastRainfall.filter((d) => d.precipitationMm >= 20)
+  const heavyRainDays = forecastRainfall.filter((d) => d.precipitationMm >= FORECAST_HEAVY_RAIN_MM)
   const previousSeason = await getPreviousSeasonWeather({
     cropId: selectedCrop.id,
     name: selectedCrop.name,

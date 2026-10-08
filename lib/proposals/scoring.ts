@@ -17,7 +17,6 @@ import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones
 import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
-import { formatSprayInterval, matchedSprayInterval, sprayIntervalExceeded } from '@/lib/benchmarks/spray-interval'
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
 import { getLocationFirstFrost, type FirstFrostSummary } from '@/lib/weather-frost'
@@ -422,8 +421,6 @@ export async function scoreGrowingCrops(
   const regionalByFarm = new Map(regionalEntries)
   const needsFallback = crops.some((crop) => !crop.farm || !hasWeatherCoordinates(crop.farm))
   const fallbackRegional = needsFallback ? await buildRegionalLayer(undefined) : null
-  const defaultFarm = farmList[0]
-  const defaultRegional = defaultFarm ? (regionalByFarm.get(defaultFarm.id) ?? null) : fallbackRegional
 
   const harvestSamples = await loadHarvestSamples(userId)
   const measured = await Promise.all(
@@ -529,7 +526,7 @@ export async function scoreGrowingCrops(
         urgency: 'today',
         score: 100,
         title: '収穫適期に入っています',
-        conclusion: '試し掘りや収穫を、雨の前に段取りしましょう。',
+        conclusion: '積算温度が収穫の目安に達しています。',
         action: { kind: 'work', taskType: '収穫', title: `${crop.name}の収穫` },
       })
     } else if (kind !== 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 0.9) {
@@ -558,6 +555,7 @@ export async function scoreGrowingCrops(
 
     if (
       stage &&
+      stage.key !== 'harvest' &&
       !stage.windowOnly &&
       !stage.expectedWorkTypes.some((expected) => workCovers(taskTypes, expected, hasHarvest))
     ) {
@@ -784,35 +782,6 @@ export async function scoreGrowingCrops(
     })
   }
 
-  if (
-    defaultRegional &&
-    (defaultRegional.includes('降水') || defaultRegional.includes('雨') || defaultRegional.includes('風')) &&
-    !isProposalDismissed(dismissed, 'weather-pull-forward')
-  ) {
-    const severe = defaultRegional.includes('風速') || defaultRegional.includes('降水')
-    cards.push({
-      id: 'weather-pull-forward',
-      urgency: 'today',
-      score: severe ? 75 : 35,
-      trigger: 'weather-pull-forward',
-      title: '天候を見て屋外作業を前倒ししましょう',
-      farmId: defaultFarm?.id,
-      farmName: defaultFarm?.name,
-      action: { kind: 'work', title: '屋外作業を前倒しする' },
-      conclusion: severe
-        ? '雨や風の前に、外でできる作業を済ませましょう。'
-        : '今週の天候に合わせて、屋外作業の順番を決めましょう。',
-      layers: mergeLayers({
-        personal: null,
-        regional: defaultRegional,
-        general: null,
-        conclusion: severe
-          ? '雨や風の前に、外でできる作業を済ませましょう。'
-          : '今週の天候に合わせて、屋外作業の順番を決めましょう。',
-      }),
-    })
-  }
-
   const diagnoses = await prisma.soilDiagnosis.findMany({
     where: { userId, ph: { not: null } },
     orderBy: { diagnosedAt: 'desc' },
@@ -923,55 +892,8 @@ export async function scoreGrowingCrops(
     })
   }
 
-  const sprays = await prisma.pesticideRecord.findMany({
-    where: { OR: [{ userId }, { farm: { userId } }] },
-    select: { cropId: true, farmId: true, appliedAt: true },
-  })
-  const sprayCards: ScoredProposal[] = []
-  for (const crop of crops) {
-    const interval = matchedSprayInterval(crop.name, crop.variety)
-    if (!interval) continue
-    if (isProposalDismissed(dismissed, 'spray-interval', crop.id)) continue
-    const dates: Date[] = []
-    for (const row of sprays) {
-      const sameCrop = row.cropId === crop.id
-      const farmWide = row.cropId == null && row.farmId != null && row.farmId === crop.farmId
-      if (sameCrop || farmWide) dates.push(row.appliedAt)
-    }
-    for (const work of crop.workRecords) {
-      if (work.taskType.includes('防除')) dates.push(work.date)
-    }
-    if (dates.length === 0) continue
-    const last = dates.reduce((latest, date) => (date > latest ? date : latest))
-    const since = daysSince(last, today)
-    if (since == null || !sprayIntervalExceeded(since, interval)) continue
-    const conclusion = '天気を見て、次の防除を検討しましょう'
-    const farmName = crop.farm?.name ?? '農場未設定'
-    const regional = (crop.farmId ? regionalByFarm.get(crop.farmId) : undefined) ?? fallbackRegional
-    sprayCards.push({
-      id: `spray-interval-${crop.id}`,
-      urgency: 'thisWeek',
-      score: 46,
-      trigger: 'spray-interval',
-      title: `${crop.name}：前回の防除から${since}日たっています`,
-      cropId: crop.id,
-      cropName: crop.name,
-      farmId: crop.farmId ?? undefined,
-      farmName,
-      variety: crop.variety,
-      conclusion,
-      action: { kind: 'pesticide', title: `${crop.name}の防除を記録` },
-      layers: mergeLayers({
-        personal: `${crop.name}の前回の防除から${since}日です（${farmName}）。`,
-        regional,
-        general: `${interval.name}の目安は${formatSprayInterval(interval)}`,
-        conclusion,
-      }),
-    })
-  }
-
-  const otherCards = cards.filter((card) => card.trigger !== 'soil-ph' && card.trigger !== 'spray-interval')
-  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...groupFrostCards(frostCards), ...soilCards, ...sprayCards].sort(
+  const otherCards = cards.filter((card) => card.trigger !== 'soil-ph')
+  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...groupFrostCards(frostCards), ...soilCards].sort(
     (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
   )
 }

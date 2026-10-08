@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { findCropBenchmark, type CropBenchmark } from '@/lib/benchmarks/crops'
+import { seasonName } from '@/lib/insights/season'
 
 export type SeasonCompareRow = {
   currentCropId: string
@@ -37,16 +38,7 @@ function matchKey(name: string, variety: string | null, farmId: string | null): 
 export function formatPlantingLabel(name: string, variety: string | null, plantingDate: Date | null): string {
   const y = plantingDate ? plantingDate.getFullYear() : null
   const m = plantingDate ? plantingDate.getMonth() + 1 : null
-  const season =
-    y && m
-      ? m <= 5
-        ? `${y}年春作`
-        : m <= 8
-          ? `${y}年夏作`
-          : `${y}年秋作`
-      : y
-        ? `${y}年作`
-        : '作付け時期未設定'
+  const season = y && m ? `${y}年${seasonName(m)}作` : y ? `${y}年作` : '作付け時期未設定'
   const v = variety ? `（${variety}）` : ''
   return `${name}${v} · ${season}`
 }

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
+import { FORECAST_RAIN_HIGHLIGHT_PCT, FORECAST_WIND_HIGHLIGHT_MS } from '@/lib/weather-thresholds'
 
 type Props = {
   farmName?: string | null
@@ -75,10 +76,10 @@ export default async function WeatherForecast({
               </div>
               <div className="dashboard-forecast-meta">
                 <p>{item.maxTemp}℃ / {item.minTemp}℃</p>
-                <p className={item.precipitation >= 60 ? 'dashboard-forecast-alert' : ''}>
+                <p className={item.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT ? 'dashboard-forecast-alert' : ''}>
                   降水 {item.precipitation}%
                 </p>
-                {item.wind >= 10 && (
+                {item.wind >= FORECAST_WIND_HIGHLIGHT_MS && (
                   <p className="dashboard-forecast-alert">風速 {item.wind}m/s</p>
                 )}
               </div>

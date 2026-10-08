@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-season-compare'
+import { seasonName } from '@/lib/insights/season'
 import { loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   getAccumulatedGDDFromApi,
@@ -53,7 +54,7 @@ export function retrospectiveSeasonTitle(plantingDate: Date | null, status: stri
   const year = new Date(plantingDate).getFullYear()
   if (year === new Date().getFullYear()) return '今シーズンの振り返り'
   const month = new Date(plantingDate).getMonth() + 1
-  const season = month >= 3 && month <= 5 ? '春作' : month >= 6 && month <= 8 ? '夏作' : month >= 9 && month <= 11 ? '秋作' : '冬作'
+  const season = `${seasonName(month)}作`
   return `${year}年${season}の振り返り`
 }
 

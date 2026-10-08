@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { prisma } from '@/lib/prisma'
 import { getTodayProposals } from '@/lib/ai-proposal'
+import { LAST_YEAR_SAME_DAY_WINDOW_DAYS } from '@/lib/proposals/constants'
 
 type DayEvents = {
   proposalCount: number
@@ -123,7 +124,7 @@ function CalendarDayCell({
       {hasLastYear && (
         <span
           className="dashboard-calendar-badge dashboard-calendar-badge--lastyear dashboard-calendar-badge--compact"
-          title={`昨年同日:\n${lastYearLabels.join('\n')}`}
+          title={`昨年の前後${LAST_YEAR_SAME_DAY_WINDOW_DAYS}日:\n${lastYearLabels.join('\n')}`}
         >
           昨年{lastYearCount > 1 ? ` ${lastYearCount}件` : ''}
         </span>
@@ -307,36 +308,43 @@ export default async function WorkCalendar({
     }
   }
 
-  /** 昨年の記録を「今年の同じ月日」キーにマッピング */
-  const mapLastYearToThisYear = (date: Date): string => {
-    const thisYear = date.getFullYear() + 1
-    const month = date.getMonth()
-    const day = date.getDate()
-    const probe = new Date(thisYear, month, day)
-    if (probe.getMonth() !== month) return ''
-    return toYmd(probe)
+  /** 昨年の記録を「今年の同じ月日±幅」のキーにマッピング */
+  const mapLastYearToThisYear = (date: Date): string[] => {
+    const keys: string[] = []
+    for (let offset = -LAST_YEAR_SAME_DAY_WINDOW_DAYS; offset <= LAST_YEAR_SAME_DAY_WINDOW_DAYS; offset++) {
+      const shifted = new Date(date)
+      shifted.setDate(shifted.getDate() + offset)
+      const thisYear = shifted.getFullYear() + 1
+      const month = shifted.getMonth()
+      const day = shifted.getDate()
+      const probe = new Date(thisYear, month, day)
+      if (probe.getMonth() !== month) continue
+      const key = toYmd(probe)
+      if (!keys.includes(key)) keys.push(key)
+    }
+    return keys
   }
 
   if (showLastYear) {
     for (const rec of lastYearWorks) {
-      const key = mapLastYearToThisYear(rec.date)
-      if (!key) continue
-      const day = getDay(key)
       const crop = rec.crop?.name ? `（${rec.crop.name}）` : ''
       const label = `${rec.taskType}${crop}`
-      if (!day.lastYearLabels.includes(label)) {
-        day.lastYearLabels.push(label)
-        day.lastYearCount += 1
+      for (const key of mapLastYearToThisYear(rec.date)) {
+        const day = getDay(key)
+        if (!day.lastYearLabels.includes(label)) {
+          day.lastYearLabels.push(label)
+          day.lastYearCount += 1
+        }
       }
     }
     for (const rec of lastYearFertilizers) {
-      const key = mapLastYearToThisYear(rec.appliedAt)
-      if (!key) continue
-      const day = getDay(key)
       const label = `施肥：${rec.productName}`
-      if (!day.lastYearLabels.includes(label)) {
-        day.lastYearLabels.push(label)
-        day.lastYearCount += 1
+      for (const key of mapLastYearToThisYear(rec.appliedAt)) {
+        const day = getDay(key)
+        if (!day.lastYearLabels.includes(label)) {
+          day.lastYearLabels.push(label)
+          day.lastYearCount += 1
+        }
       }
     }
   }
@@ -355,7 +363,7 @@ export default async function WorkCalendar({
     const sectionSub =
       variant === 'history'
         ? '過去の作業記録・施肥をカレンダーで確認できます。月を移動して期間を変えられます。'
-        : '今月・来月・再来月の提案と実績です。薄い「昨年」は前年同日の作業・施肥です。もっと前は「過去の実績」から。'
+        : '今月・来月・再来月の提案と実績です。薄い「昨年」は前年の同じ日の前後2日の作業・施肥です。もっと前は「過去の実績」から。'
 
     return (
       <section className="dashboard-card">
@@ -377,7 +385,7 @@ export default async function WorkCalendar({
         <p className="dashboard-calendar-note">
           {variant === 'history'
             ? '※ 実績バッジにマウスを乗せると内容の概要を表示します。日付クリックで作業記録を登録できます。'
-            : '※ 「昨年」は前年同日の実績です。提案・実績は件数バッジのみ。詳細は過去の実績ページでも確認できます。'}
+            : '※ 「昨年」は前年の同じ日の前後2日の実績です。提案・実績は件数バッジのみ。詳細は過去の実績ページでも確認できます。'}
         </p>
       </section>
     )
@@ -392,7 +400,7 @@ export default async function WorkCalendar({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">作業カレンダー（{todayMonth}月）</h2>
       <p className="dashboard-section-sub">
-        提案（AI）と実績（作業・施肥）、昨年同日の記録を確認できます。日付を押しても記録画面には移りません。
+        提案（AI）と実績（作業・施肥）、昨年の前後2日の記録を確認できます。日付を押しても記録画面には移りません。
       </p>
       <div className="dashboard-calendar-frame">
         <div className="dashboard-calendar-header">
@@ -433,7 +441,7 @@ export default async function WorkCalendar({
             <span className="font-semibold">{recordDays}日</span>
             {lastYearDays > 0 && (
               <>
-                、昨年同日に記録がある日は <span className="font-semibold">{lastYearDays}日</span>
+                、昨年の前後2日に記録がある日は <span className="font-semibold">{lastYearDays}日</span>
               </>
             )}{' '}
             です。

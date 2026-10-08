@@ -48,7 +48,7 @@ const SWEET_POTATO_STAGES: CropStage[] = [
     label: '収穫',
     fromGddRatio: 1,
     expectedWorkTypes: ['収穫'],
-    generalLine: 'さつまいもは積算温度が収穫の目安に達しています。雨の前の掘り取りが安心です',
+    generalLine: 'さつまいもは積算温度が収穫の目安に達しています',
     nextHint: '収穫と出荷の段取り',
   },
 ]
@@ -127,7 +127,7 @@ const CUCUMBER_STAGES: CropStage[] = [
     label: '収穫',
     fromGddRatio: 1,
     expectedWorkTypes: ['収穫'],
-    generalLine: 'キュウリは積算温度が収穫の目安に達しています。最盛期はほぼ毎日の収穫が目安です',
+    generalLine: 'キュウリは積算温度が収穫の目安に達しています',
     nextHint: '収穫',
   },
   {
@@ -249,5 +249,8 @@ export function resolveCropStage(
 }
 
 export function formatStageGeneralLine(stage: CropStage): string {
+  if (stage.key === 'harvest') {
+    return stage.generalLine.endsWith('。') ? stage.generalLine : `${stage.generalLine}。`
+  }
   return `${stage.generalLine}。次は${stage.nextHint}。`
 }
