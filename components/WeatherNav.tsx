@@ -3,8 +3,8 @@ import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { getLocationDailyNormals, meanNormalMaxTemp } from '@/lib/weather-normals'
 import {
   FORECAST_RAIN_HIGHLIGHT_PCT,
-  FORECAST_TEMP_DIFF_RATIO,
   FORECAST_WIND_HIGHLIGHT_MS,
+  tempCompareLabel,
 } from '@/lib/weather-thresholds'
 
 type Props = {
@@ -20,14 +20,6 @@ type Props = {
 function mean(values: number[]): number {
   if (values.length === 0) return 0
   return values.reduce((a, b) => a + b, 0) / values.length
-}
-
-function tempCompareLabel(avgMax: number, normalMax: number | null): string | null {
-  if (normalMax == null || normalMax <= 0) return null
-  const diff = avgMax - normalMax
-  if (Math.abs(diff) / normalMax < FORECAST_TEMP_DIFF_RATIO) return '10年平均並み'
-  const rounded = Math.round(Math.abs(diff) * 10) / 10
-  return diff > 0 ? `10年平均より${rounded}℃高い` : `10年平均より${rounded}℃低い`
 }
 
 export default async function WeatherNav({

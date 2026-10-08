@@ -7,7 +7,16 @@ export const FORECAST_WIND_HIGHLIGHT_MS = 10
 export const FORECAST_HEAVY_RAIN_MM = 20
 
 /**
- * 直近の最高気温が、同じ暦日の10年平均よりこの割合以上ずれたら「高い／低い」と言う。
- * 来年の計画の 103%・97%（根拠台帳 B8）と同じ 3% 幅。
+ * 直近の最高気温の平均と、同じ暦日の10年平均との差がこれ未満なら「10年平均並み」。
+ * 推計の気温は実測と ±1.5℃ほどずれる（根拠台帳 A3）ので、それより小さい差は誤差の内側。
  */
-export const FORECAST_TEMP_DIFF_RATIO = 0.03
+export const FORECAST_TEMP_DIFF_C = 1.5
+
+/** 10年平均が無くなければ、0℃以下でも差で比べる。 */
+export function tempCompareLabel(avgMax: number, normalMax: number | null): string | null {
+  if (normalMax == null || !Number.isFinite(normalMax) || !Number.isFinite(avgMax)) return null
+  const diff = avgMax - normalMax
+  if (Math.abs(diff) < FORECAST_TEMP_DIFF_C) return '10年平均並み'
+  const rounded = Math.round(Math.abs(diff) * 10) / 10
+  return diff > 0 ? `10年平均より${rounded}℃高い` : `10年平均より${rounded}℃低い`
+}

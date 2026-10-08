@@ -101,19 +101,19 @@ function buildInterpretation(args: {
   const diffPct =
     args.normalMm > 0 ? Math.round(((args.thisYearMm - args.normalMm) / args.normalMm) * 100) : null
   const ratioText = normalRatioPct !== null ? `${TEN_YEAR_MEAN}の${normalRatioPct}%` : ''
-  let advice = '作業計画は予報の晴れ間を軸にしましょう。'
+  let fact = ''
   if (args.normalMm === 0 && args.thisYearMm === 0) {
-    advice = `${TEN_YEAR_MEAN}もほぼ降水なしです。乾燥が続く場合は灌水の優先度を上げましょう。`
+    fact = `${TEN_YEAR_MEAN}もほぼ降水なしです。`
   } else if (normalRatioPct !== null && normalRatioPct <= 75) {
-    advice = '乾き気味なので灌水を早めに検討しましょう。'
+    fact = `${TEN_YEAR_MEAN}より雨が少ないです。`
   } else if (normalRatioPct !== null && normalRatioPct >= 125) {
-    advice = `${TEN_YEAR_MEAN}より雨が多いので、排水と病害防除のタイミングに注意しましょう。`
+    fact = `${TEN_YEAR_MEAN}より雨が多いです。`
   }
   const compare =
     ratioText !== ''
       ? `降水量は${ratioText}です（推計では約${args.thisYearMm}mm、${TEN_YEAR_MEAN}は約${args.normalMm}mm）`
       : `${TEN_YEAR_MEAN}の同じ期間は約${args.normalMm}mmです（推計）`
-  const shortLine = `${place}の${period}。${compare}。${lastNote}${advice}`
+  const shortLine = `${place}の${period}。${compare}。${lastNote}${fact}`
   const interpretation = shortLine
   return { shortLine, interpretation, diffPct, normalRatioPct }
 }
@@ -134,23 +134,18 @@ function fallbackLastYear(args: {
     diffPct = Math.round(((args.thisYearMm - args.lastYearMm) / args.lastYearMm) * 100)
   }
   let compare = ''
-  let advice = '排水・灌水の判断は、直近の予報とあわせて確認しましょう。'
   if (args.lastYearMm === null) {
     compare = '昨年同時期のデータは取得できませんでした'
   } else if (args.lastYearMm === 0 && args.thisYearMm === 0) {
     compare = '昨年同時期もほぼ降水なし'
-    advice = '乾燥が続く場合は灌水の優先度を上げましょう。'
   } else if (diffPct !== null && diffPct >= 25) {
     compare = `昨年同時期（約${args.lastYearMm}mm）より多め（+${diffPct}%）`
-    advice = '排水と病害防除のタイミングに注意しましょう。'
   } else if (diffPct !== null && diffPct <= -25) {
     compare = `昨年同時期（約${args.lastYearMm}mm）より少なめ（${diffPct}%）`
-    advice = '灌水や乾燥ストレスへの備えを早めに検討しましょう。'
   } else {
     compare = `昨年同時期（約${args.lastYearMm}mm）と同程度`
-    advice = '昨年並みの雨量帯です。作業計画は予報の晴れ間を軸に。'
   }
-  const shortLine = `${args.base}。${compare}。${advice}`
+  const shortLine = `${args.base}。${compare}。`
   return { shortLine, interpretation: shortLine, diffPct, normalRatioPct: null }
 }
 
