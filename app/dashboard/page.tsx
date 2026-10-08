@@ -138,14 +138,11 @@ export default async function DashboardPage() {
 
   let totalSales = 0
   try {
-    const saleModel = (prisma as { sale?: { aggregate: (args: unknown) => Promise<{ _sum: { amount: number | null } }> } }).sale
-    if (saleModel?.aggregate) {
-      const salesAggregate = await saleModel.aggregate({
-        where: { userId: user.id },
-        _sum: { amount: true },
-      })
-      totalSales = salesAggregate._sum.amount ?? 0
-    }
+    const salesAggregate = await prisma.sale.aggregate({
+      where: { userId: user.id },
+      _sum: { amount: true },
+    })
+    totalSales = salesAggregate._sum.amount ?? 0
   } catch {
     totalSales = 0
   }

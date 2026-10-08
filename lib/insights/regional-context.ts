@@ -88,7 +88,12 @@ function buildInterpretation(args: {
     args.lastYearMm !== null ? `昨年同時期は約${args.lastYearMm}mm。` : ''
 
   if (args.normalMm === null) {
-    return fallbackLastYear({ ...args, place, period, base, lastNote })
+    return fallbackLastYear({
+      dayOfMonth: args.dayOfMonth,
+      thisYearMm: args.thisYearMm,
+      lastYearMm: args.lastYearMm,
+      base,
+    })
   }
 
   const normalRatioPct =
@@ -256,6 +261,6 @@ export async function getRegionalMonthlyLine(point?: {
   longitude?: number | null
   farmName?: string | null
 }): Promise<string | null> {
-  const summary = await getRegionalRainSummary(point)
+  const summary = await getRegionalRainSummary(point ?? {})
   return summary?.shortLine ?? null
 }

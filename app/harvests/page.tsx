@@ -26,7 +26,7 @@ export default async function HarvestsPage({
 
   const { where, whereFallback } = getHarvestWhere(user.id, { cropId: searchParams.cropId })
 
-  let harvests: Awaited<ReturnType<typeof prisma.harvest.findMany>>
+  let harvests
   try {
     harvests = await prisma.harvest.findMany({
       where,

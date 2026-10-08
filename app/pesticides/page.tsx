@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { getPesticideWhere, getCropWhere } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -34,22 +35,22 @@ export default async function PesticidesPage({
     cropId: searchParams.cropId,
     farmId: searchParams.farmId,
   })
-  const records = await (async () => {
-    try {
-      const model = (prisma as { pesticideRecord?: { findMany: (args: unknown) => Promise<unknown[]> } }).pesticideRecord
-      if (!model?.findMany) return []
-      return (await model.findMany({
-        where: pesticideWhere,
-        include: {
-          crop: { include: { farm: true } },
-          farm: true,
-        },
-        orderBy: { appliedAt: 'desc' },
-      })) as Awaited<ReturnType<typeof prisma.pesticideRecord.findMany>>
-    } catch {
-      return []
-    }
-  })()
+  type PesticideRow = Prisma.PesticideRecordGetPayload<{
+    include: { crop: { include: { farm: true } }; farm: true }
+  }>
+  let records: PesticideRow[] = []
+  try {
+    records = await prisma.pesticideRecord.findMany({
+      where: pesticideWhere,
+      include: {
+        crop: { include: { farm: true } },
+        farm: true,
+      },
+      orderBy: { appliedAt: 'desc' },
+    })
+  } catch {
+    records = []
+  }
 
   return (
     <div className="dashboard-page min-h-screen flex">

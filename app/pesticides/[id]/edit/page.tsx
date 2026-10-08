@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
-import PesticideEditForm from './PesticideEditForm'
+import PesticideEditForm, { type RecordForForm } from './PesticideEditForm'
 
 export default async function PesticideEditPage({
   params,
@@ -37,15 +37,15 @@ export default async function PesticideEditPage({
     orderBy: { name: 'asc' },
   })
 
-  const recordForForm = {
+  const recordForForm: RecordForForm = {
     id: record.id,
     appliedAt: record.appliedAt.toISOString().slice(0, 10),
     productName: record.productName,
-    amount: record.amount ?? '',
+    amount: record.amount == null ? '' : record.amount,
     amountUnit: record.amountUnit ?? 'mL',
     dilution: record.dilution ?? '',
-    applicationCount: record.applicationCount ?? '',
-    daysBeforeHarvest: record.daysBeforeHarvest ?? '',
+    applicationCount: record.applicationCount == null ? '' : record.applicationCount,
+    daysBeforeHarvest: record.daysBeforeHarvest == null ? '' : record.daysBeforeHarvest,
     cropId: record.cropId ?? '',
     farmId: record.farmId ?? '',
     notes: record.notes ?? '',

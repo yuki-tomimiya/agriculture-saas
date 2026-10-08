@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
+import type { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 
 export async function GET(request: NextRequest) {
@@ -15,54 +16,28 @@ export async function GET(request: NextRequest) {
     const fromStr = url.searchParams.get('from') ?? undefined
     const toStr = url.searchParams.get('to') ?? undefined
 
-    const where: any = { userId }
+    const where: Prisma.SaleWhereInput = { userId }
     if (cropId) {
       where.cropId = cropId
     }
     if (fromStr || toStr) {
-      where.date = {}
+      const date: Prisma.DateTimeFilter = {}
       if (fromStr) {
         const from = new Date(fromStr)
         if (!Number.isNaN(from.getTime())) {
-          where.date.gte = from
+          date.gte = from
         }
       }
       if (toStr) {
         const to = new Date(toStr)
         if (!Number.isNaN(to.getTime())) {
-          where.date.lte = to
+          date.lte = to
         }
       }
+      where.date = date
     }
 
-    const saleModel = (prisma as {
-      sale?: {
-        findMany: (args: unknown) => Promise<
-          {
-            id: string
-            date: Date
-            quantity: number
-            unit: string
-            unitPrice: number
-            amount: number
-            customerName: string
-            channel: string | null
-            notes: string | null
-            crop: { name: string } | null
-            farm: { name: string } | null
-          }[]
-        >
-      }
-    }).sale
-
-    if (!saleModel?.findMany) {
-      return NextResponse.json(
-        { error: '販売データがまだ利用できません（Prisma の生成・マイグレーションが未実行の可能性があります）' },
-        { status: 500 }
-      )
-    }
-
-    const sales = await saleModel.findMany({
+    const sales = await prisma.sale.findMany({
       where,
       include: {
         crop: true,

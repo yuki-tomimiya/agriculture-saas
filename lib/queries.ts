@@ -8,9 +8,9 @@ export function getCropWhere(
   userId: string,
   options?: { farmId?: string }
 ): { where: Prisma.CropWhereInput; whereFallback: Prisma.CropWhereInput } {
-  const baseOr = [{ userId }, { farm: { userId } }] as const
-  const withFarmFilter = options?.farmId
-    ? { AND: [{ farmId: options.farmId }, { OR: baseOr }] as const }
+  const baseOr: Prisma.CropWhereInput[] = [{ userId }, { farm: { userId } }]
+  const withFarmFilter: Prisma.CropWhereInput = options?.farmId
+    ? { AND: [{ farmId: options.farmId }, { OR: baseOr }] }
     : { OR: baseOr }
   const fallback = options?.farmId
     ? { farmId: options.farmId, farm: { userId } }
@@ -25,8 +25,8 @@ export function getHarvestWhere(
   userId: string,
   options?: { cropId?: string }
 ): { where: Prisma.HarvestWhereInput; whereFallback: Prisma.HarvestWhereInput } {
-  const cropOr = [{ userId }, { farm: { userId } }] as const
-  const where = options?.cropId
+  const cropOr: Prisma.CropWhereInput[] = [{ userId }, { farm: { userId } }]
+  const where: Prisma.HarvestWhereInput = options?.cropId
     ? { crop: { id: options.cropId, OR: cropOr } }
     : { crop: { OR: cropOr } }
   const whereFallback = options?.cropId

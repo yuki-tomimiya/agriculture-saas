@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import type { Prisma } from '@prisma/client'
 import { getFertilizerWhere, getCropWhere } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -35,22 +36,22 @@ export default async function FertilizersPage({
     cropId: searchParams.cropId,
     farmId: searchParams.farmId,
   })
-  const records = await (async () => {
-    try {
-      const model = (prisma as { fertilizerRecord?: { findMany: (args: unknown) => Promise<unknown[]> } }).fertilizerRecord
-      if (!model?.findMany) return []
-      return (await model.findMany({
-        where: fertilizerWhere,
-        include: {
-          crop: { include: { farm: true } },
-          farm: true,
-        },
-        orderBy: { appliedAt: 'desc' },
-      })) as Awaited<ReturnType<typeof prisma.fertilizerRecord.findMany>>
-    } catch {
-      return []
-    }
-  })()
+  type FertilizerRow = Prisma.FertilizerRecordGetPayload<{
+    include: { crop: { include: { farm: true } }; farm: true }
+  }>
+  let records: FertilizerRow[] = []
+  try {
+    records = await prisma.fertilizerRecord.findMany({
+      where: fertilizerWhere,
+      include: {
+        crop: { include: { farm: true } },
+        farm: true,
+      },
+      orderBy: { appliedAt: 'desc' },
+    })
+  } catch {
+    records = []
+  }
 
   const filterQuery = buildWorkManagementQuery(searchParams)
 

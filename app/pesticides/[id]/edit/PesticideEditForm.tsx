@@ -7,7 +7,7 @@ import Sidebar from '@/components/Sidebar'
 
 type CropOption = { id: string; name: string; farmName: string | null }
 type FarmOption = { id: string; name: string }
-type RecordForForm = {
+export type RecordForForm = {
   id: string
   appliedAt: string
   productName: string
