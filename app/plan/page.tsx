@@ -117,7 +117,9 @@ export default async function NextYearPlanPage() {
                   </p>
                   <p className="insights-regional-text">
                     <span className="insights-layer-tag">地域</span>
-                    {plan.windowLabel
+                    {plan.normalNote?.includes('日の長さ')
+                      ? 'この品目は、積算温度の収穫目安を出していません。'
+                      : plan.windowLabel
                       ? `この農場の過去10年それぞれの気温を、植付日から足しています。基準温度は${plan.baseTemp}℃です。`
                       : plan.forecastKind === 'season-days' || plan.normalStatus === 'unreachable'
                       ? `10年平均の気温は取れています。基準温度は${plan.baseTemp}℃です。`

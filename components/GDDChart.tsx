@@ -15,6 +15,8 @@ type GDDChartProps = {
   crop?: CropForGDD
   currentGDD?: number
   targetGDD?: number
+  /** 日長で育つ品目は、収穫目安の線と「目安まで何%」を出さない */
+  showHarvestTarget?: boolean
   /** 赤線の意味。未指定のときは「目標」と書く */
   targetCaption?: string
   daysFromPlanting?: number
@@ -88,6 +90,7 @@ export default function GDDChart({
   crop,
   currentGDD = 0,
   targetGDD = 1000,
+  showHarvestTarget = true,
   targetCaption,
   daysFromPlanting = 0,
   historicalPoints = [],
@@ -142,7 +145,7 @@ export default function GDDChart({
     lastYearMaxGDD * 1.1,
     projectedMaxGDD * 1.05,
     normalMax * 1.05,
-    targetGDD
+    showHarvestTarget ? targetGDD : 0
   )
   const stepY = chooseStep(maxGDD)
   const maxGDDRounded = Math.ceil(maxGDD / stepY) * stepY
@@ -222,7 +225,7 @@ export default function GDDChart({
       <p className="dashboard-section-sub">
         上段は実績（緑）と数値予報モデルの計算（青破線）
         {hasLastYear ? '、前回作付け（灰）' : ''}
-        の累積推移、下段はこの基準までの進捗を表示します。
+        の累積推移{showHarvestTarget ? '、下段はこの基準までの進捗を表示します。' : 'を表示します。'}
         {!crop && ' 作物一覧で植え付け日を登録した作物がここに表示されます。'}
         {crop && !hasHistory && ' この作物の農場に緯度・経度を登録すると、実データに基づく推移が表示されます。'}
       </p>
@@ -297,7 +300,7 @@ export default function GDDChart({
                 strokeDasharray="3 2"
               />
             )}
-            {targetGDD > 0 && (
+            {showHarvestTarget && targetGDD > 0 && (
               <line
                 x1={scaleX(0, displayDays)}
                 x2={scaleX(displayDays, displayDays)}
@@ -384,7 +387,7 @@ export default function GDDChart({
                 </span>
               </div>
             )}
-            {targetGDD > 0 && (
+            {showHarvestTarget && targetGDD > 0 && (
               <div className="dashboard-gdd-graph-marker-row">
                 <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#DC2626' }} />
                 <span className="dashboard-gdd-graph-marker-text">{basisLabel}</span>
@@ -404,10 +407,13 @@ export default function GDDChart({
         <p className="dashboard-gdd-note">
           {normalGddByDay == null
             ? '10年平均を取得できなかったため、比較の線は出していません。'
-            : `10年平均（推計）＝この地点の過去10年を平均した再解析です。赤の破線は${basisLabel}です。`}
+            : showHarvestTarget
+              ? `10年平均（推計）＝この地点の過去10年を平均した再解析です。赤の破線は${basisLabel}です。`
+              : '10年平均（推計）＝この地点の過去10年を平均した再解析です。'}
         </p>
       )}
 
+      {showHarvestTarget && (
       <div className="dashboard-gdd-summary">
         <p className="dashboard-gdd-summary-title">基準までの進捗</p>
         <p className="dashboard-gdd-summary-text">
@@ -448,6 +454,7 @@ export default function GDDChart({
           </p>
         )}
       </div>
+      )}
       <p className="dashboard-gdd-note">
         ※ 日々の気温データと連携すると積算温度が自動で更新されます。詳細な作物比較は生育ナビで確認できます。
       </p>

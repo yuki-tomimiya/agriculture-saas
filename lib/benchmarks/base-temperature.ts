@@ -5,7 +5,7 @@ export const CROP_BASE_TEMPERATURES = [
   { name: 'ピーマン', baseTemp: 10, gddLabel: '約 850〜1,050' },
   { name: 'キュウリ', baseTemp: 10, gddLabel: '約 650〜850' },
   { name: 'スイートコーン', baseTemp: 10, gddLabel: '約 1,300〜1,500' },
-  { name: 'イチゴ', baseTemp: 5, gddLabel: '約 600〜800（開花〜収穫）' },
+  { name: 'イチゴ', baseTemp: 5, gddLabel: '使いません（日の長さで花芽が決まる）' },
   { name: 'さつまいも', baseTemp: 10, gddLabel: '約 1,700（暫定）' },
 ] as const
 

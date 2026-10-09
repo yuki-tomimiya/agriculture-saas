@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { getCropSeasonRetrospective, getRetrospectiveGdd } from '@/lib/insights/crop-season-retrospective'
 import { formatDateShort } from '@/lib/utils'
+import NationalYieldNote from '@/components/NationalYieldNote'
+import { DAYLENGTH_NOTE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 
 function formatYen(n: number): string {
   return `¥${n.toLocaleString('ja-JP')}`
@@ -177,6 +179,13 @@ export default async function CropRetrospectivePage({
               同名・同品種・同農場の前回作付けがありません
             </p>
           )}
+          <NationalYieldNote
+            cropName={data.cropName}
+            variety={data.variety}
+            qty={data.harvestQty}
+            unit={data.harvestUnit}
+            areaM2={data.fieldAreaM2}
+          />
           <div className="farm-new-actions" style={{ marginTop: '0.75rem' }}>
             {(data.harvestCount === 0 || data.harvestQty === 0) && (
               <Link
@@ -270,6 +279,7 @@ export default async function CropRetrospectivePage({
                 </Suspense>
               </span>
             </div>
+            {!isDaylengthCrop(data.cropName, data.variety) && (
             <div>
               <span className="insights-regional-stat-label">
                 {data.gddBasis?.source === 'provisional' ? '一般の目安（暫定）' : '収穫時点の実績'}
@@ -278,8 +288,13 @@ export default async function CropRetrospectivePage({
                 {data.gddBasis ? `${data.gddBasis.gdd}℃日` : '—'}
               </span>
             </div>
+            )}
           </div>
-          {data.gddBasis && (
+          {isDaylengthCrop(data.cropName, data.variety) ? (
+            <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
+              {DAYLENGTH_NOTE}
+            </p>
+          ) : data.gddBasis && (
             <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
               {data.gddBasis.summary}
               {data.gddBasis.detail ? `。${data.gddBasis.detail}` : ''}

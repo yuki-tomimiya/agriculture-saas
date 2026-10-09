@@ -6,6 +6,8 @@ import Sidebar from '@/components/Sidebar'
 import CropDeleteButton from '@/components/CropDeleteButton'
 import CropMilestones from '@/components/CropMilestones'
 import { milestoneFormItems } from '@/lib/proposals/milestones'
+import { cropPoints } from '@/lib/benchmarks/crop-points'
+import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 import { formatDateShort } from '@/lib/utils'
 
 export default async function CropDetailPage({
@@ -58,6 +60,8 @@ export default async function CropDetailPage({
 
   const statusLabel =
     crop.status === 'growing' ? '栽培中' : crop.status === 'harvested' ? '収穫済み' : '完了'
+  const points = cropPoints(crop.name, crop.variety)
+  const daylength = isDaylengthCrop(crop.name, crop.variety)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -153,6 +157,27 @@ export default async function CropDetailPage({
             )}
           </dl>
         </div>
+
+        {(points.length > 0 || daylength) && (
+          <div className="bg-white p-6 rounded-lg shadow mb-8">
+            <h2 className="text-xl font-semibold mb-4">この品目のポイント</h2>
+            {daylength && (
+              <p className="text-gray-800 mb-3">
+                {DAYLENGTH_NOTE}出典：{DAYLENGTH_SOURCE}。
+              </p>
+            )}
+            {points.length > 0 && (
+              <ul className="space-y-3">
+                {points.map((point) => (
+                  <li key={point.text}>
+                    <p className="text-gray-900">{point.text}</p>
+                    <p className="text-sm text-gray-500">出典：{point.source}</p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
 
         <CropMilestones
           cropId={crop.id}

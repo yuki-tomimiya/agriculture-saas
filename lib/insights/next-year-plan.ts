@@ -11,6 +11,7 @@ import {
   type HarvestBasis,
   type HarvestSample,
 } from '@/lib/insights/harvest-gdd-basis'
+import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 
 export type PlanWorkHint = {
   taskType: string
@@ -253,7 +254,9 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       let windowLate: Date | null = null
       let windowAdjustNote: string | null = null
       let seasonDayFallback: number | null = seasonDays
-      if (!crop.plantingDate) {
+      if (isDaylengthCrop(crop.name, crop.variety)) {
+        normalNote = `${DAYLENGTH_NOTE}出典：${DAYLENGTH_SOURCE}。`
+      } else if (!crop.plantingDate) {
         normalStatus = 'no-date'
         normalNote = '植付日がないので、来年の収穫日は出せません。'
       } else if (!hasWeatherCoordinates(point)) {
