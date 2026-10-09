@@ -103,11 +103,11 @@ function buildSuggestions(args: {
   if (targetReachDate && daysToTarget != null) {
     list.push('過去の気温が取れないため、収穫の見込みは日付で出していません。')
   } else if (endCumulativeGDD < targetGDD) {
-    list.push(`今後2週間の予報では、まだ目標の${targetGDD}℃日に届きません（見込み：約${Math.round(endCumulativeGDD)}℃日）。`)
+    list.push(`今後2週間の計算では、まだ目標の${targetGDD}℃日に届きません（見込み：約${Math.round(endCumulativeGDD)}℃日）。`)
   }
 
   if (list.length === 0) {
-    list.push('気象予報を反映した見通しは、植え付け日と現在の積算温度が分かると表示されます。')
+    list.push('数値予報モデルの計算を反映した見通しは、植え付け日と現在の積算温度が分かると表示されます。')
   }
 
   return list

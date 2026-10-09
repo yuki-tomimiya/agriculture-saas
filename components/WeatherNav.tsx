@@ -35,7 +35,7 @@ export default async function WeatherNav({
         <div className="dashboard-weather-header">
           <div className="dashboard-weather-header-text">
             <h2>今週の気象ナビ</h2>
-            <p>農場を登録し、農場情報で緯度・経度を入力すると、その地点の予報に基づいて表示されます。</p>
+            <p>農場を登録し、農場情報で緯度・経度を入力すると、その地点の計算結果に基づいて表示されます。</p>
           </div>
         </div>
         <div className="dashboard-empty" style={{ padding: '1.25rem' }}>
@@ -54,7 +54,7 @@ export default async function WeatherNav({
         <div className="dashboard-weather-header">
           <div className="dashboard-weather-header-text">
             <h2>今週の気象ナビ</h2>
-            <p>登録した緯度・経度の地点で Open-Meteo の予報を取得しています。</p>
+            <p>登録した緯度・経度の地点で、数値予報モデル（Open-Meteo）の計算結果を取得しています。</p>
           </div>
           <div className="dashboard-weather-tags">
             <span className="dashboard-weather-tag-gray">拠点：{farmName ?? '—'}（地点未登録）</span>
@@ -81,7 +81,7 @@ export default async function WeatherNav({
         <div className="dashboard-weather-header">
           <div className="dashboard-weather-header-text">
             <h2>今週の気象ナビ</h2>
-            <p>直近7日間の予報（Open-Meteo）です。</p>
+            <p>直近7日間の、数値予報モデル（Open-Meteo）の計算結果です。</p>
           </div>
           <div className="dashboard-weather-tags">
             <span className="dashboard-weather-tag-green">
@@ -91,7 +91,7 @@ export default async function WeatherNav({
         </div>
         <div className="dashboard-empty" style={{ padding: '1.25rem' }}>
           <p className="dashboard-empty-text">
-            気象予報の取得に失敗しました。しばらくしてから再度お試しください。
+            計算結果の取得に失敗しました。しばらくしてから再度お試しください。
           </p>
         </div>
       </section>
@@ -120,7 +120,7 @@ export default async function WeatherNav({
       <div className="dashboard-weather-header">
         <div className="dashboard-weather-header-text">
           <h2>今週の気象ナビ</h2>
-          <p>直近7日間の予報（Open-Meteo）です。</p>
+          <p>直近7日間の、数値予報モデル（Open-Meteo）の計算結果です。</p>
         </div>
         <div className="dashboard-weather-tags">
           <span className="dashboard-weather-tag-green">
@@ -148,7 +148,7 @@ export default async function WeatherNav({
           </ul>
         </div>
         <div className="dashboard-weather-col dashboard-weather-col--blue">
-          <h3>取り上げる予報</h3>
+          <h3>取り上げる計算結果</h3>
           <ul>
             <li>
               ・降水確率{FORECAST_RAIN_HIGHLIGHT_PCT}%以上：

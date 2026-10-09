@@ -46,6 +46,7 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
         <p className="faq-section-text">
           画面の「10年平均」は、その農場の座標で、過去10年の同じ月日を平均した値です。
           出どころは Open-Meteo です。中身は ERA5 などの再解析で、観測所・衛星・レーダーを数値モデルで統合した推計です。実測そのものではありません。
+          先の天気も同じ出どころで、表示しているのは気象庁の予報ではなく、海外の数値予報モデル（Open-Meteo）の計算結果です。大きくずれることがあります。
         </p>
         <p className="faq-section-text">
           格子の大きさはおおよそ 9〜25km です。近い農場同士では、同じ値になることがあります。
@@ -72,7 +73,7 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
           先の日付ほど幅は広く、収穫が近づくほど狭くなります。年ごとの気温の振れを、そのまま幅にしています。
         </p>
         <p className="faq-section-text">
-          明日から14日先までは、その年の過去の気温ではなく、いまの予報の平均気温を足します。15日目以降は、その年の同じ月日の気温です。年内に届かない年は、幅に入れません。1年も届かないときは「今季は、収穫の目安に届かない見込みです」と出します。
+          明日から14日先までは、その年の過去の気温ではなく、いまの数値予報モデルの計算の平均気温を足します。15日目以降は、その年の同じ月日の気温です。年内に届かない年は、幅に入れません。1年も届かないときは「今季は、収穫の目安に届かない見込みです」と出します。
         </p>
         <p className="faq-section-text">
           目安が暫定のときは、この幅より大きくずれることがあります。そのときは「目安が暫定のため、これより大きくずれることがあります」と添えます。
@@ -252,7 +253,7 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
         気象庁が観測した初霜ではありません。この期間に4℃以下まで下がらない地点では、霜の締切は出しません。
       </p>
       <p className="faq-section-text">
-        谷・盆地・くぼ地は、表示より早く霜がおりることがあります。
+        谷・盆地・くぼ地は、表示より早く霜がおりることがあります。気象庁が観測した初霜と比べると、内陸では約10日早い地点がありました。
       </p>
       <p className="faq-section-note">
         出典は、{FROST_SOURCE_FUKUOKA.publisher}「{FROST_SOURCE_FUKUOKA.name}」{FROST_SOURCE_FUKUOKA.detail}

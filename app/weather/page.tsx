@@ -37,7 +37,7 @@ export default async function WeatherPage({
           <div className="farms-header-text">
             <h1 className="farms-title">気象ナビ</h1>
             <p className="farms-subtitle">
-              今週と今後2週間の予報を確認します
+              今週と今後2週間の計算結果を確認します。表示している先の天気は、気象庁の予報ではなく、海外の数値予報モデル（Open-Meteo）の計算結果です。大きくずれることがあります。
             </p>
           </div>
         </div>

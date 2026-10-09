@@ -255,7 +255,7 @@ export default function RainfallDataCard({
       </div>
 
       <div className="dashboard-gdd-suggestions">
-        <p className="dashboard-gdd-suggestions-title">日降水量{FORECAST_HEAVY_RAIN_MM}mm以上の予報</p>
+        <p className="dashboard-gdd-suggestions-title">日降水量{FORECAST_HEAVY_RAIN_MM}mm以上の計算結果</p>
         {rainyDays.length === 0 ? (
           <p className="dashboard-gdd-note">該当日はありません。</p>
         ) : (

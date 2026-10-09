@@ -220,7 +220,7 @@ export default function GDDChart({
         <Link href="/faq/gdd" className="chart-help" aria-label="積算温度とは">？</Link>
       </h2>
       <p className="dashboard-section-sub">
-        上段は実績（緑）と予報（青破線）
+        上段は実績（緑）と数値予報モデルの計算（青破線）
         {hasLastYear ? '、前回作付け（灰）' : ''}
         の累積推移、下段はこの基準までの進捗を表示します。
         {!crop && ' 作物一覧で植え付け日を登録した作物がここに表示されます。'}

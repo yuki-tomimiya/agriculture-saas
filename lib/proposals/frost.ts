@@ -31,6 +31,7 @@ export const FROST_SOURCE_JMA = {
 
 const SEASON_LEAD_DAYS = 30
 const FORECAST_TODAY_DAYS = 6
+const INLAND_FROST_NOTE = '内陸や窪地では、これより早く霜がおりることがあります。'
 
 export function isFrostTrigger(trigger: string | undefined): boolean {
   return trigger === FROST_FORECAST_TRIGGER || trigger === FROST_SEASON_TRIGGER
@@ -100,9 +101,9 @@ export function assessSweetPotatoFrost(args: {
     return {
       trigger: FROST_FORECAST_TRIGGER,
       urgency: withinWeek ? 'today' : 'thisWeek',
-      title: `${when}に最低気温${temp}℃の予報です`,
+      title: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です`,
       conclusion: forecastConclusion(args.hasSeenRoots),
-      generalLine: `${when}に最低気温${temp}℃の予報です。霜のおそれがあるので、${args.hasSeenRoots ? 'その前に掘り上げます' : 'まず試し掘りで太りを確かめて、その前に掘り上げます'}。`,
+      generalLine: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です。霜のおそれがあるので、${args.hasSeenRoots ? 'その前に掘り上げます' : 'まず試し掘りで太りを確かめて、その前に掘り上げます'}。${INLAND_FROST_NOTE}`,
       sourceLine: sourceLine(),
     }
   }
@@ -119,7 +120,7 @@ export function assessSweetPotatoFrost(args: {
       urgency: 'thisWeek',
       title: '今季は、収穫の目安に届かない見込みです',
       conclusion: `${when}。${action}。`,
-      generalLine: `今季は、収穫の目安に届かない見込みです。${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。`,
+      generalLine: `今季は、収穫の目安に届かない見込みです。${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。${INLAND_FROST_NOTE}`,
       sourceLine: sourceLine(),
     }
   }
@@ -132,7 +133,7 @@ export function assessSweetPotatoFrost(args: {
     urgency: 'thisWeek',
     title: when,
     conclusion: `収穫の目安に届くのは${span}。それより、霜が先になる年があります。${action}。`,
-    generalLine: `${when}。収穫の目安に届くのは${span}。それより、霜が先になる年があります。${after}。`,
+    generalLine: `${when}。収穫の目安に届くのは${span}。それより、霜が先になる年があります。${after}。${INLAND_FROST_NOTE}`,
     sourceLine: sourceLine(),
   }
 }

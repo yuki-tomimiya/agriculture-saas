@@ -202,11 +202,11 @@ export async function buildRegionalLayer(point?: {
     const near = forecast.slice(0, 5)
     const heavyRain = near.find((d) => d.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT)
     if (heavyRain) {
-      forecastLine = `${heavyRain.dayLabel}は降水確率${heavyRain.precipitation}%の予報です。`
+      forecastLine = `数値予報モデルの計算では、${heavyRain.dayLabel}の降水確率は${heavyRain.precipitation}%です。`
     } else {
       const strongWind = near.find((d) => d.wind >= FORECAST_WIND_HIGHLIGHT_MS)
       if (strongWind) {
-        forecastLine = `${strongWind.dayLabel}は最大風速${strongWind.wind}m/sの予報です。`
+        forecastLine = `数値予報モデルの計算では、${strongWind.dayLabel}の最大風速は${strongWind.wind}m/sです。`
       }
     }
   }

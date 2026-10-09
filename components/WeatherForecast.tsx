@@ -22,7 +22,7 @@ export default async function WeatherForecast({
       <section className="dashboard-card">
         <h2 className="dashboard-section-title">今後2週間の気象情報</h2>
         <div className="dashboard-empty" style={{ padding: '1rem 0' }}>
-          <p className="dashboard-empty-text">農場を登録し、地点を入力すると予報が表示されます。</p>
+          <p className="dashboard-empty-text">農場を登録し、地点を入力すると計算結果が表示されます。</p>
           <Link href="/farms/new" className="btn btn-primary">
             農場を追加
           </Link>
@@ -40,7 +40,7 @@ export default async function WeatherForecast({
         </p>
         <div className="dashboard-empty" style={{ padding: '1rem 0' }}>
           <p className="dashboard-empty-text">
-            緯度・経度が登録されると、この農場の地点に基づく2週間予報を表示します。
+            緯度・経度が登録されると、この農場の地点の計算結果を表示します。
           </p>
           {farmId ? (
             <Link href={`/farms/${farmId}/edit`} className="btn btn-primary">
@@ -58,12 +58,12 @@ export default async function WeatherForecast({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">今後2週間の気象情報</h2>
       <p className="dashboard-section-sub">
-        拠点：{farmName ?? '未選択'}（北緯 {Number(latitude).toFixed(4)} / 東経 {Number(longitude).toFixed(4)}） ／ 本日から14日先までの日ごとの予報
+        拠点：{farmName ?? '未選択'}（北緯 {Number(latitude).toFixed(4)} / 東経 {Number(longitude).toFixed(4)}） ／ 本日から14日先までの日ごとの計算結果
       </p>
       {forecastData.length === 0 ? (
         <div className="dashboard-empty" style={{ padding: '1rem 0' }}>
           <p className="dashboard-empty-text">
-            気象予報の取得に失敗しました。しばらくしてから再度お試しください。
+            計算結果の取得に失敗しました。しばらくしてから再度お試しください。
           </p>
         </div>
       ) : (
