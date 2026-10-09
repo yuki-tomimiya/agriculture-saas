@@ -5,6 +5,8 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import FarmDeleteButton from '@/components/FarmDeleteButton'
 import { formatDateShort } from '@/lib/utils'
+import { climateRegionSentence, CLIMATE_REGION_SOURCE, meanAnnualTemp } from '@/lib/benchmarks/climate-region'
+import { getLocationDailyNormals } from '@/lib/weather-normals'
 
 export default async function FarmDetailPage({
   params,
@@ -47,6 +49,16 @@ export default async function FarmDetailPage({
   })
 
   if (!farm) notFound()
+
+  let regionSentence: string | null = null
+  if (farm.latitude != null && farm.longitude != null) {
+    const normals = await getLocationDailyNormals({
+      latitude: farm.latitude,
+      longitude: farm.longitude,
+    })
+    const mean = normals ? meanAnnualTemp(normals.values()) : null
+    if (mean != null) regionSentence = climateRegionSentence(mean)
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -103,6 +115,20 @@ export default async function FarmDetailPage({
             )}
           </div>
         </div>
+
+        {regionSentence && (
+          <div className="bg-white p-6 rounded-lg shadow mb-8">
+            <h2 className="text-xl font-semibold mb-2">地域区分</h2>
+            <p className="text-gray-800">{regionSentence}</p>
+            <p className="text-sm text-gray-500 mt-2">
+              出典：{CLIMATE_REGION_SOURCE.publisher}『{CLIMATE_REGION_SOURCE.name}』{CLIMATE_REGION_SOURCE.detail}
+              {' '}
+              <a href={CLIMATE_REGION_SOURCE.url} className="text-green-700 hover:underline">
+                {CLIMATE_REGION_SOURCE.url}
+              </a>
+            </p>
+          </div>
+        )}
 
         {/* 圃場一覧 */}
         {farm.fields.length > 0 && (
