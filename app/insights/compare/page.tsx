@@ -192,6 +192,7 @@ function CompareCard({
         qty={row.harvestQty}
         unit={row.harvestUnit}
         areaM2={row.fieldAreaM2}
+        sharedField={row.sharedField}
       />
 
       <div className="insights-layers">

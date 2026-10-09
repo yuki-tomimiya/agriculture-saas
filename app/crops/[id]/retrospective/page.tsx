@@ -185,6 +185,7 @@ export default async function CropRetrospectivePage({
             qty={data.harvestQty}
             unit={data.harvestUnit}
             areaM2={data.fieldAreaM2}
+            sharedField={data.sharedField}
           />
           <div className="farm-new-actions" style={{ marginTop: '0.75rem' }}>
             {(data.harvestCount === 0 || data.harvestQty === 0) && (

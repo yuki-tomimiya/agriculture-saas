@@ -235,6 +235,7 @@ model SoilDiagnosis {
   nitrogen    Float? // 硝酸態窒素 mg/100g
   phosphorus  Float? // 有効態リン酸 mg/100g
   potassium   Float? // 交換性カリ mg/100g
+  timing      String? // 作付け前 / 栽培中。未選択は null
   notes       String?
   photoPath   String? // data/soil-photos 内のファイル名だけ
   createdAt   DateTime @default(now())

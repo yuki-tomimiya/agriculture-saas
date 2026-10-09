@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { formatDateShort } from '@/lib/utils'
 import SoilDiagnosisActions from './SoilDiagnosisActions'
-import { soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
+import { SOIL_TIMING_DURING, soilNutrientHits, soilTimingSuffix } from '@/lib/benchmarks/soil-nutrients'
 
 function measure(label: string, value: number | null, unit: string, note?: string): string | null {
   if (value == null) return null
@@ -109,9 +109,16 @@ export default async function SoilDiagnosisPage({
                   <article key={groupFarmId} className="card insights-section">
                     <h2 className="insights-section-title">
                       {farmName}
-                      <span className="insights-card-meta"> 最新 {formatDateShort(latest.diagnosedAt)}</span>
+                      <span className="insights-card-meta">
+                        {' '}
+                        最新 {formatDateShort(latest.diagnosedAt)}
+                        {soilTimingSuffix(latest.timing)}
+                      </span>
                     </h2>
                     {lines.length > 0 && <p className="insights-regional-text">{lines.join('。')}。</p>}
+                    {latest.timing === SOIL_TIMING_DURING && (
+                      <p className="insights-regional-text">栽培中に測った値には、作付け前の目安を当てはめていません。</p>
+                    )}
                     {hits.length > 0 && (
                       <p className="insights-regional-text">
                         これは作付け前に測った値の目安です。
@@ -133,6 +140,7 @@ export default async function SoilDiagnosisPage({
                         {older.map((record) => (
                           <li key={record.id}>
                             {formatDateShort(record.diagnosedAt)}
+                            {soilTimingSuffix(record.timing)}
                             {record.ph != null ? ` pH ${record.ph}` : ''}
                           </li>
                         ))}

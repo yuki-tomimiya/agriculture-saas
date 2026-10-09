@@ -102,6 +102,16 @@ export default function SoilNewForm({
                   className="input"
                 />
               </div>
+              <fieldset className="auth-field">
+                <legend className="label">測った時期</legend>
+                <p className="farms-subtitle">未選択のまま保存できます。選んだときだけ記録します。</p>
+                <label className="label">
+                  <input type="radio" name="timing" value="作付け前" /> 作付け前（肥料を入れる前）
+                </label>
+                <label className="label">
+                  <input type="radio" name="timing" value="栽培中" /> 栽培中
+                </label>
+              </fieldset>
               <div className="farm-new-row">
                 <div className="auth-field farm-new-half">
                   <label htmlFor="soil-farm" className="label">

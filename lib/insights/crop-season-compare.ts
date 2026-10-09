@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { findCropBenchmark, type CropBenchmark } from '@/lib/benchmarks/crops'
 import { seasonName } from '@/lib/insights/season'
+import { latestHarvestDate, sharesFieldPeriod, type FieldStay } from '@/lib/benchmarks/national-yield'
 
 export type SeasonCompareRow = {
   currentCropId: string
@@ -18,6 +19,7 @@ export type SeasonCompareRow = {
   harvestQty: number
   harvestUnit: string
   fieldAreaM2: number | null
+  sharedField: boolean
   harvestRecorded: boolean
   previousHarvestQty: number | null
   previousHarvestRecorded: boolean | null
@@ -116,6 +118,14 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
     byKey.set(key, list)
   }
 
+  const stays: FieldStay[] = crops.map((crop) => ({
+    id: crop.id,
+    fieldId: crop.fieldId,
+    plantingDate: crop.plantingDate,
+    status: crop.status,
+    lastHarvestDate: latestHarvestDate(crop.harvests.map((harvest) => harvest.date)),
+  }))
+
   const rows: SeasonCompareRow[] = []
 
   for (const group of byKey.values()) {
@@ -185,6 +195,16 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       harvestQty,
       harvestUnit,
       fieldAreaM2: current.field?.area ?? null,
+      sharedField: sharesFieldPeriod(
+        stays.find((stay) => stay.id === current.id) ?? {
+          id: current.id,
+          fieldId: current.fieldId,
+          plantingDate: current.plantingDate,
+          status: current.status,
+          lastHarvestDate: null,
+        },
+        stays
+      ),
       harvestRecorded,
       previousHarvestQty,
       previousHarvestRecorded,

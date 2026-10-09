@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-season-compare'
 import { seasonName } from '@/lib/insights/season'
+import { latestHarvestDate, sharesFieldPeriod } from '@/lib/benchmarks/national-yield'
 import { loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   getAccumulatedGDDFromApi,
@@ -21,6 +22,7 @@ export type CropSeasonRetrospective = {
   harvestQty: number
   harvestUnit: string
   fieldAreaM2: number | null
+  sharedField: boolean
   harvestCount: number
   salesCount: number
   firstHarvestDate: Date | null
@@ -219,6 +221,35 @@ export async function getCropSeasonRetrospective(
   const gddAsOf = !endStamp ? null : endStamp.getTime() >= today.getTime() ? 'today' : 'harvest'
   const seasonTitle = retrospectiveSeasonTitle(crop.plantingDate, crop.status)
 
+  const fieldMates = crop.fieldId
+    ? await prisma.crop.findMany({
+        where: { fieldId: crop.fieldId, NOT: { id: crop.id } },
+        select: {
+          id: true,
+          fieldId: true,
+          plantingDate: true,
+          status: true,
+          harvests: { select: { date: true } },
+        },
+      })
+    : []
+  const sharedField = sharesFieldPeriod(
+    {
+      id: crop.id,
+      fieldId: crop.fieldId,
+      plantingDate: crop.plantingDate,
+      status: crop.status,
+      lastHarvestDate,
+    },
+    fieldMates.map((mate) => ({
+      id: mate.id,
+      fieldId: mate.fieldId,
+      plantingDate: mate.plantingDate,
+      status: mate.status,
+      lastHarvestDate: latestHarvestDate(mate.harvests.map((harvest) => harvest.date)),
+    }))
+  )
+
   const label = formatPlantingLabel(crop.name, crop.variety, crop.plantingDate)
   const headlineSummary = buildHeadline({
     status: crop.status,
@@ -246,6 +277,7 @@ export async function getCropSeasonRetrospective(
     harvestQty,
     harvestUnit,
     fieldAreaM2: crop.field?.area ?? null,
+    sharedField,
     harvestCount,
     salesCount,
     firstHarvestDate,

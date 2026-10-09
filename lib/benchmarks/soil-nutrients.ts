@@ -29,6 +29,14 @@ export const SOIL_PHOSPHORUS_SKIP_MG = 100
 
 const BEFORE_PLANTING = '作付け前に測った値の目安です。'
 
+export const SOIL_TIMING_BEFORE = '作付け前'
+export const SOIL_TIMING_DURING = '栽培中'
+
+export function soilTimingSuffix(timing: string | null | undefined): string {
+  if (timing === SOIL_TIMING_BEFORE || timing === SOIL_TIMING_DURING) return `（${timing}）`
+  return ''
+}
+
 export type SoilNutrientHit = {
   key: 'ec' | 'nitrogen' | 'phosphorus'
   /** 土壌診断の数字の横に付ける短い一言 */
@@ -41,7 +49,9 @@ export function soilNutrientHits(row: {
   ec?: number | null
   nitrogen?: number | null
   phosphorus?: number | null
+  timing?: string | null
 }): SoilNutrientHit[] {
+  if (row.timing === SOIL_TIMING_DURING) return []
   const hits: SoilNutrientHit[] = []
   if (row.ec != null && row.ec > SOIL_EC_OVER_MS) {
     hits.push({

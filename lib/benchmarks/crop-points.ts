@@ -31,7 +31,7 @@ const ROWS: readonly PointRow[] = [
     ],
   },
   {
-    keywords: ['ピーマン', 'パプリカ'],
+    keywords: ['ピーマン'],
     points: [
       {
         text: '秋田県の資料では、咲いている花の上に葉が4〜5枚なら健全、1〜2枚なら草勢が落ちています。',

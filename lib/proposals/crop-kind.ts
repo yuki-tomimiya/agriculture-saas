@@ -49,6 +49,7 @@ export function isTomatoCrop(cropName: string, variety?: string | null): boolean
 /**
  * 一斉収穫型と、型が分からない作物。
  * 収穫の記録があれば聞く。無ければ、収穫予定日を過ぎて目安以上のときだけ聞く。
+ * 日長の品目は、収穫が無ければ収穫予定日を過ぎたときだけ聞く。積算温度は見ない。
  * 連続収穫型は、収穫が1回でもあれば聞かない。
  */
 export function askSeasonFinish(input: {
@@ -56,8 +57,10 @@ export function askSeasonFinish(input: {
   hasHarvest: boolean
   harvestDatePast: boolean
   overTarget: boolean
+  daylength?: boolean
 }): boolean {
   if (input.kind === 'continuous') return false
   if (input.hasHarvest) return true
+  if (input.daylength) return input.harvestDatePast
   return input.harvestDatePast && input.overTarget
 }

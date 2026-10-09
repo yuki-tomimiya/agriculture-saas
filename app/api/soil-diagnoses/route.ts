@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { parseOptionalNumber, removeSoilPhoto, saveSoilPhoto } from '@/lib/soil-diagnosis'
+import { SOIL_TIMING_BEFORE, SOIL_TIMING_DURING } from '@/lib/benchmarks/soil-nutrients'
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,6 +45,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: '農場が見つかりません' }, { status: 400 })
     }
 
+    const timingRaw = String(form.get('timing') ?? '').trim()
+    const timing = timingRaw === SOIL_TIMING_BEFORE || timingRaw === SOIL_TIMING_DURING ? timingRaw : null
+
     const fieldIdRaw = String(form.get('fieldId') ?? '').trim()
     let fieldId: string | null = null
     if (fieldIdRaw) {
@@ -77,6 +81,7 @@ export async function POST(request: NextRequest) {
           nitrogen: typeof nitrogen === 'number' ? nitrogen : null,
           phosphorus: typeof phosphorus === 'number' ? phosphorus : null,
           potassium: typeof potassium === 'number' ? potassium : null,
+          timing,
           notes: notesRaw || null,
           photoPath,
         },

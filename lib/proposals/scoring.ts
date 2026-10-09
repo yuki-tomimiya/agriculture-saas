@@ -17,7 +17,7 @@ import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones
 import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
-import { soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
+import { SOIL_TIMING_DURING, soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
 import { getLocationFirstFrost, type FirstFrostSummary } from '@/lib/weather-frost'
@@ -484,7 +484,15 @@ export async function scoreGrowingCrops(
       crop.harvestDate != null && new Date(crop.harvestDate).setHours(0, 0, 0, 0) < today.getTime()
     const overTarget = gddRatio != null && gddRatio >= 1
     const kind = cropHarvestKind(crop.name, crop.variety)
-    if (askSeasonFinish({ kind, hasHarvest, harvestDatePast, overTarget })) {
+    if (
+      askSeasonFinish({
+        kind,
+        hasHarvest,
+        harvestDatePast,
+        overTarget,
+        daylength: isDaylengthCrop(crop.name, crop.variety),
+      })
+    ) {
       hits.push({
         trigger: 'season-finish',
         urgency: 'today',
@@ -901,6 +909,7 @@ export async function scoreGrowingCrops(
   for (const [farmId, diagnosis] of latestByFarm) {
     const trigger = `soil-nutrient:${farmId}`
     if (isProposalDismissed(dismissed, trigger)) continue
+    if (diagnosis.timing === SOIL_TIMING_DURING) continue
     const hits = soilNutrientHits(diagnosis)
     if (hits.length === 0) continue
     const diagnosed = new Date(diagnosis.diagnosedAt)
