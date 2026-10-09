@@ -20,6 +20,7 @@ export type CropSeasonRetrospective = {
   seasonDays: number | null
   harvestQty: number
   harvestUnit: string
+  fieldAreaM2: number | null
   harvestCount: number
   salesCount: number
   firstHarvestDate: Date | null
@@ -118,6 +119,7 @@ export async function getCropSeasonRetrospective(
 ): Promise<CropSeasonRetrospective | null> {
   const include = {
     farm: true,
+    field: { select: { area: true } },
     harvests: { orderBy: { date: 'asc' as const } },
     sales: true,
     workRecords: { orderBy: { date: 'asc' as const } },
@@ -243,6 +245,7 @@ export async function getCropSeasonRetrospective(
     seasonDays,
     harvestQty,
     harvestUnit,
+    fieldAreaM2: crop.field?.area ?? null,
     harvestCount,
     salesCount,
     firstHarvestDate,

@@ -5,6 +5,7 @@ import Sidebar from '@/components/Sidebar'
 import { getCropSeasonComparisons } from '@/lib/insights/crop-season-compare'
 import { getRegionalContextForUser } from '@/lib/insights/regional-context'
 import { formatDateShort } from '@/lib/utils'
+import NationalYieldNote from '@/components/NationalYieldNote'
 
 function formatYen(n: number): string {
   return `¥${n.toLocaleString('ja-JP')}`
@@ -184,6 +185,14 @@ function CompareCard({
           )}
         </p>
       )}
+
+      <NationalYieldNote
+        cropName={row.cropName}
+        variety={row.variety}
+        qty={row.harvestQty}
+        unit={row.harvestUnit}
+        areaM2={row.fieldAreaM2}
+      />
 
       <div className="insights-layers">
         <p>

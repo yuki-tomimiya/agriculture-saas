@@ -17,6 +17,7 @@ export type SeasonCompareRow = {
   previousPlantingDate: Date | null
   harvestQty: number
   harvestUnit: string
+  fieldAreaM2: number | null
   harvestRecorded: boolean
   previousHarvestQty: number | null
   previousHarvestRecorded: boolean | null
@@ -91,6 +92,7 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
   const { where, whereFallback } = getCropWhere(userId)
   const include = {
     farm: true,
+    field: { select: { area: true } },
     harvests: true,
     sales: true,
   } as const
@@ -182,6 +184,7 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       previousPlantingDate: previous?.plantingDate ?? null,
       harvestQty,
       harvestUnit,
+      fieldAreaM2: current.field?.area ?? null,
       harvestRecorded,
       previousHarvestQty,
       previousHarvestRecorded,
