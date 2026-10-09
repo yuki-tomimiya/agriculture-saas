@@ -193,6 +193,9 @@ export default function PesticideNewForm({
               </div>
             </div>
 
+            <p className="text-sm text-gray-600">
+              ラベルの使用時期（収穫◯日前まで）と総使用回数を確かめてください。
+            </p>
             <div className="auth-field">
               <label htmlFor="pesticide-application-count" className="label">使用回数（この作付けで何回目か）</label>
               <input

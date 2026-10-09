@@ -8,6 +8,7 @@ export const FAQ_SLUGS = [
   'soil-ph',
   'stages',
   'frost',
+  'pest-timing',
 ] as const
 
 export type FaqSlug = (typeof FAQ_SLUGS)[number]
@@ -74,6 +75,12 @@ export const FAQ_ENTRIES: FaqEntry[] = [
     summary: '日数では段階を決めず、節目を本人に聞いて確かめます。',
     related: ['gdd', 'frost'],
   },
+  {
+    slug: 'pest-timing',
+    title: '防除のタイミングは？',
+    summary: '日数では示しません。発生予察、見回り、ラベル、ローテーションの順です。',
+    related: ['stages'],
+  },
 ]
 
 export const FAQ_GROUPS: { heading: string; slugs: FaqSlug[] }[] = [
@@ -87,7 +94,7 @@ export const FAQ_GROUPS: { heading: string; slugs: FaqSlug[] }[] = [
   },
   {
     heading: '土と生育',
-    slugs: ['soil-ph', 'stages'],
+    slugs: ['soil-ph', 'stages', 'pest-timing'],
   },
 ]
 

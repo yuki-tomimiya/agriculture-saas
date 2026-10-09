@@ -145,6 +145,9 @@ export default function PesticideEditForm({
                 <input id="pesticide-days" type="number" min="0" value={daysBeforeHarvest} onChange={(e) => setDaysBeforeHarvest(e.target.value)} className="input" />
               </div>
             </div>
+            <p className="text-sm text-gray-600">
+              ラベルの使用時期（収穫◯日前まで）と総使用回数を確かめてください。
+            </p>
             <div className="auth-field">
               <label htmlFor="pesticide-application-count" className="label">使用回数</label>
               <input id="pesticide-application-count" type="number" min="1" value={applicationCount} onChange={(e) => setApplicationCount(e.target.value)} className="input" />

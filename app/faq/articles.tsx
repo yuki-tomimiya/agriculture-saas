@@ -271,6 +271,47 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
     )
   }
 
+  if (slug === 'pest-timing') {
+    return (
+      <>
+        <p className="faq-section-text">
+          防除の間隔は、病害と農薬によって違います。Tillto は防除の日数を示しません。
+        </p>
+        <p className="faq-section-text">
+          国の総合防除の考え方と、千葉県の病害虫防除指針が示しているのは、次の順番です。
+        </p>
+        <ol className="faq-section-text list-decimal pl-5">
+          <li>県の病害虫防除所が出す発生予察情報（注意報・警報）を確認します。</li>
+          <li>見回りで、発生の初期に見つけたら防除します。</li>
+          <li>農薬は、ラベルの使用時期（収穫◯日前まで）と総使用回数を守り、使用記録をつけます。</li>
+          <li>同じ系統の薬剤を続けて使わず、ローテーションします。</li>
+        </ol>
+        <p className="faq-section-note">
+          出典は、農林水産省「総合防除実践ガイドライン」、
+          「農薬を使用する者が遵守すべき基準を定める省令」、
+          農林水産省「農薬使用者の皆さんへ」、
+          千葉県「病害虫防除指針」（令和8年）です。
+          {' '}
+          <a href="https://www.maff.go.jp/j/syouan/syokubo/gaicyu/g_ipm/attach/pdf/index-34.pdf" className="text-green-700 hover:underline">
+            https://www.maff.go.jp/j/syouan/syokubo/gaicyu/g_ipm/attach/pdf/index-34.pdf
+          </a>
+          {' '}
+          <a href="https://www.maff.go.jp/j/nouyaku/n_kaisei/h141211/h141211f.html" className="text-green-700 hover:underline">
+            https://www.maff.go.jp/j/nouyaku/n_kaisei/h141211/h141211f.html
+          </a>
+          {' '}
+          <a href="https://www.maff.go.jp/j/nouyaku/n_tekisei/attach/pdf/info-6.pdf" className="text-green-700 hover:underline">
+            https://www.maff.go.jp/j/nouyaku/n_tekisei/attach/pdf/info-6.pdf
+          </a>
+          {' '}
+          <a href="https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010301.pdf" className="text-green-700 hover:underline">
+            https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010301.pdf
+          </a>
+        </p>
+      </>
+    )
+  }
+
   return (
     <>
       <p className="faq-section-text">
