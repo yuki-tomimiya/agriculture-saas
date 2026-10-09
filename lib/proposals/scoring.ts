@@ -17,6 +17,7 @@ import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones
 import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
+import { soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
 import { getLocationFirstFrost, type FirstFrostSummary } from '@/lib/weather-frost'
@@ -783,8 +784,9 @@ export async function scoreGrowingCrops(
   }
 
   const diagnoses = await prisma.soilDiagnosis.findMany({
-    where: { userId, ph: { not: null } },
+    where: { userId },
     orderBy: { diagnosedAt: 'desc' },
+    include: { farm: { select: { name: true } } },
   })
   const latestByFarm = new Map<string, (typeof diagnoses)[number]>()
   for (const row of diagnoses) {
@@ -887,6 +889,37 @@ export async function scoreGrowingCrops(
       layers: mergeLayers({
         personal: `${group.farmName}の土壌 pH は ${group.ph}（${group.dateLabel} 診断）。この農場の${subject}が対象です`,
         general,
+        conclusion,
+      }),
+    })
+  }
+
+  for (const [farmId, diagnosis] of latestByFarm) {
+    const trigger = `soil-nutrient:${farmId}`
+    if (isProposalDismissed(dismissed, trigger)) continue
+    const hits = soilNutrientHits(diagnosis)
+    if (hits.length === 0) continue
+    const diagnosed = new Date(diagnosis.diagnosedAt)
+    const dateLabel = `${diagnosed.getFullYear()}/${diagnosed.getMonth() + 1}/${diagnosed.getDate()}`
+    const farmName = diagnosis.farm.name
+    const conclusion = '次の作付けの元肥を、診断の値に合わせて見直す目安です。'
+    soilCards.push({
+      id: trigger,
+      urgency: 'thisWeek',
+      score: 46,
+      trigger,
+      title: `${farmName}：土の養分が、次の元肥を見直す目安を超えています`,
+      farmId,
+      farmName,
+      conclusion,
+      action: {
+        kind: 'work',
+        taskType: '土づくり',
+        title: `${farmName}の元肥を診断に合わせて見直す`,
+      },
+      layers: mergeLayers({
+        personal: `${farmName}の${dateLabel}の診断です。`,
+        general: hits.map((hit) => hit.sentence).join(''),
         conclusion,
       }),
     })

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
 import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
+import { SOIL_NUTRIENT_SOURCE_MAFF, SOIL_PH_SOURCE_MIYAZAKI } from '@/lib/benchmarks/soil-nutrients'
 import { FROST_SOURCE_FUKUOKA, FROST_SOURCE_JMA } from '@/lib/proposals/frost'
 import { MILESTONE_SOURCE_CHIBA, MILESTONE_SOURCE_LINKS, milestoneFaqRows } from '@/lib/proposals/milestones'
 import type { FaqSlug } from '@/lib/faq-index'
@@ -144,16 +145,42 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
           <a href={SOIL_PH_SOURCE_MAFF.url} className="text-green-700 hover:underline">
             {SOIL_PH_SOURCE_MAFF.url}
           </a>
-          さつまいもだけは、{SOIL_PH_SOURCE_CHIBA.publisher}「{SOIL_PH_SOURCE_CHIBA.name}」（{SOIL_PH_SOURCE_CHIBA.year}）です。
+          さつまいもだけは、{SOIL_PH_SOURCE_CHIBA.publisher}「{SOIL_PH_SOURCE_CHIBA.name}」（{SOIL_PH_SOURCE_CHIBA.year}）と、
+          {SOIL_PH_SOURCE_MIYAZAKI.publisher}「{SOIL_PH_SOURCE_MIYAZAKI.name}」（{SOIL_PH_SOURCE_MIYAZAKI.year}）{SOIL_PH_SOURCE_MIYAZAKI.detail}です。
+          どちらも暖かい地域の資料なので、全国の一般とは呼びません。
           {' '}
           <a href={SOIL_PH_SOURCE_CHIBA.url} className="text-green-700 hover:underline">
             {SOIL_PH_SOURCE_CHIBA.url}
+          </a>
+          {' '}
+          <a href={SOIL_PH_SOURCE_MIYAZAKI.url} className="text-green-700 hover:underline">
+            {SOIL_PH_SOURCE_MIYAZAKI.url}
           </a>
         </p>
         <p className="faq-section-note">
           地域・土壌型により変わります。都道府県の施肥基準がある場合はそちらを優先してください。
           さつまいもは生育できるpHが広く、pHが高いと立枯病が出やすいため、pH5.5以上では石灰を入れません。
-          EC・窒素・リン酸・カリの良し悪しは判定しません。
+        </p>
+        <p className="faq-section-note">
+          EC・硝酸態窒素・有効態リン酸は、作付け前に測った値の目安で、超えたときだけ知らせます。超えていなくても「適正」とは言いません。
+          作付け前の EC が 0.3 mS/cm（土：水＝1：5）を超えたら、肥料が残っている目安です。砂地（砂丘未熟土など）では 0.1 が目安です。
+          硝酸態窒素が 10 mg/100g を超えたら、そのぶん次の元肥の窒素を減らせます。有効態リン酸が 100 mg/100g 以上なら、リン酸の肥料は施さなくてよい目安です。
+          減らす量までは言いません。交換性カリは、保肥力（CEC）が分からないと判定できないので、言いません。
+        </p>
+        <p className="faq-section-note">
+          出典は、{SOIL_NUTRIENT_SOURCE_MAFF.publisher}「{SOIL_NUTRIENT_SOURCE_MAFF.name}」（{SOIL_NUTRIENT_SOURCE_MAFF.detail}）、
+          秋田県「施肥低減マニュアル」（令和5年3月）、岩手県大船渡「きゅうり技術情報」（令和8年2月）、
+          宮崎県「主要作物の土壌診断基準」（平成9年3月）、高知県施肥基準、和歌山県「土壌肥料対策指針」野菜・花き編、
+          東京都「土壌診断基準」（平成31年3月）です。
+          {' '}
+          <a href={SOIL_NUTRIENT_SOURCE_MAFF.url} className="text-green-700 hover:underline">
+            {SOIL_NUTRIENT_SOURCE_MAFF.url}
+          </a>
+        </p>
+        <p className="faq-section-note">
+          県ごとの減肥の例です。秋田県のマニュアルでは、作付け前の硝酸態窒素が 36 mg/100g 以上なら元肥の窒素は入れません。
+          岩手県大船渡のきゅうり技術情報では、21 mg/100g 以上なら元肥の窒素は入れません。
+          東京都の土壌診断基準では、EC が 1.5 mS/cm 以上になると肥やけの原因になることがあります。
         </p>
         <div className="overflow-x-auto">
           <table className="gdd-reference-table">
@@ -168,8 +195,9 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
                 <tr key={row.name}>
                   <td>{row.name}</td>
                   <td>
-                    {formatSoilPhRange(row.min, row.max)}
-                    {row.source === 'chiba' ? '（千葉県）' : ''}
+                    {row.source === 'chiba'
+                      ? `千葉県・宮崎県の資料では ${formatSoilPhRange(row.min, row.max)}`
+                      : formatSoilPhRange(row.min, row.max)}
                   </td>
                 </tr>
               ))}

@@ -5,10 +5,11 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { formatDateShort } from '@/lib/utils'
 import SoilDiagnosisActions from './SoilDiagnosisActions'
+import { soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
 
-function measure(label: string, value: number | null, unit: string): string | null {
+function measure(label: string, value: number | null, unit: string, note?: string): string | null {
   if (value == null) return null
-  return `${label} ${value}${unit}`
+  return note ? `${label} ${value}${unit}（${note}）` : `${label} ${value}${unit}`
 }
 
 export default async function SoilDiagnosisPage({
@@ -47,7 +48,7 @@ export default async function SoilDiagnosisPage({
             </p>
             <h1 className="farms-title">土壌診断</h1>
             <p className="farms-subtitle">
-              農場ごとの診断です。養分は mg/100g です。pH 以外の良し悪しは判定しません。
+              農場ごとの診断です。養分は mg/100g です。作付け前に測った値の目安で、超えた項目だけ一言を付けます。
             </p>
           </div>
           <Link
@@ -95,11 +96,13 @@ export default async function SoilDiagnosisPage({
                 const group = records.filter((record) => record.farmId === groupFarmId)
                 const latest = group[0]
                 const older = group.slice(1)
+                const hits = soilNutrientHits(latest)
+                const noteOf = (key: 'ec' | 'nitrogen' | 'phosphorus') => hits.find((hit) => hit.key === key)?.pageNote
                 const lines = [
                   measure('pH', latest.ph, ''),
-                  measure('EC', latest.ec, ' mS/cm'),
-                  measure('硝酸態窒素', latest.nitrogen, ' mg/100g'),
-                  measure('有効態リン酸', latest.phosphorus, ' mg/100g'),
+                  measure('EC', latest.ec, ' mS/cm', noteOf('ec')),
+                  measure('硝酸態窒素', latest.nitrogen, ' mg/100g', noteOf('nitrogen')),
+                  measure('有効態リン酸', latest.phosphorus, ' mg/100g', noteOf('phosphorus')),
                   measure('交換性カリ', latest.potassium, ' mg/100g'),
                 ].filter((line): line is string => line != null)
                 return (
@@ -109,6 +112,12 @@ export default async function SoilDiagnosisPage({
                       <span className="insights-card-meta"> 最新 {formatDateShort(latest.diagnosedAt)}</span>
                     </h2>
                     {lines.length > 0 && <p className="insights-regional-text">{lines.join('。')}。</p>}
+                    {hits.length > 0 && (
+                      <p className="insights-regional-text">
+                        これは作付け前に測った値の目安です。
+                        {hits.some((hit) => hit.key === 'ec') ? '砂地（砂丘未熟土など）では 0.1 が目安です。' : ''}
+                      </p>
+                    )}
                     {latest.field && <p className="insights-regional-text">圃場 {latest.field.name}</p>}
                     {latest.notes && <p className="insights-regional-text">{latest.notes}</p>}
                     {latest.photoPath && (
