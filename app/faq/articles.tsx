@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
 import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
 import { FROST_SOURCE_FUKUOKA, FROST_SOURCE_JMA } from '@/lib/proposals/frost'
-import { MILESTONE_SOURCE_AKITA, MILESTONE_SOURCE_CHIBA, milestoneFaqRows } from '@/lib/proposals/milestones'
+import { MILESTONE_SOURCE_CHIBA, MILESTONE_SOURCE_LINKS, milestoneFaqRows } from '@/lib/proposals/milestones'
 import type { FaqSlug } from '@/lib/faq-index'
 
 export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
@@ -191,17 +191,24 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
           畑を見られないので、節目は本人に聞いて確かめます。聞くのは、答えで助言が変わるときだけです。
           収穫を始めたかどうかのように、記録を見れば分かることは聞きません。
         </p>
+        <p className="faq-section-text">
+          南北の2県以上で一致したものだけを一般として出し、1県だけのものは県名を付けています。
+          最終花房の上には、葉を2〜3枚残して摘心します。宮城県・熊本県野菜振興協会の資料は2枚、秋田県の資料は3枚です。
+        </p>
+        <p className="faq-section-text">
+          ピーマンは、1番花が咲く直前（つぼみが白くなったころ）が定植の適期です（秋田県・鳥取県の資料）。作付けを登録したあとでは遅いので、ここでは聞きません。
+          1番花を摘むのは秋田県の資料と、鳥取県の資料の「5月定植の場合」だけなので、問いかけにはしていません。
+        </p>
         <p className="faq-section-note">
-          トマトの出典は、{MILESTONE_SOURCE_AKITA.publisher}「{MILESTONE_SOURCE_AKITA.name}」{MILESTONE_SOURCE_AKITA.detail}です。
-          {' '}
-          <a href={MILESTONE_SOURCE_AKITA.url} className="text-green-700 hover:underline">
-            {MILESTONE_SOURCE_AKITA.url}
-          </a>
-          さつまいもの出典は、{MILESTONE_SOURCE_CHIBA.publisher}「{MILESTONE_SOURCE_CHIBA.name}」（{MILESTONE_SOURCE_CHIBA.year}）です。
-          {' '}
-          <a href={MILESTONE_SOURCE_CHIBA.url} className="text-green-700 hover:underline">
-            {MILESTONE_SOURCE_CHIBA.url}
-          </a>
+          出典は次のとおりです。
+          {MILESTONE_SOURCE_LINKS.map((source) => (
+            <span key={source.url}>
+              {' '}
+              <a href={source.url} className="text-green-700 hover:underline">
+                {source.label}
+              </a>
+            </span>
+          ))}
         </p>
         <div className="overflow-x-auto">
           <table className="gdd-reference-table">

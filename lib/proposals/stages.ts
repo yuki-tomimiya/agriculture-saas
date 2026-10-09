@@ -88,7 +88,7 @@ const TOMATO_STAGES: CropStage[] = [
   },
 ]
 
-/** 月次ヒントの「定植・活着」「整枝」と、目標積算温度1000 */
+/** 日数の段階は 2026-10-09 に節目へ置き換えた。収穫の目安だけ残す */
 const EGGPLANT_STAGES: CropStage[] = [
   {
     key: 'harvest',
@@ -98,29 +98,9 @@ const EGGPLANT_STAGES: CropStage[] = [
     generalLine: 'ナスは積算温度が収穫の目安に達しています',
     nextHint: '収穫',
   },
-  {
-    key: 'training',
-    label: '整枝',
-    fromDays: 30,
-    toDays: 60,
-    windowOnly: true,
-    expectedWorkTypes: ['誘引・仕立て', '整枝'],
-    generalLine: 'ナスは、茂って風通しが悪ければ、整枝・摘葉をします',
-    nextHint: '整枝・摘葉',
-  },
-  {
-    key: 'rooting',
-    label: '定植・活着',
-    fromDays: 0,
-    toDays: 21,
-    windowOnly: true,
-    expectedWorkTypes: ['植え付け'],
-    generalLine: 'ナスは、苗が根付いていれば活着しています。乾いていれば灌水をします',
-    nextHint: '活着の確認',
-  },
 ]
 
-/** 月次ヒントの「定植・誘引」「収穫開始」と、目標積算温度750。中間の段階はヒントに作業名がない */
+/** 日数の段階は 2026-10-09 に節目へ置き換えた。収穫の目安だけ残す */
 const CUCUMBER_STAGES: CropStage[] = [
   {
     key: 'harvest',
@@ -130,19 +110,9 @@ const CUCUMBER_STAGES: CropStage[] = [
     generalLine: 'キュウリは積算温度が収穫の目安に達しています',
     nextHint: '収穫',
   },
-  {
-    key: 'rooting',
-    label: '定植・誘引',
-    fromDays: 0,
-    toDays: 21,
-    windowOnly: true,
-    expectedWorkTypes: ['植え付け', '誘引・仕立て'],
-    generalLine: 'キュウリは、定植していれば誘引を始めます',
-    nextHint: '誘引',
-  },
 ]
 
-/** 目標積算温度950。月次ヒントの中間は追肥・防除だけで、作業記録の段階にはしていない */
+/** 日数の段階は 2026-10-09 に外した。ピーマンの節目は収穫記録だけなので、聞かない */
 const PEPPER_STAGES: CropStage[] = [
   {
     key: 'harvest',
@@ -152,41 +122,10 @@ const PEPPER_STAGES: CropStage[] = [
     generalLine: 'ピーマンは積算温度が収穫の目安に達しています',
     nextHint: '収穫',
   },
-  {
-    key: 'rooting',
-    label: '定植',
-    fromDays: 0,
-    toDays: 21,
-    windowOnly: true,
-    expectedWorkTypes: ['植え付け'],
-    generalLine: 'ピーマンは、苗が根付いていれば初期の灌水と誘引をします',
-    nextHint: '活着の確認',
-  },
 ]
 
-/** 目標積算温度はない。3月植付け・4月土寄せの月次ヒントを、植付からの日数にした */
-const POTATO_STAGES: CropStage[] = [
-  {
-    key: 'hilling',
-    label: '土寄せ',
-    fromDays: 20,
-    toDays: 45,
-    windowOnly: true,
-    expectedWorkTypes: ['土寄せ'],
-    generalLine: 'ジャガイモは、茎が伸びていれば土寄せでイモの緑化を防ぎます',
-    nextHint: '土寄せ',
-  },
-  {
-    key: 'rooting',
-    label: '植付け',
-    fromDays: 0,
-    toDays: 14,
-    windowOnly: true,
-    expectedWorkTypes: ['植え付け'],
-    generalLine: 'ジャガイモは、植えたばかりなら萌芽を確認します',
-    nextHint: '萌芽の確認',
-  },
-]
+/** 日数の段階は 2026-10-09 に節目へ置き換えた。積算温度の収穫段階は持たない */
+const POTATO_STAGES: CropStage[] = []
 
 const STAGE_SETS: { name: string; match: (cropName: string, variety?: string | null) => boolean; stages: CropStage[] }[] = [
   { name: 'さつまいも', match: isSweetPotato, stages: SWEET_POTATO_STAGES },
