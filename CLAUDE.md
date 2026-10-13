@@ -2,10 +2,13 @@
 
 ## 作業開始時に必ず読む（この順）
 
-1. `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\SESSION_HANDOFF.md` — 直近チャットの文脈・合意・未着手（Obsidian）
-2. `PROJECT_CONTEXT.md` — コードの地図・ルート・主要 lib（このリポジトリ）
-3. `docs/議事録/minutes-content.json` — 方針・Phase・次にやることの正本（このリポジトリ）
-4. `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\daily\` の当日メモ（あれば）— Obsidian 日報
+1. `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\セッション引き継ぎ\引き継ぎ書.md` — **セッションの引き継ぎ書**：仕事の進め方（説明の仕方・依頼の渡し方・レビューの手順・切り替え）。メインのセッション（Claude）用
+2. `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\SESSION_HANDOFF.md` — **業務の引き継ぎ**：いまの状態・判断待ち・次にやること・分かったこと（Obsidian）
+3. `PROJECT_CONTEXT.md` — コードの地図・ルート・主要 lib（このリポジトリ）
+4. `docs/議事録/minutes-content.json` — 方針・Phase・次にやることの正本（このリポジトリ）
+5. `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\daily\` の当日メモ（あれば）— Obsidian 日報
+
+運用のルールと業務の中身は種類が違うので、2つの引き継ぎに混ぜない（2026-10-13 ユーザー）。
 
 ### 作業開始時に必ず作る（日報・Obsidian）
 
@@ -39,7 +42,7 @@
 |---|---|
 | 方針・優先順・Phase・決定 | `docs/議事録/minutes-content.json` を更新 → `node docs/議事録/generate-minutes.mjs` で Word 再生成 |
 | パス・画面・lib・Sidebarの変更 | `PROJECT_CONTEXT.md` のみ更新 |
-| チャット終了時・大きな合意後 | Obsidian `Tillto/SESSION_HANDOFF.md` を上書き（セクション3・4） |
+| チャット終了時・大きな合意後 | Obsidian `Tillto/SESSION_HANDOFF.md`（業務の引き継ぎ）の「3. いまの状態」「4. 判断待ちと次にやること」を上書き。運用のルールが変わったら `セッション引き継ぎ/引き継ぎ書.md` も直し、切り替えの記録に追記 |
 | 作業セッション開始時 | Obsidian 日報 `Tillto/daily/YYYY-MM-DD.md` を作成。終了時に「やったこと/残り」を追記 |
 | 調査・差別化などのナレッジ | Obsidian `Tillto/` に作成・更新（リポジトリ `docs/` には書かない） |
 
@@ -82,6 +85,7 @@ Cursor が実装、Claude がレビューと指示書、という分担。ただ
 
 - 着手前に、気づいた点を**1〜2点に絞って**先に挙げる（簡単な方法／副作用／指示の誤り／一緒に直すべきこと）。なければ「特になし」でよい
 - 指示と違う作りにしたら、理由を日報の「気づいた点・提案」に書く
+- 指示書の範囲の外でも、「利用者（農家）にとってこうしたほうがよい」と思うアイディアがあれば、日報の「気づいた点・提案」に書いてよい。**実装はせず提案だけ**（採否は Claude とユーザー。2026-10-13 ユーザー）
 
 **コミットを頼まれたとき**: `git status` で全体を見て、アプリのコード以外（エディタ設定・画面の状態）が混ざっていないか確認する。新規ファイルの入れ忘れにも注意。
 
