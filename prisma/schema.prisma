@@ -244,6 +244,30 @@ model SoilDiagnosis {
   @@index([userId, diagnosedAt])
 }
 
+/// 気象庁「過去の気象データ検索」の日別気温。画面を開いたときはここだけ読む。
+model JmaDailyTemp {
+  id      String  @id @default(cuid())
+  blockNo String
+  date    String // YYYY-MM-DD
+  tMean   Float?
+  tMax    Float?
+  tMin    Float?
+
+  @@unique([blockNo, date])
+  @@index([blockNo, date])
+}
+
+/// 観測所・年・月を取り終えた印。値がすべて欠けの月も付ける。
+model JmaMonthFetch {
+  id        String   @id @default(cuid())
+  blockNo   String
+  year      Int
+  month     Int
+  fetchedAt DateTime @default(now())
+
+  @@unique([blockNo, year, month])
+}
+
 model ProposalDismissal {
   id          String   @id @default(cuid())
   userId      String

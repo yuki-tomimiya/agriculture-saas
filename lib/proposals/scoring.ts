@@ -20,7 +20,9 @@ import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks
 import { SOIL_TIMING_DURING, soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
-import { getLocationFirstFrost, type FirstFrostSummary } from '@/lib/weather-frost'
+import { readCoolNight, readFarmFrost, type FrostOrigin } from '@/lib/jma/frost-record'
+import { JMA_SEARCH_TOP } from '@/lib/jma/thresholds'
+import { formatKm } from '@/lib/jma/stations'
 import {
   askSeasonFinish,
   cropHarvestKind,
@@ -28,7 +30,7 @@ import {
   TOMATO_NIGHT_SOURCE,
   TOMATO_POLLEN_MIN_C,
 } from '@/lib/proposals/crop-kind'
-import { firstMeanMinBelow, isOnOrAfterCoolNight } from '@/lib/weather-night'
+import { isOnOrAfterCoolNight } from '@/lib/weather-night'
 import { isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
@@ -395,7 +397,11 @@ export async function scoreGrowingCrops(
   const climateByFarm = new Map<
     string,
     {
-      frost: FirstFrostSummary | null
+      frost: FrostOrigin | null
+      coolNight: { month: number; day: number } | null
+      coolSource: 'station' | 'estimate'
+      coolStationName: string | null
+      coolDistanceKm: number | null
       forecast: Awaited<ReturnType<typeof getForecastDays>>
       archive: LocationArchive | null
     }
@@ -406,17 +412,26 @@ export async function scoreGrowingCrops(
         latitude: Number(farm.latitude),
         longitude: Number(farm.longitude),
       }
-      const [text, frost, forecast, archive] = await Promise.all([
+      const [text, frost, cool, forecast, archive] = await Promise.all([
         buildRegionalLayer({
           latitude: farm.latitude,
           longitude: farm.longitude,
           farmName: farm.name,
         }),
-        getLocationFirstFrost(point),
+        readFarmFrost(point),
+        readCoolNight(point),
         getForecastDays(point),
         loadLocationArchive(point),
       ])
-      climateByFarm.set(farm.id, { frost, forecast, archive })
+      climateByFarm.set(farm.id, {
+        frost,
+        forecast,
+        archive,
+        coolNight: cool.date,
+        coolSource: cool.source,
+        coolStationName: cool.stationName,
+        coolDistanceKm: cool.distanceKm,
+      })
       return [farm.id, text] as const
     })
   )
@@ -503,10 +518,7 @@ export async function scoreGrowingCrops(
       })
     }
 
-    const coolNight =
-      isTomatoCrop(crop.name, crop.variety) && climate?.archive
-        ? firstMeanMinBelow(climate.archive)
-        : null
+    const coolNight = isTomatoCrop(crop.name, crop.variety) ? climate?.coolNight ?? null : null
     if (coolNight && isOnOrAfterCoolNight(today, coolNight)) {
       hits.push({
         trigger: 'season-finish',
@@ -789,7 +801,11 @@ export async function scoreGrowingCrops(
       layers: mergeLayers({
         personal: personalText,
         regional,
-        general: coolFinish ? TOMATO_NIGHT_SOURCE : general,
+        general: coolFinish
+          ? climate?.coolSource === 'station' && climate.coolStationName
+            ? `${TOMATO_NIGHT_SOURCE}。過去10年の観測では、${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。出典：気象庁ホームページ『過去の気象データ検索』（${JMA_SEARCH_TOP}）の日別値を加工して作成`
+            : TOMATO_NIGHT_SOURCE
+          : general,
         conclusion: best.conclusion,
       }),
     })

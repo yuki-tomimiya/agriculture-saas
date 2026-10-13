@@ -7,6 +7,7 @@ import FarmDeleteButton from '@/components/FarmDeleteButton'
 import { formatDateShort } from '@/lib/utils'
 import { climateRegionSentence, CLIMATE_REGION_SOURCE, meanAnnualTemp } from '@/lib/benchmarks/climate-region'
 import { getLocationDailyNormals } from '@/lib/weather-normals'
+import { chooseStation, frostStationLine } from '@/lib/jma/frost-record'
 
 export default async function FarmDetailPage({
   params,
@@ -58,6 +59,22 @@ export default async function FarmDetailPage({
     })
     const mean = normals ? meanAnnualTemp(normals.values()) : null
     if (mean != null) regionSentence = climateRegionSentence(mean)
+  }
+
+  let frostLine: string | null = null
+  if (farm.latitude != null && farm.longitude != null) {
+    try {
+      const pick = await chooseStation({
+        latitude: farm.latitude,
+        longitude: farm.longitude,
+      })
+      const count = pick
+        ? await prisma.jmaDailyTemp.count({ where: { blockNo: pick.station.blockNo } })
+        : 0
+      frostLine = frostStationLine(pick, count > 0)
+    } catch {
+      frostLine = frostStationLine(null, false)
+    }
   }
 
   return (
@@ -116,17 +133,24 @@ export default async function FarmDetailPage({
           </div>
         </div>
 
-        {regionSentence && (
+        {(regionSentence || frostLine) && (
           <div className="bg-white p-6 rounded-lg shadow mb-8">
-            <h2 className="text-xl font-semibold mb-2">地域区分</h2>
-            <p className="text-gray-800">{regionSentence}</p>
-            <p className="text-sm text-gray-500 mt-2">
-              出典：{CLIMATE_REGION_SOURCE.publisher}『{CLIMATE_REGION_SOURCE.name}』{CLIMATE_REGION_SOURCE.detail}
-              {' '}
-              <a href={CLIMATE_REGION_SOURCE.url} className="text-green-700 hover:underline">
-                {CLIMATE_REGION_SOURCE.url}
-              </a>
-            </p>
+            {regionSentence && (
+              <>
+                <h2 className="text-xl font-semibold mb-2">地域区分</h2>
+                <p className="text-gray-800">{regionSentence}</p>
+                <p className="text-sm text-gray-500 mt-2">
+                  出典：{CLIMATE_REGION_SOURCE.publisher}『{CLIMATE_REGION_SOURCE.name}』{CLIMATE_REGION_SOURCE.detail}
+                  {' '}
+                  <a href={CLIMATE_REGION_SOURCE.url} className="text-green-700 hover:underline">
+                    {CLIMATE_REGION_SOURCE.url}
+                  </a>
+                </p>
+              </>
+            )}
+            {frostLine && (
+              <p className={`text-gray-800 ${regionSentence ? 'mt-4' : ''}`}>{frostLine}</p>
+            )}
           </div>
         )}
 
