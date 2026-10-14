@@ -2,7 +2,7 @@
  * 前回作付けシーズンの気象系列（植付けからの日数で揃えて昨年比較用）
  */
 import { prisma } from '@/lib/prisma'
-import { personalGroupKey } from '@/lib/crops/conditions'
+import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
 import {
   getHistoricalDailyPrecipitation,
   getHistoricalDailyRadiation,
@@ -62,6 +62,7 @@ export type PreviousSeasonWeather = {
   previousLabel: string
   plantingDate: Date
   endDate: Date
+  plantingGapNote: string | null
   source: 'open-meteo' | 'demo'
   gdd: DaySeriesPoint[]
   rain: DaySeriesPoint[]
@@ -69,7 +70,7 @@ export type PreviousSeasonWeather = {
 }
 
 /**
- * 選択中作物と同名・同品種・同農場の「1つ前の作付け」の気象系列を返す
+ * 選択中作物と同じまとまりの、前の年で月日がいちばん近い作付けの気象系列を返す
  */
 export async function getPreviousSeasonWeather(args: {
   cropId: string
@@ -89,13 +90,13 @@ export async function getPreviousSeasonWeather(args: {
   })
 
   const key = personalGroupKey(args)
-  const group = siblings
-    .filter((c) => personalGroupKey(c) === key && c.plantingDate)
-    .sort((a, b) => (b.plantingDate?.getTime() ?? 0) - (a.plantingDate?.getTime() ?? 0))
-
-  const idx = group.findIndex((c) => c.id === args.cropId)
-  const previous = idx >= 0 ? group[idx + 1] : group.find((c) => c.id !== args.cropId)
+  const group = siblings.filter((c) => personalGroupKey(c) === key)
+  const previous = previousPlanting(
+    { id: args.cropId, plantingDate: args.plantingDate },
+    group,
+  )
   if (!previous?.plantingDate) return null
+  const gapNote = plantingGapNote(args.plantingDate, previous.plantingDate)
 
   const plant = new Date(previous.plantingDate)
   plant.setHours(0, 0, 0, 0)
@@ -168,6 +169,7 @@ export async function getPreviousSeasonWeather(args: {
           previousLabel: `${previous.name}${previous.variety ? `（${previous.variety}）` : ''} · ${plant.getFullYear()}年作`,
           plantingDate: plant,
           endDate: end,
+          plantingGapNote: gapNote,
           source: 'open-meteo',
           gdd: gddPts,
           rain: rainPts.length > 1 ? rainPts : buildDemoSeasonSeries({ days: daySpan, dailyGddMean: 8, dailyRainMean: 3, dailyRadiationMean: 14, seed: 1 }).rain,
@@ -192,6 +194,7 @@ export async function getPreviousSeasonWeather(args: {
     previousLabel: `${previous.name}${previous.variety ? `（${previous.variety}）` : ''} · ${plant.getFullYear()}年作（仮データ）`,
     plantingDate: plant,
     endDate: end,
+    plantingGapNote: gapNote,
     source: 'demo',
     gdd: demo.gdd,
     rain: demo.rain,

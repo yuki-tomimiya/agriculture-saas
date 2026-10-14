@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-season-compare'
 import { seasonName } from '@/lib/insights/season'
 import { latestHarvestDate, ownYieldRates, sharesFieldPeriod } from '@/lib/benchmarks/national-yield'
-import { personalGroupKey } from '@/lib/crops/conditions'
+import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
 import { loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   getAccumulatedGDDFromApi,
@@ -89,6 +89,9 @@ function buildHeadline(args: {
   yieldComment: string | null
   workCount: number
   seasonTitle: string
+  plantingGapNote: string | null
+  currentHarvestRecorded: boolean
+  previousHarvestQty: number | null
 }): string {
   const parts: string[] = []
   parts.push(`${args.seasonTitle}です`)
@@ -104,12 +107,15 @@ function buildHeadline(args: {
         harvestDiffPct: args.harvestDiffPct,
         hasPrevious: true,
         yieldComment: args.yieldComment,
+        currentHarvestRecorded: args.currentHarvestRecorded,
+        previousHarvestQty: args.previousHarvestQty,
       }).replace(/。$/, '')
     )
   } else if (args.yieldComment) {
     parts.push(args.yieldComment.replace(/。$/, ''))
   }
   if (args.workCount > 0) parts.push(`作業記録 ${args.workCount}件`)
+  if (args.plantingGapNote) parts.push(args.plantingGapNote)
   return parts.join('。') + '。'
 }
 
@@ -168,11 +174,9 @@ export async function getCropSeasonRetrospective(
     orderBy: { plantingDate: 'desc' },
   })
   const groupKey = personalGroupKey(crop)
-  const group = siblings
-    .filter((c) => personalGroupKey(c) === groupKey)
-    .sort((a, b) => (b.plantingDate?.getTime() ?? 0) - (a.plantingDate?.getTime() ?? 0))
-  const idx = group.findIndex((c) => c.id === crop.id)
-  const previous = idx >= 0 ? group[idx + 1] : null
+  const group = siblings.filter((c) => personalGroupKey(c) === groupKey)
+  const previous = previousPlanting(crop, group)
+  const gapNote = plantingGapNote(crop.plantingDate, previous?.plantingDate ?? null)
 
   let previousHarvestQty: number | null = null
   let previousHarvestCount: number | null = null
@@ -265,6 +269,9 @@ export async function getCropSeasonRetrospective(
     yieldComment,
     workCount: crop.workRecords.length,
     seasonTitle,
+    plantingGapNote: gapNote,
+    currentHarvestRecorded: harvestCount > 0,
+    previousHarvestQty,
   })
 
   return {

@@ -97,7 +97,7 @@ function CompareSections({
         <section className="card insights-section" style={{ marginTop: compared.length > 0 ? '1.5rem' : 0 }}>
           <h2 className="gdd-section-title">前回作付けがまだない作物</h2>
           <p className="farms-subtitle">
-            {unmatched.length}件は、同名・同品種・同農場の前回がないため、比較の文は出していません。
+            {unmatched.length}件は、同じ品目・同じ品種・同じ農場の、前の年の作付けがないため、比較の文は出していません。
           </p>
           <ul className="gdd-crop-list-other-list">
             {unmatched.map((row) => (

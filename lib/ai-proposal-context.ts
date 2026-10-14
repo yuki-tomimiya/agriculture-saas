@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { personalGroupKey } from '@/lib/crops/conditions'
+import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
 import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
 import { formatMilestoneGeneral } from '@/lib/proposals/milestones'
 import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
@@ -237,8 +237,8 @@ export async function buildPersonalLayerForCrop(args: {
 
   const key = personalGroupKey({ ...args, name: args.cropName })
   const group = siblings.filter((c) => personalGroupKey(c) === key)
-  const idx = group.findIndex((c) => c.id === args.cropId)
-  const previous = idx >= 0 ? group[idx + 1] : group[1]
+  const previous = previousPlanting({ id: args.cropId, plantingDate: args.plantingDate }, group)
+  const gapNote = plantingGapNote(args.plantingDate, previous?.plantingDate ?? null)
 
   let phenologyLabels: string[] = []
   if (previous?.plantingDate && days !== null) {
@@ -277,6 +277,7 @@ export async function buildPersonalLayerForCrop(args: {
     } else if (prevQ > 0 && curQ === 0) {
       parts.push(`前回作付けの収量は${prevQ}kgでした。`)
     }
+    if (gapNote) parts.push(`${gapNote}。`)
   }
 
   // カレンダー軸：昨年同日の作業（植付日ベースとは別）

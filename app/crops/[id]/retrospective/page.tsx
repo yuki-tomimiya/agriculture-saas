@@ -205,7 +205,7 @@ export default async function CropRetrospectivePage({
             </p>
           ) : (
             <p className="insights-previous-label text-gray-500">
-              同じ品目・同じ品種・同じ農場の前回作付けがありません
+              同じ品目・同じ品種・同じ農場の、前の年の作付けがありません
             </p>
           )}
           {(data.kgPerPlant != null || data.kgPer10a != null) && (

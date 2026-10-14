@@ -1,7 +1,13 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { findCropBenchmark, type CropBenchmark } from '@/lib/benchmarks/crops'
-import { adviceNames, personalGroupKey } from '@/lib/crops/conditions'
+import {
+  adviceNames,
+  appendPlantingGapNote,
+  personalGroupKey,
+  plantingGapNote,
+  previousPlanting,
+} from '@/lib/crops/conditions'
 import { ownYieldRates } from '@/lib/benchmarks/national-yield'
 import { seasonName } from '@/lib/insights/season'
 import { latestHarvestDate, sharesFieldPeriod, type FieldStay } from '@/lib/benchmarks/national-yield'
@@ -39,6 +45,21 @@ export type SeasonCompareRow = {
   summaryLine: string
 }
 
+/** 比較の行の見分け。呼び名、植え付け日、株数。 */
+export function formatCropRowLabel(crop: {
+  name: string
+  variety: string | null
+  plantingDate: Date | null
+  plantCount: number | null
+}): string {
+  const variety = crop.variety ? `（${crop.variety}）` : ''
+  const date = crop.plantingDate
+    ? `${crop.plantingDate.getFullYear()}/${crop.plantingDate.getMonth() + 1}/${crop.plantingDate.getDate()}`
+    : '植え付け日なし'
+  const count = crop.plantCount != null ? `${crop.plantCount}本` : '株数なし'
+  return `${crop.name}${variety} · ${date} · ${count}`
+}
+
 export function formatPlantingLabel(name: string, variety: string | null, plantingDate: Date | null): string {
   const y = plantingDate ? plantingDate.getFullYear() : null
   const m = plantingDate ? plantingDate.getMonth() + 1 : null
@@ -57,8 +78,19 @@ export function describeYieldChange(args: {
   harvestDiffPct: number | null
   hasPrevious: boolean
   yieldComment: string | null
+  currentHarvestRecorded?: boolean
+  previousHarvestQty?: number | null
 }): string {
   if (!args.hasPrevious) return '比較できる前回作付けがまだありません。'
+  if (
+    args.currentHarvestRecorded === false &&
+    args.previousHarvestQty != null &&
+    args.previousHarvestQty > 0
+  ) {
+    const kg = Math.round(args.previousHarvestQty * 10) / 10
+    const base = `前回の収量は${kg}kgでした`
+    return args.yieldComment ? `${base}。${args.yieldComment}` : `${base}。`
+  }
   if (args.harvestDiffPct === null) {
     const base = '前回作付けとの収量比較ができません（単位や記録を確認）'
     return args.yieldComment ? `${base}。${args.yieldComment}` : `${base}。`
@@ -89,7 +121,7 @@ export function describeYieldChange(args: {
 }
 
 /**
- * 作付け単位で「今回」と「同じ品目・同じ品種・同じ農場の前回作付け」を比較する
+ * いちばん新しい植え付けの年の作付けを1行ずつ出し、前の年の近い月日と比べる。
  */
 export async function getCropSeasonComparisons(userId: string): Promise<SeasonCompareRow[]> {
   const { where, whereFallback } = getCropWhere(userId)
@@ -130,18 +162,16 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
   const rows: SeasonCompareRow[] = []
 
   for (const group of byKey.values()) {
-    // plantingDate 降順（null は末尾）
-    const sorted = [...group].sort((a, b) => {
-      const ta = a.plantingDate?.getTime() ?? 0
-      const tb = b.plantingDate?.getTime() ?? 0
-      return tb - ta
-    })
+    const newestYear = group.reduce<number | null>((latest, crop) => {
+      if (!crop.plantingDate) return latest
+      const year = crop.plantingDate.getFullYear()
+      return latest == null || year > latest ? year : latest
+    }, null)
+    if (newestYear == null) continue
+    const currents = group.filter((crop) => crop.plantingDate?.getFullYear() === newestYear)
 
-    // グループにつき「最新の作付け」1件だけ表示し、1つ前を前回として比較する
-    // （前回作付け自体を別カードにすると「比較なし」に見えてしまうため）
-    const current = sorted[0]
-    if (!current) continue
-    const previous = sorted[1] ?? null
+    for (const current of currents) {
+    const previous = previousPlanting(current, group)
 
     const harvestUnit =
       current.harvests.find((h) => h.unit)?.unit ??
@@ -206,9 +236,9 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       farmId: current.farmId,
       farmName: current.farm?.name ?? null,
       currentStatus: current.status,
-      currentLabel: formatPlantingLabel(current.name, current.variety, current.plantingDate),
+      currentLabel: formatCropRowLabel(current),
       previousLabel: previous
-        ? formatPlantingLabel(previous.name, previous.variety, previous.plantingDate)
+        ? formatCropRowLabel(previous)
         : null,
       previousCropId: previous?.id ?? null,
       plantingDate: current.plantingDate,
@@ -231,12 +261,18 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       salesDiffPct,
       benchmark,
       yieldComment,
-      summaryLine: describeYieldChange({
-        harvestDiffPct,
-        hasPrevious: !!previous,
-        yieldComment,
-      }),
+      summaryLine: appendPlantingGapNote(
+        describeYieldChange({
+          harvestDiffPct,
+          hasPrevious: !!previous,
+          yieldComment,
+          currentHarvestRecorded: harvestRecorded,
+          previousHarvestQty,
+        }),
+        plantingGapNote(current.plantingDate, previous?.plantingDate ?? null),
+      ),
     })
+    }
   }
 
   rows.sort((a, b) => {

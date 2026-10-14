@@ -15,7 +15,16 @@ import {
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones'
 import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
-import { adviceNames, conditionsMissing, CONDITIONS_PROMPT, personalGroupKey, RECORD_ONLY_NOTE } from '@/lib/crops/conditions'
+import {
+  adviceNames,
+  appendPlantingGapNote,
+  conditionsMissing,
+  CONDITIONS_PROMPT,
+  personalGroupKey,
+  plantingGapNote,
+  previousPlanting,
+  RECORD_ONLY_NOTE,
+} from '@/lib/crops/conditions'
 import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
@@ -622,10 +631,10 @@ export async function scoreGrowingCrops(
       return latest
     }, null)
     const key = matchKey(crop)
-    const previous = previousPool
-      .filter((other) => other.id !== crop.id && matchKey(other) === key)
-      .sort((a, b) => (b.plantingDate?.getTime() ?? 0) - (a.plantingDate?.getTime() ?? 0))
-      .find((other) => (other.plantingDate?.getTime() ?? 0) < (crop.plantingDate?.getTime() ?? 0))
+    const previous = previousPlanting(
+      crop,
+      previousPool.filter((other) => matchKey(other) === key),
+    )
     const previousGap = previous ? averageGapDays(previous.workRecords.map((work) => work.date)) : null
     const sinceLastWork = lastWork ? daysSince(lastWork, today) : null
     if (previousGap != null && sinceLastWork != null && sinceLastWork > previousGap) {
@@ -634,7 +643,10 @@ export async function scoreGrowingCrops(
         urgency: 'thisWeek',
         score: 42,
         title: '前回より作業の間隔が空いています',
-        conclusion: `前回作付けの作業間隔はおおよそ${Math.round(previousGap)}日でした。最終作業から${sinceLastWork}日たっています。`,
+        conclusion: appendPlantingGapNote(
+          `前回作付けの作業間隔はおおよそ${Math.round(previousGap)}日でした。最終作業から${sinceLastWork}日たっています。`,
+          plantingGapNote(crop.plantingDate, previous?.plantingDate ?? null),
+        ),
         action: { kind: 'work', title: `${crop.name}の作業を記録` },
       })
     }

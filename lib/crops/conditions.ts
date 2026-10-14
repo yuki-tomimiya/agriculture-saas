@@ -64,6 +64,61 @@ export function personalGroupKey(crop: {
   return `${compareSubject(crop).key}|${variety}|${crop.farmId ?? ''}${site}`
 }
 
+/** ⚙ 運用の値。月日がこれ以上違う前回には「植えた時期が◯日違います」と添える。出典なし。 */
+export const PLANTING_GAP_NOTE_DAYS = 30
+
+/**
+ * 年を除いた月日の差。うるう年の2000年で数え、年の変わり目は短いほう。
+ * 12/20 と 1/5 は16日。出典なし（⚙）。
+ */
+export function plantingMonthDayGap(a: Date, b: Date): number {
+  const index = (date: Date) =>
+    Math.round((Date.UTC(2000, date.getMonth(), date.getDate()) - Date.UTC(2000, 0, 1)) / 86400000)
+  const linear = Math.abs(index(a) - index(b))
+  return Math.min(linear, 366 - linear)
+}
+
+export function plantingGapNote(current: Date | null, previous: Date | null): string | null {
+  if (!current || !previous) return null
+  const days = plantingMonthDayGap(current, previous)
+  if (days < PLANTING_GAP_NOTE_DAYS) return null
+  return `植えた時期が${days}日違います`
+}
+
+export function appendPlantingGapNote(sentence: string, note: string | null): string {
+  if (!note) return sentence
+  return sentence.endsWith('。') ? `${sentence}${note}。` : `${sentence}。${note}。`
+}
+
+/**
+ * 同じまとまりのうち、前の年でいちばん新しい年の、植え付けの月日がいちばん近い作付け。
+ * 植え付け日が無いものは探さないし、前回にもしない。同じ年は前回にしない。
+ * 月日の差が同じときは、その年で植え付けが遅いほう。
+ */
+export function previousPlanting<T extends { id: string; plantingDate: Date | null }>(
+  current: { id: string; plantingDate: Date | null },
+  candidates: readonly T[],
+): T | null {
+  if (!current.plantingDate) return null
+  const year = current.plantingDate.getFullYear()
+  const earlier = candidates.filter(
+    (crop) =>
+      crop.id !== current.id &&
+      crop.plantingDate != null &&
+      crop.plantingDate.getFullYear() < year,
+  )
+  if (earlier.length === 0) return null
+  const newestYear = Math.max(...earlier.map((crop) => crop.plantingDate!.getFullYear()))
+  const inYear = earlier.filter((crop) => crop.plantingDate!.getFullYear() === newestYear)
+  inYear.sort((a, b) => {
+    const gapA = plantingMonthDayGap(current.plantingDate!, a.plantingDate!)
+    const gapB = plantingMonthDayGap(current.plantingDate!, b.plantingDate!)
+    if (gapA !== gapB) return gapA - gapB
+    return b.plantingDate!.getTime() - a.plantingDate!.getTime()
+  })
+  return inYear[0] ?? null
+}
+
 export function cropKindByKey(key: string | null | undefined): CropKindDef | null {
   if (!key) return null
   return CROP_KINDS.find((kind) => kind.key === key) ?? null

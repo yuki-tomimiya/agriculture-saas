@@ -244,6 +244,9 @@ export default async function GddCropPage({
             </div>
           )}
 
+          {previousSeason?.plantingGapNote && (
+            <p className="dashboard-gdd-summary-text">{previousSeason.plantingGapNote}。</p>
+          )}
           <GDDChart
             crop={{
               id: selectedCrop.id,
