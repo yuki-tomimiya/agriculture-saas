@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { parseHarvestBody } from '@/lib/crops/harvest'
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,9 +18,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     const cropId = typeof body.cropId === 'string' ? body.cropId.trim() : ''
     const dateStr = body.date
-    const quantity = typeof body.quantity === 'number' ? body.quantity : Number(body.quantity)
-    const unit = typeof body.unit === 'string' ? (body.unit.trim() || 'kg') : 'kg'
     const notes = typeof body.notes === 'string' ? body.notes.trim() || null : null
+    const parsed = parseHarvestBody(body)
+    if ('error' in parsed) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
+    }
 
     if (!cropId) {
       return NextResponse.json(
@@ -60,19 +63,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (typeof quantity !== 'number' || Number.isNaN(quantity) || quantity < 0) {
-      return NextResponse.json(
-        { error: '収穫量は0以上の数値を入力してください' },
-        { status: 400 }
-      )
-    }
-
     const harvest = await prisma.harvest.create({
       data: {
         cropId,
         date,
-        quantity,
-        unit: unit || 'kg',
+        quantity: parsed.value.quantityKg,
+        unit: 'kg',
+        countQuantity: parsed.value.countQuantity,
+        countUnit: parsed.value.countUnit,
         notes,
       },
     })

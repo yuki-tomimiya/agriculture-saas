@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { personalGroupKey } from '@/lib/crops/conditions'
 import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
 import { formatMilestoneGeneral } from '@/lib/proposals/milestones'
 import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
@@ -39,10 +40,6 @@ function daysSincePlanting(plantingDate: Date | null): number | null {
   const today = getTodayStart()
   const diff = Math.floor((today.getTime() - start.getTime()) / (24 * 60 * 60 * 1000))
   return diff >= 0 ? diff : null
-}
-
-function matchKey(name: string, variety: string | null, farmId: string | null): string {
-  return `${name.trim().toLowerCase()}|${(variety ?? '').trim().toLowerCase()}|${farmId ?? ''}`
 }
 
 /**
@@ -219,8 +216,10 @@ export async function buildPersonalLayerForCrop(args: {
   userId: string
   cropId: string
   cropName: string
+  cropKind?: string | null
   variety: string | null
   farmId: string | null
+  growingSite?: string | null
   plantingDate: Date | null
   farmName: string
 }): Promise<string | null> {
@@ -232,17 +231,12 @@ export async function buildPersonalLayerForCrop(args: {
   }
 
   const siblings = await prisma.crop.findMany({
-    where: {
-      name: args.cropName,
-      variety: args.variety ?? undefined,
-      farmId: args.farmId ?? undefined,
-    },
+    where: args.farmId ? { farmId: args.farmId } : { name: args.cropName, farmId: null },
     orderBy: { plantingDate: 'desc' },
   })
 
-  const group = siblings.filter(
-    (c) => matchKey(c.name, c.variety, c.farmId) === matchKey(args.cropName, args.variety, args.farmId)
-  )
+  const key = personalGroupKey({ ...args, name: args.cropName })
+  const group = siblings.filter((c) => personalGroupKey(c) === key)
   const idx = group.findIndex((c) => c.id === args.cropId)
   const previous = idx >= 0 ? group[idx + 1] : group[1]
 

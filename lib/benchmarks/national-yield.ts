@@ -109,7 +109,35 @@ export function sharesFieldPeriod(self: FieldStay, others: FieldStay[], today = 
   return false
 }
 
-/** 収穫量が kg で、圃場面積（㎡）があるときだけ kg/10a にする */
+export function ownYieldRates(args: {
+  qtyKg: number
+  plantCount?: number | null
+  cropAreaM2?: number | null
+  fieldAreaM2?: number | null
+  sharedField?: boolean
+}): {
+  perPlant: number | null
+  per10a: number | null
+  areaM2: number | null
+  areaLabel: string | null
+  sharedField: boolean
+} {
+  const perPlant =
+    args.plantCount != null && args.plantCount > 0 && args.qtyKg > 0 ? args.qtyKg / args.plantCount : null
+  const fromCrop = args.cropAreaM2 != null && args.cropAreaM2 > 0
+  const areaM2 = fromCrop ? args.cropAreaM2! : args.fieldAreaM2 != null && args.fieldAreaM2 > 0 ? args.fieldAreaM2 : null
+  const sharedField = fromCrop ? false : Boolean(args.sharedField)
+  const per10a = areaM2 != null && !sharedField ? kgPer10a(args.qtyKg, 'kg', areaM2) : null
+  return {
+    perPlant,
+    per10a,
+    areaM2,
+    areaLabel: areaM2 == null ? null : fromCrop ? '栽培面積' : '圃場',
+    sharedField,
+  }
+}
+
+/** 収穫量が kg で、面積（㎡）があるときだけ kg/10a にする */
 export function kgPer10a(qty: number, unit: string, areaM2: number | null | undefined): number | null {
   if (unit !== 'kg' || areaM2 == null || areaM2 <= 0 || qty <= 0) return null
   return (qty / areaM2) * 1000
@@ -118,7 +146,7 @@ export function kgPer10a(qty: number, unit: string, areaM2: number | null | unde
 export function nationalYieldCopy(
   cropName: string,
   variety: string | null | undefined,
-  own: { qty: number; unit: string; areaM2: number | null | undefined; sharedField?: boolean }
+  own: { qty: number; unit: string; areaM2: number | null | undefined; sharedField?: boolean; areaLabel?: string | null }
 ): { text: string; sourceUrl: string } | null {
   const row = matchRow(cropName, variety)
   if (!row) return null
@@ -131,9 +159,9 @@ export function nationalYieldCopy(
   if (own.sharedField) {
     lines.push(SHARED_FIELD_YIELD_NOTE)
   } else if (per != null) {
-    lines.push(`この作付けは ${formatKg(per)} kg/10a です（圃場 ${formatKg(own.areaM2 ?? 0)} m²）。`)
+    lines.push(`この作付けは ${formatKg(per)} kg/10a です（${own.areaLabel || '圃場'} ${formatKg(own.areaM2 ?? 0)} m²）。`)
   } else if (own.areaM2 == null || own.areaM2 <= 0) {
-    lines.push('圃場の面積を登録すると比べられます。')
+    lines.push('栽培面積か圃場の面積を登録すると比べられます。')
   } else if (own.unit !== 'kg') {
     lines.push('収穫の単位が kg ではないので、10a 当たりには直していません。')
   } else {

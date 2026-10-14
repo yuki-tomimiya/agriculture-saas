@@ -67,7 +67,10 @@ export default function CropForm({
   farms: FarmWithFields[]
 }) {
   const router = useRouter()
-  const [form, setForm] = useState(initial)
+  const [form, setForm] = useState(() => {
+    if (initial.farmId || farms.length !== 1) return initial
+    return { ...initial, farmId: farms[0].id }
+  })
   const [baseTouched, setBaseTouched] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -93,6 +96,10 @@ export default function CropForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!form.farmId) {
+      setError('農場を選んでください')
+      return
+    }
     setLoading(true)
     const body = {
       cropKind: form.cropKind,
@@ -152,6 +159,16 @@ export default function CropForm({
             <p className="farms-subtitle">品目と育て方を選んで登録します。呼び名は空でも、品目の名前が入ります。</p>
           </div>
         </div>
+        {farms.length === 0 ? (
+          <div className="card farm-new-card">
+            <p className="text-gray-800">
+              先に農場を登録してください（場所が分かると、天気・霜・積算温度の助言が出ます）
+            </p>
+            <Link href="/farms/new" className="btn btn-primary" style={{ marginTop: '1rem' }}>
+              農場を登録する
+            </Link>
+          </div>
+        ) : (
         <div className="card farm-new-card">
           {error && (
             <div className="auth-error" role="alert">
@@ -343,22 +360,23 @@ export default function CropForm({
             </div>
             <p className="text-sm text-gray-500">株数か栽培面積のどちらかは必要です。</p>
 
-            {farms.length > 0 && (
-              <div className="auth-field">
-                <label htmlFor="crop-farm" className="label">農場</label>
-                <select
-                  id="crop-farm"
-                  className="input"
-                  value={form.farmId}
-                  onChange={(e) => patch({ farmId: e.target.value, fieldId: '', fieldUndivided: false })}
-                >
-                  <option value="">紐づけない</option>
-                  {farms.map((farm) => (
-                    <option key={farm.id} value={farm.id}>{farm.name}</option>
-                  ))}
-                </select>
-              </div>
-            )}
+            <div className="auth-field">
+              <label htmlFor="crop-farm" className="label">
+                農場 <span className="farm-new-required">必須</span>
+              </label>
+              <select
+                id="crop-farm"
+                className="input"
+                value={form.farmId}
+                onChange={(e) => patch({ farmId: e.target.value, fieldId: '', fieldUndivided: false })}
+                required
+              >
+                <option value="">選んでください</option>
+                {farms.map((farm) => (
+                  <option key={farm.id} value={farm.id}>{farm.name}</option>
+                ))}
+              </select>
+            </div>
 
             {fields.length > 0 && (
               <div className="auth-field">
@@ -419,6 +437,7 @@ export default function CropForm({
             </div>
           </form>
         </div>
+        )}
       </main>
     </div>
   )

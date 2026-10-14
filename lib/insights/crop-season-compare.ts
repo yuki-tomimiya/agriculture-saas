@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { findCropBenchmark, type CropBenchmark } from '@/lib/benchmarks/crops'
-import { adviceNames } from '@/lib/crops/conditions'
+import { adviceNames, personalGroupKey } from '@/lib/crops/conditions'
+import { ownYieldRates } from '@/lib/benchmarks/national-yield'
 import { seasonName } from '@/lib/insights/season'
 import { latestHarvestDate, sharesFieldPeriod, type FieldStay } from '@/lib/benchmarks/national-yield'
 
@@ -21,6 +22,9 @@ export type SeasonCompareRow = {
   harvestUnit: string
   fieldAreaM2: number | null
   sharedField: boolean
+  areaLabel: string | null
+  kgPerPlant: number | null
+  kgPer10a: number | null
   harvestRecorded: boolean
   previousHarvestQty: number | null
   previousHarvestRecorded: boolean | null
@@ -33,10 +37,6 @@ export type SeasonCompareRow = {
   benchmark: CropBenchmark | null
   yieldComment: string | null
   summaryLine: string
-}
-
-function matchKey(name: string, variety: string | null, farmId: string | null): string {
-  return `${name.trim().toLowerCase()}|${(variety ?? '').trim().toLowerCase()}|${farmId ?? ''}`
 }
 
 export function formatPlantingLabel(name: string, variety: string | null, plantingDate: Date | null): string {
@@ -89,7 +89,7 @@ export function describeYieldChange(args: {
 }
 
 /**
- * 作付け単位で「今回」と「同名・同品種・同農場の前回作付け」を比較する
+ * 作付け単位で「今回」と「同じ品目・同じ品種・同じ農場の前回作付け」を比較する
  */
 export async function getCropSeasonComparisons(userId: string): Promise<SeasonCompareRow[]> {
   const { where, whereFallback } = getCropWhere(userId)
@@ -113,7 +113,7 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
 
   const byKey = new Map<string, typeof crops>()
   for (const crop of crops) {
-    const key = matchKey(crop.name, crop.variety, crop.farmId)
+    const key = personalGroupKey(crop)
     const list = byKey.get(key) ?? []
     list.push(crop)
     byKey.set(key, list)
@@ -181,6 +181,23 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       ? null
       : findCropBenchmark(compareAdvice.name, compareAdvice.variety)
     const yieldComment = null
+    const sharedOnField = sharesFieldPeriod(
+      stays.find((stay) => stay.id === current.id) ?? {
+        id: current.id,
+        fieldId: current.fieldId,
+        plantingDate: current.plantingDate,
+        status: current.status,
+        lastHarvestDate: null,
+      },
+      stays
+    )
+    const rates = ownYieldRates({
+      qtyKg: harvestQty,
+      plantCount: current.plantCount,
+      cropAreaM2: current.areaM2,
+      fieldAreaM2: current.field?.area ?? null,
+      sharedField: sharedOnField,
+    })
 
     rows.push({
       currentCropId: current.id,
@@ -198,17 +215,11 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
       previousPlantingDate: previous?.plantingDate ?? null,
       harvestQty,
       harvestUnit,
-      fieldAreaM2: current.field?.area ?? null,
-      sharedField: sharesFieldPeriod(
-        stays.find((stay) => stay.id === current.id) ?? {
-          id: current.id,
-          fieldId: current.fieldId,
-          plantingDate: current.plantingDate,
-          status: current.status,
-          lastHarvestDate: null,
-        },
-        stays
-      ),
+      fieldAreaM2: rates.areaM2,
+      sharedField: rates.sharedField,
+      areaLabel: rates.areaLabel,
+      kgPerPlant: rates.perPlant,
+      kgPer10a: rates.per10a,
       harvestRecorded,
       previousHarvestQty,
       previousHarvestRecorded,

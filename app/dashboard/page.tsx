@@ -5,6 +5,7 @@ import { getTodayProposals } from '@/lib/ai-proposal'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
+import { formatHarvestAmount } from '@/lib/crops/harvest'
 
 function DashboardKpi({
   title,
@@ -263,7 +264,7 @@ export default async function DashboardPage() {
                         </span>
                       </div>
                       <span className="dashboard-list-sub">
-                        {harvest.quantity} {harvest.unit}
+                        {formatHarvestAmount(harvest)}
                       </span>
                     </Link>
                   </li>

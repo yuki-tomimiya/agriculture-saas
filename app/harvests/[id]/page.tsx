@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import RecordDeleteButton from '@/components/RecordDeleteButton'
 import { formatDateShort, formatDate } from '@/lib/utils'
+import { formatHarvestAmount } from '@/lib/crops/harvest'
 
 export default async function HarvestDetailPage({
   params,
@@ -56,7 +57,7 @@ export default async function HarvestDetailPage({
               収穫: {harvest.crop.name}
             </h1>
             <p className="text-lg text-gray-600">
-              {formatDate(harvest.date)} ・ {harvest.quantity} {harvest.unit}
+              {formatDate(harvest.date)} ・ {formatHarvestAmount(harvest)}
             </p>
           </div>
           <div className="flex gap-2">
@@ -81,7 +82,7 @@ export default async function HarvestDetailPage({
             <div>
               <dt className="text-sm text-gray-500">収穫量</dt>
               <dd className="text-gray-900 font-semibold">
-                {harvest.quantity} {harvest.unit}
+                {formatHarvestAmount(harvest)}
               </dd>
             </div>
             <div>

@@ -235,8 +235,8 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       const seasonDays =
         crop.plantingDate && harvestDate ? daysBetween(crop.plantingDate, harvestDate) : null
       const baseTemp = crop.baseTemperature ?? 10
-      const picked = chosenHarvestSamples(harvestSamples, crop.name, crop.variety)
-      const basis = pickHarvestBasis(harvestSamples, crop.name, crop.variety)
+      const picked = chosenHarvestSamples(harvestSamples, crop)
+      const basis = pickHarvestBasis(harvestSamples, crop)
       const targetGdd = basis.gdd
       const point = {
         latitude: crop.farm?.latitude ?? null,

@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
 import { RecordTabs } from '@/components/RecordTabs'
+import { formatHarvestAmount } from '@/lib/crops/harvest'
 
 export default async function HarvestsPage({
   searchParams,
@@ -142,7 +143,7 @@ export default async function HarvestsPage({
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span className="font-semibold text-gray-900">
-                          {harvest.quantity} {harvest.unit}
+                          {formatHarvestAmount(harvest)}
                         </span>
                       </td>
                       <td className="py-3 px-4 text-gray-600 text-sm">

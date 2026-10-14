@@ -121,7 +121,7 @@ export default async function GddCropPage({
   })
   const currentGDD = historicalCumulative[historicalCumulative.length - 1]?.cumulativeGDD ?? 0
   const harvestSamples = await loadHarvestSamples(user.id)
-  const harvestBasis = pickHarvestBasis(harvestSamples, selectedCrop.name, selectedCrop.variety)
+  const harvestBasis = pickHarvestBasis(harvestSamples, selectedCrop)
   const targetGDD = harvestBasis.gdd
   const weatherPoint = canFetchWeather
     ? { latitude: Number(point.latitude), longitude: Number(point.longitude) }
@@ -171,8 +171,10 @@ export default async function GddCropPage({
   const previousSeason = await getPreviousSeasonWeather({
     cropId: selectedCrop.id,
     name: selectedCrop.name,
+    cropKind: selectedCrop.cropKind,
     variety: selectedCrop.variety,
     farmId: selectedCrop.farmId,
+    growingSite: selectedCrop.growingSite,
     plantingDate: new Date(selectedCrop.plantingDate!),
     latitude: selectedCrop.farm?.latitude ?? null,
     longitude: selectedCrop.farm?.longitude ?? null,

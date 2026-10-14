@@ -186,12 +186,20 @@ function CompareCard({
         </p>
       )}
 
+      {(row.kgPerPlant != null || row.kgPer10a != null) && (
+        <p className="insights-regional-meta" style={{ marginTop: '0.75rem' }}>
+          {row.kgPerPlant != null ? `1株あたり ${Math.round(row.kgPerPlant * 10) / 10} kg` : ''}
+          {row.kgPerPlant != null && row.kgPer10a != null ? '。' : ''}
+          {row.kgPer10a != null ? `10a あたり ${Math.round(row.kgPer10a * 10) / 10} kg` : ''}
+        </p>
+      )}
       <NationalYieldNote
         cropName={row.cropName}
         variety={row.variety}
         qty={row.harvestQty}
         unit={row.harvestUnit}
         areaM2={row.fieldAreaM2}
+        areaLabel={row.areaLabel}
         sharedField={row.sharedField}
       />
 

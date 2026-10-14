@@ -20,6 +20,8 @@ import {
   siteLabel,
 } from '@/lib/crops/conditions'
 import { formatDateShort } from '@/lib/utils'
+import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
+import { formatHarvestAmount } from '@/lib/crops/harvest'
 
 export default async function CropDetailPage({
   params,
@@ -35,6 +37,7 @@ export default async function CropDetailPage({
     farm: true,
     field: true,
     harvests: { orderBy: { date: 'desc' as const }, take: 20 },
+    outcome: true,
     milestones: { orderBy: { observedAt: 'asc' as const } },
     tasks: { orderBy: { dueDate: 'asc' as const } },
     _count: {
@@ -75,6 +78,7 @@ export default async function CropDetailPage({
   const points = advice.recordOnly ? [] : cropPoints(advice.name, advice.variety)
   const daylength = advice.recordOnly ? false : isDaylengthCrop(advice.name, advice.variety)
   const missingConditions = conditionsMissing(crop)
+  const missingResult = outcomeMissing(crop)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -132,6 +136,15 @@ export default async function CropDetailPage({
 
         {advice.recordOnly && (
           <p className="bg-white p-4 rounded-lg shadow mb-6 text-gray-800">{RECORD_ONLY_NOTE}</p>
+        )}
+        {missingResult && (
+          <p className="bg-white p-4 rounded-lg shadow mb-6 text-gray-800">
+            {RESULT_PROMPT}
+            {' '}
+            <Link href={`/crops/${id}/retrospective`} className="text-green-700 hover:underline">
+              振り返りで記録する
+            </Link>
+          </p>
         )}
         {missingConditions && (
           <p className="bg-white p-4 rounded-lg shadow mb-6 text-gray-800">
@@ -280,7 +293,7 @@ export default async function CropDetailPage({
                           {formatDateShort(h.date)}
                         </Link>
                       </td>
-                      <td className="py-2 text-right font-medium">{h.quantity} {h.unit}</td>
+                      <td className="py-2 text-right font-medium">{formatHarvestAmount(h)}</td>
                       <td className="py-2 text-gray-600">{h.notes || '-'}</td>
                     </tr>
                   ))}

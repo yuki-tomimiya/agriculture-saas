@@ -42,6 +42,28 @@ export const RECORD_ONLY_NOTE = 'この品目はまだ助言の対象外です�
 export const CONDITIONS_PROMPT =
   '育て方の型・植え方を選んでください（あとで同じ条件の作付けと比べるために使います）'
 
+/** 自分の記録をまとめる品目。欄が空の古い作付けだけ呼び名。その他は呼び名が同じものだけ。 */
+export function compareSubject(crop: { cropKind?: string | null; name: string }): { key: string; label: string } {
+  const kind = cropKindByKey(crop.cropKind)
+  const nickname = crop.name.trim()
+  if (!kind) return { key: `name:${nickname.toLowerCase()}`, label: nickname }
+  if (kind.key === 'other') return { key: `other:${nickname.toLowerCase()}`, label: nickname }
+  return { key: `kind:${kind.key}`, label: kind.label }
+}
+
+/** 同じ品目・品種・農場。露地とハウスは別。場所が空の作付けは、空どうしだけでまとめる。 */
+export function personalGroupKey(crop: {
+  cropKind?: string | null
+  name: string
+  variety?: string | null
+  farmId?: string | null
+  growingSite?: string | null
+}): string {
+  const variety = (crop.variety ?? '').trim().toLowerCase()
+  const site = crop.growingSite === 'open' || crop.growingSite === 'house' ? `|${crop.growingSite}` : ''
+  return `${compareSubject(crop).key}|${variety}|${crop.farmId ?? ''}${site}`
+}
+
 export function cropKindByKey(key: string | null | undefined): CropKindDef | null {
   if (!key) return null
   return CROP_KINDS.find((kind) => kind.key === key) ?? null

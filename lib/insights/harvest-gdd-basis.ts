@@ -1,15 +1,18 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
-import { getTargetGDDForCrop, TARGET_GDD_BY_CROP } from '@/lib/gdd'
+import { getTargetGDDForCrop } from '@/lib/gdd'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { formatPlantingLabel } from '@/lib/insights/crop-season-compare'
+import { adviceNames, compareSubject } from '@/lib/crops/conditions'
 
 export type HarvestSample = {
   cropId: string
   name: string
   variety: string | null
   varietyLabel: string | null
-  cropKey: string | null
+  cropKey: string
+  subjectLabel: string
+  growingSite: string | null
   gdd: number
   days: number
   seasonLabel: string
@@ -35,14 +38,6 @@ function daysBetween(start: Date, end: Date): number {
   const b = new Date(end)
   b.setHours(0, 0, 0, 0)
   return Math.max(0, Math.floor((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000)))
-}
-
-function cropKeyOf(name: string): string | null {
-  for (const key of Object.keys(TARGET_GDD_BY_CROP)) {
-    if (name.includes(key)) return key
-  }
-  const trimmed = name.trim()
-  return trimmed || null
 }
 
 function seasonLabel(name: string, variety: string | null, plantingDate: Date): string {
@@ -80,12 +75,15 @@ export async function loadHarvestSamples(userId: string): Promise<HarvestSample[
       })
       if (gdd == null) return null
       const varietyLabel = (crop.variety ?? '').trim() || null
+      const subject = compareSubject(crop)
       return {
         cropId: crop.id,
         name: crop.name,
         variety: crop.variety,
         varietyLabel,
-        cropKey: cropKeyOf(crop.name),
+        cropKey: subject.key,
+        subjectLabel: subject.label,
+        growingSite: crop.growingSite,
         gdd: Math.round(gdd),
         days: daysBetween(crop.plantingDate, end),
         seasonLabel: seasonLabel(crop.name, crop.variety, crop.plantingDate),
@@ -123,33 +121,37 @@ function spreadNote(samples: HarvestSample[], avg: number): string | null {
   return `作によって ${min}〜${max}℃日と差があります。`
 }
 
+export type HarvestBasisCrop = {
+  cropKind?: string | null
+  name: string
+  variety?: string | null
+  growingSite?: string | null
+}
+
 export function chosenHarvestSamples(
   samples: HarvestSample[],
-  cropName: string,
-  variety?: string | null
+  crop: HarvestBasisCrop
 ): { source: HarvestBasis['source']; samples: HarvestSample[]; provisional: number } {
-  const provisional = getTargetGDDForCrop(cropName, variety)
-  const varietyLabel = (variety ?? '').trim()
-  const key = cropKeyOf(cropName)
-  const byVariety = varietyLabel
-    ? samples.filter((row) => row.varietyLabel === varietyLabel)
-    : []
-  const byCrop = key ? samples.filter((row) => row.cropKey === key) : []
+  const advice = adviceNames(crop)
+  const provisional = getTargetGDDForCrop(advice.recordOnly ? '' : advice.name, advice.variety)
+  const subject = compareSubject(crop)
+  const siteOf = (site?: string | null) => (site === 'open' || site === 'house' ? site : '')
+  const pool = samples.filter(
+    (row) => row.cropKey === subject.key && siteOf(row.growingSite) === siteOf(crop.growingSite)
+  )
+  const varietyLabel = (crop.variety ?? '').trim()
+  const byVariety = varietyLabel ? pool.filter((row) => row.varietyLabel === varietyLabel) : []
   if (byVariety.length > 0) return { source: 'variety', samples: byVariety, provisional }
-  if (byCrop.length > 0) return { source: 'crop', samples: byCrop, provisional }
+  if (pool.length > 0) return { source: 'crop', samples: pool, provisional }
   return { source: 'provisional', samples: [], provisional }
 }
 
-export function pickHarvestBasis(
-  samples: HarvestSample[],
-  cropName: string,
-  variety?: string | null
-): HarvestBasis {
-  const picked = chosenHarvestSamples(samples, cropName, variety)
+export function pickHarvestBasis(samples: HarvestSample[], crop: HarvestBasisCrop): HarvestBasis {
+  const picked = chosenHarvestSamples(samples, crop)
   const { source } = picked
   const chosen = picked.samples
   const provisional = picked.provisional
-  const key = cropKeyOf(cropName)
+  const key = compareSubject(crop).label
   if (source === 'provisional') {
     return {
       gdd: provisional,

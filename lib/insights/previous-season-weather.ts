@@ -2,6 +2,7 @@
  * 前回作付けシーズンの気象系列（植付けからの日数で揃えて昨年比較用）
  */
 import { prisma } from '@/lib/prisma'
+import { personalGroupKey } from '@/lib/crops/conditions'
 import {
   getHistoricalDailyPrecipitation,
   getHistoricalDailyRadiation,
@@ -10,10 +11,6 @@ import {
 } from '@/lib/weather-forecast'
 
 export type DaySeriesPoint = { dayFromPlanting: number; value: number }
-
-function matchKey(name: string, variety: string | null, farmId: string | null): string {
-  return `${name.trim().toLowerCase()}|${(variety ?? '').trim().toLowerCase()}|${farmId ?? ''}`
-}
 
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
@@ -77,25 +74,23 @@ export type PreviousSeasonWeather = {
 export async function getPreviousSeasonWeather(args: {
   cropId: string
   name: string
+  cropKind?: string | null
   variety: string | null
   farmId: string | null
+  growingSite?: string | null
   plantingDate: Date
   latitude: number | null
   longitude: number | null
   baseTemperature: number
 }): Promise<PreviousSeasonWeather | null> {
   const siblings = await prisma.crop.findMany({
-    where: {
-      name: args.name,
-      variety: args.variety ?? undefined,
-      farmId: args.farmId,
-    },
+    where: args.farmId ? { farmId: args.farmId } : { name: args.name, farmId: null },
     orderBy: { plantingDate: 'desc' },
   })
 
-  const key = matchKey(args.name, args.variety, args.farmId)
+  const key = personalGroupKey(args)
   const group = siblings
-    .filter((c) => matchKey(c.name, c.variety, c.farmId) === key && c.plantingDate)
+    .filter((c) => personalGroupKey(c) === key && c.plantingDate)
     .sort((a, b) => (b.plantingDate?.getTime() ?? 0) - (a.plantingDate?.getTime() ?? 0))
 
   const idx = group.findIndex((c) => c.id === args.cropId)

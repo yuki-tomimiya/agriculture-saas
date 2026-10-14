@@ -4,6 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import { COUNT_UNITS } from '@/lib/crops/harvest'
 
 type CropOption = { id: string; name: string; farmName: string | null; status: string }
 
@@ -34,7 +35,9 @@ export default function HarvestNewForm({
     return d.toISOString().slice(0, 10)
   })
   const [quantity, setQuantity] = useState('')
-  const [unit, setUnit] = useState('kg')
+  const [weightUnit, setWeightUnit] = useState<'kg' | 'g'>('kg')
+  const [countQuantity, setCountQuantity] = useState('')
+  const [countUnit, setCountUnit] = useState('')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -47,8 +50,8 @@ export default function HarvestNewForm({
     setLoading(true)
 
     const num = parseFloat(quantity)
-    if (Number.isNaN(num) || num < 0) {
-      setError('収穫量は0以上の数値を入力してください')
+    if (Number.isNaN(num) || num <= 0) {
+      setError('収穫量（kg）を入力してください')
       setLoading(false)
       return
     }
@@ -61,7 +64,9 @@ export default function HarvestNewForm({
           cropId: cropId || null,
           date: date || null,
           quantity: num,
-          unit: unit || 'kg',
+          weightUnit,
+          countQuantity: countQuantity.trim() === '' ? null : Number(countQuantity),
+          countUnit: countUnit || null,
           notes: notes.trim() || null,
         }),
       })
@@ -223,28 +228,24 @@ export default function HarvestNewForm({
                 />
               </div>
               <div className="auth-field farm-new-half">
-                <label htmlFor="harvest-unit" className="label">
-                  単位
+                <label htmlFor="harvest-weight-unit" className="label">
+                  重さの単位
                 </label>
                 <select
-                  id="harvest-unit"
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
+                  id="harvest-weight-unit"
+                  value={weightUnit}
+                  onChange={(e) => setWeightUnit(e.target.value === 'g' ? 'g' : 'kg')}
                   className="input"
                 >
                   <option value="kg">kg</option>
-                  <option value="g">g</option>
-                  <option value="個">個</option>
-                  <option value="本">本</option>
-                  <option value="袋">袋</option>
-                  <option value="箱">箱</option>
+                  <option value="g">g（保存するときは kg に直します）</option>
                 </select>
               </div>
             </div>
 
             <div className="auth-field">
               <label htmlFor="harvest-quantity" className="label">
-                収穫量 <span className="farm-new-required">必須</span>
+                収穫量（重さ） <span className="farm-new-required">必須</span>
               </label>
               <input
                 id="harvest-quantity"
@@ -255,8 +256,42 @@ export default function HarvestNewForm({
                 onChange={(e) => setQuantity(e.target.value)}
                 required
                 className="input"
-                placeholder="例：12.5"
+                placeholder={weightUnit === 'g' ? '例：500' : '例：12.5'}
               />
+            </div>
+
+            <div className="farm-new-row">
+              <div className="auth-field farm-new-half">
+                <label htmlFor="harvest-count" className="label">
+                  個数など（任意）
+                </label>
+                <input
+                  id="harvest-count"
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={countQuantity}
+                  onChange={(e) => setCountQuantity(e.target.value)}
+                  className="input"
+                  placeholder="例：30"
+                />
+              </div>
+              <div className="auth-field farm-new-half">
+                <label htmlFor="harvest-count-unit" className="label">
+                  個数の単位
+                </label>
+                <select
+                  id="harvest-count-unit"
+                  value={countUnit}
+                  onChange={(e) => setCountUnit(e.target.value)}
+                  className="input"
+                >
+                  <option value="">選ばない</option>
+                  {COUNT_UNITS.map((unit) => (
+                    <option key={unit} value={unit}>{unit}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             <div className="auth-field">

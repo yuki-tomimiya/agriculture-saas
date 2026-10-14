@@ -15,7 +15,8 @@ import {
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones'
 import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
-import { adviceNames, conditionsMissing, CONDITIONS_PROMPT, RECORD_ONLY_NOTE } from '@/lib/crops/conditions'
+import { adviceNames, conditionsMissing, CONDITIONS_PROMPT, personalGroupKey, RECORD_ONLY_NOTE } from '@/lib/crops/conditions'
+import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { SOIL_TIMING_DURING, soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
@@ -99,8 +100,14 @@ function daysSince(date: Date | null, today: Date): number | null {
   return diff >= 0 ? diff : null
 }
 
-function matchKey(name: string, variety: string | null, farmId: string | null): string {
-  return `${name.trim().toLowerCase()}|${(variety ?? '').trim().toLowerCase()}|${farmId ?? ''}`
+function matchKey(crop: {
+  cropKind?: string | null
+  name: string
+  variety?: string | null
+  farmId?: string | null
+  growingSite?: string | null
+}): string {
+  return personalGroupKey(crop)
 }
 
 function averageGapDays(dates: Date[]): number | null {
@@ -472,7 +479,7 @@ export async function scoreGrowingCrops(
     const matchName = advice.recordOnly ? '' : advice.name
     const matchVariety = advice.recordOnly ? null : advice.variety
     const hasHarvest = crop.harvests.length > 0
-    const basis = pickHarvestBasis(harvestSamples, crop.name, crop.variety)
+    const basis = pickHarvestBasis(harvestSamples, crop)
     const targetGDD = basis.gdd
     const gddRatio = currentGDD != null && targetGDD > 0 ? currentGDD / targetGDD : null
     const climate = crop.farmId ? climateByFarm.get(crop.farmId) : undefined
@@ -614,9 +621,9 @@ export async function scoreGrowingCrops(
       if (!latest || work.date > latest) return work.date
       return latest
     }, null)
-    const key = matchKey(crop.name, crop.variety, crop.farmId)
+    const key = matchKey(crop)
     const previous = previousPool
-      .filter((other) => other.id !== crop.id && matchKey(other.name, other.variety, other.farmId) === key)
+      .filter((other) => other.id !== crop.id && matchKey(other) === key)
       .sort((a, b) => (b.plantingDate?.getTime() ?? 0) - (a.plantingDate?.getTime() ?? 0))
       .find((other) => (other.plantingDate?.getTime() ?? 0) < (crop.plantingDate?.getTime() ?? 0))
     const previousGap = previous ? averageGapDays(previous.workRecords.map((work) => work.date)) : null
@@ -748,8 +755,10 @@ export async function scoreGrowingCrops(
         userId,
         cropId: crop.id,
         cropName: crop.name,
+        cropKind: crop.cropKind,
         variety: crop.variety,
         farmId: crop.farmId,
+        growingSite: crop.growingSite,
         plantingDate: crop.plantingDate,
         farmName,
       }),
@@ -968,15 +977,34 @@ export async function scoreGrowingCrops(
     where: { OR: [{ userId }, { farm: { userId } }] },
     select: {
       id: true,
+      status: true,
       growingSite: true,
       covers: true,
       heating: true,
       plantingMethod: true,
       plantCount: true,
       areaM2: true,
+      outcome: { select: { id: true } },
     },
   })
   const missingCount = missingConditions.filter((crop) => conditionsMissing(crop)).length
+  const missingResults = missingConditions.filter((crop) => outcomeMissing(crop)).length
+  if (missingResults > 0 && !isProposalDismissed(dismissed, 'result-missing')) {
+    cards.push({
+      id: 'result-missing',
+      urgency: 'today',
+      score: 48,
+      trigger: 'result-missing',
+      title: `${missingResults}件の終わった作付けで、結果が未入力です`,
+      conclusion: RESULT_PROMPT,
+      layers: mergeLayers({
+        personal: null,
+        regional: null,
+        general: null,
+        conclusion: RESULT_PROMPT,
+      }),
+    })
+  }
   if (missingCount > 0 && !isProposalDismissed(dismissed, 'conditions-missing')) {
     cards.push({
       id: 'conditions-missing',

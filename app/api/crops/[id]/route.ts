@@ -45,6 +45,9 @@ export async function PATCH(
     const status = typeof body.status === 'string' && ['growing', 'harvested', 'completed'].includes(body.status) ? body.status : undefined
     const nextFarmId = farmId === undefined ? existing.farmId : farmId
     const editingConditions = typeof body.cropKind === 'string'
+    if (editingConditions && !nextFarmId) {
+      return NextResponse.json({ error: '農場を選んでください' }, { status: 400 })
+    }
 
     let farmHasFields = false
     let farmFields: { id: string }[] = []

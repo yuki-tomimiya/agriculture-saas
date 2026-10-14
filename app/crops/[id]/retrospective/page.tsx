@@ -8,6 +8,8 @@ import { formatDateShort } from '@/lib/utils'
 import NationalYieldNote from '@/components/NationalYieldNote'
 import { DAYLENGTH_NOTE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 import { adviceNames } from '@/lib/crops/conditions'
+import { prisma } from '@/lib/prisma'
+import CropOutcomeForm from '@/components/CropOutcomeForm'
 
 function formatYen(n: number): string {
   return `¥${n.toLocaleString('ja-JP')}`
@@ -17,6 +19,11 @@ function formatDiff(pct: number | null): string {
   if (pct === null) return '—'
   if (pct > 0) return `+${pct}%`
   return `${pct}%`
+}
+
+function formatKg(value: number): string {
+  const rounded = Math.round(value * 10) / 10
+  return rounded.toLocaleString('ja-JP')
 }
 
 function formatQty(recorded: boolean, qty: number, unit: string): string {
@@ -56,6 +63,7 @@ export default async function CropRetrospectivePage({
 
   const data = await getCropSeasonRetrospective(user.id, id)
   if (!data) notFound()
+  const outcome = await prisma.cropOutcome.findUnique({ where: { cropId: id } })
   const advice = adviceNames({ cropKind: data.cropKind, name: data.cropName, variety: data.variety })
   const adviceName = advice.recordOnly ? '' : advice.name
   const adviceVariety = advice.recordOnly ? null : advice.variety
@@ -89,6 +97,23 @@ export default async function CropRetrospectivePage({
             </Link>
           </div>
         </div>
+
+        {data.status !== 'growing' && (
+          <CropOutcomeForm
+            cropId={id}
+            initial={
+              outcome
+                ? {
+                    endReason: outcome.endReason,
+                    noHarvest: outcome.noHarvest,
+                    gradeAShare: outcome.gradeAShare,
+                    gradeAReason: outcome.gradeAReason ?? '',
+                    note: outcome.note ?? '',
+                  }
+                : null
+            }
+          />
+        )}
 
         {fromStatus && data.status !== 'growing' && (
           <div className="card gdd-past-banner" style={{ marginBottom: '1.25rem' }}>
@@ -180,12 +205,20 @@ export default async function CropRetrospectivePage({
             </p>
           ) : (
             <p className="insights-previous-label text-gray-500">
-              同名・同品種・同農場の前回作付けがありません
+              同じ品目・同じ品種・同じ農場の前回作付けがありません
+            </p>
+          )}
+          {(data.kgPerPlant != null || data.kgPer10a != null) && (
+            <p className="insights-regional-meta" style={{ marginTop: '0.75rem' }}>
+              {data.kgPerPlant != null ? `1株あたり ${formatKg(data.kgPerPlant)} kg` : ''}
+              {data.kgPerPlant != null && data.kgPer10a != null ? '。' : ''}
+              {data.kgPer10a != null ? `10a あたり ${formatKg(data.kgPer10a)} kg` : ''}
             </p>
           )}
           <NationalYieldNote
             cropName={adviceName}
             variety={adviceVariety}
+            areaLabel={data.areaLabel}
             qty={data.harvestQty}
             unit={data.harvestUnit}
             areaM2={data.fieldAreaM2}

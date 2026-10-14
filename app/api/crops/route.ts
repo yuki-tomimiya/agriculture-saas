@@ -18,6 +18,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const farmId = typeof body.farmId === 'string' ? body.farmId.trim() || null : null
+    if (!farmId) {
+      return NextResponse.json({ error: '農場を選んでください' }, { status: 400 })
+    }
     const variety = typeof body.variety === 'string' ? body.variety.trim() || null : null
     const plantingDateStr = body.plantingDate
     const harvestDateStr = body.harvestDate

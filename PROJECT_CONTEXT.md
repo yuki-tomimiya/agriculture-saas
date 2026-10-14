@@ -83,6 +83,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 地域（降水量） | `lib/insights/regional-context.ts` |
 | 一般目安 | `lib/benchmarks/crops.ts`, `lib/benchmarks/base-temperature.ts`（基準温度。FAQ の表もここ） |
 | 作付けの条件 | `lib/crops/conditions.ts`（選べる品目と `adviceNames`）。Crop の品目・場所・覆い・暖房・植え方・株数・面積・圃場を分けていない。呼び名は `name` のまま |
+| 作付けの結果 | 振り返り先頭の結果（`CropOutcome`、`lib/crops/outcome.ts`）。収穫の重さは kg（`lib/crops/harvest.ts`）。自分の記録のまとまりは `personalGroupKey` |
 | 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`, `lib/gdd.ts` |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |

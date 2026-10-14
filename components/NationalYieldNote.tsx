@@ -6,6 +6,7 @@ export default function NationalYieldNote({
   qty,
   unit,
   areaM2,
+  areaLabel = null,
   sharedField = false,
 }: {
   cropName: string
@@ -13,9 +14,10 @@ export default function NationalYieldNote({
   qty: number
   unit: string
   areaM2: number | null
+  areaLabel?: string | null
   sharedField?: boolean
 }) {
-  const copy = nationalYieldCopy(cropName, variety, { qty, unit, areaM2, sharedField })
+  const copy = nationalYieldCopy(cropName, variety, { qty, unit, areaM2, sharedField, areaLabel })
   if (!copy) return null
   return (
     <p className="insights-regional-text" style={{ marginTop: '0.75rem' }}>

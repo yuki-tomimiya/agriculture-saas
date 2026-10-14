@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-season-compare'
 import { seasonName } from '@/lib/insights/season'
-import { latestHarvestDate, sharesFieldPeriod } from '@/lib/benchmarks/national-yield'
+import { latestHarvestDate, ownYieldRates, sharesFieldPeriod } from '@/lib/benchmarks/national-yield'
+import { personalGroupKey } from '@/lib/crops/conditions'
 import { loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   getAccumulatedGDDFromApi,
@@ -23,6 +24,9 @@ export type CropSeasonRetrospective = {
   harvestQty: number
   harvestUnit: string
   fieldAreaM2: number | null
+  areaLabel: string | null
+  kgPerPlant: number | null
+  kgPer10a: number | null
   sharedField: boolean
   harvestCount: number
   salesCount: number
@@ -60,10 +64,6 @@ export function retrospectiveSeasonTitle(plantingDate: Date | null, status: stri
   const month = new Date(plantingDate).getMonth() + 1
   const season = `${seasonName(month)}作`
   return `${year}年${season}の振り返り`
-}
-
-function matchKey(name: string, variety: string | null, farmId: string | null): string {
-  return `${name.trim().toLowerCase()}|${(variety ?? '').trim().toLowerCase()}|${farmId ?? ''}`
 }
 
 function pctDiff(current: number, previous: number): number | null {
@@ -162,19 +162,14 @@ export async function getCropSeasonRetrospective(
     taskType: w.taskType,
   }))
 
-  // 前回作付け（同名・同品種・同農場）
   const siblings = await prisma.crop.findMany({
-    where: {
-      name: crop.name,
-      variety: crop.variety ?? undefined,
-      farmId: crop.farmId ?? undefined,
-      OR: [{ userId }, { farm: { userId } }],
-    },
+    where: { OR: [{ userId }, { farm: { userId } }] },
     include: { harvests: true, sales: true },
     orderBy: { plantingDate: 'desc' },
   })
+  const groupKey = personalGroupKey(crop)
   const group = siblings
-    .filter((c) => matchKey(c.name, c.variety, c.farmId) === matchKey(crop.name, crop.variety, crop.farmId))
+    .filter((c) => personalGroupKey(c) === groupKey)
     .sort((a, b) => (b.plantingDate?.getTime() ?? 0) - (a.plantingDate?.getTime() ?? 0))
   const idx = group.findIndex((c) => c.id === crop.id)
   const previous = idx >= 0 ? group[idx + 1] : null
@@ -213,7 +208,7 @@ export async function getCropSeasonRetrospective(
   }
 
   const harvestSamples = await loadHarvestSamples(userId)
-  const gddBasis = pickHarvestBasis(harvestSamples, crop.name, crop.variety)
+  const gddBasis = pickHarvestBasis(harvestSamples, crop)
   const targetGdd = gddBasis.gdd
   const today = new Date()
   today.setHours(0, 0, 0, 0)
@@ -251,6 +246,14 @@ export async function getCropSeasonRetrospective(
     }))
   )
 
+  const rates = ownYieldRates({
+    qtyKg: harvestQty,
+    plantCount: crop.plantCount,
+    cropAreaM2: crop.areaM2,
+    fieldAreaM2: crop.field?.area ?? null,
+    sharedField,
+  })
+
   const label = formatPlantingLabel(crop.name, crop.variety, crop.plantingDate)
   const headlineSummary = buildHeadline({
     status: crop.status,
@@ -278,8 +281,11 @@ export async function getCropSeasonRetrospective(
     seasonDays,
     harvestQty,
     harvestUnit,
-    fieldAreaM2: crop.field?.area ?? null,
-    sharedField,
+    fieldAreaM2: rates.areaM2,
+    areaLabel: rates.areaLabel,
+    kgPerPlant: rates.perPlant,
+    kgPer10a: rates.per10a,
+    sharedField: rates.sharedField,
     harvestCount,
     salesCount,
     firstHarvestDate,
