@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { resolveBaseTemperature } from '@/lib/benchmarks/base-temperature'
+import { cropKindByKey, parseCropConditions } from '@/lib/crops/conditions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,18 +17,32 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const name = typeof body.name === 'string' ? body.name.trim() : ''
     const farmId = typeof body.farmId === 'string' ? body.farmId.trim() || null : null
     const variety = typeof body.variety === 'string' ? body.variety.trim() || null : null
     const plantingDateStr = body.plantingDate
     const harvestDateStr = body.harvestDate
-    const fieldId = typeof body.fieldId === 'string' && body.fieldId.trim() ? body.fieldId.trim() : null
 
-    if (!name) {
-      return NextResponse.json(
-        { error: '作物名は必須です' },
-        { status: 400 }
-      )
+    let farmHasFields = false
+    let farmFields: { id: string }[] = []
+    if (farmId) {
+      const farm = await prisma.farm.findFirst({
+        where: { id: farmId, userId },
+        include: { fields: true },
+      })
+      if (!farm) {
+        return NextResponse.json({ error: '指定した農場が見つかりません' }, { status: 400 })
+      }
+      farmHasFields = farm.fields.length > 0
+      farmFields = farm.fields
+    }
+
+    const parsed = parseCropConditions(body, { farmHasFields })
+    if ('error' in parsed) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
+    }
+    const conditions = parsed.value
+    if (conditions.fieldId && !farmFields.some((field) => field.id === conditions.fieldId)) {
+      return NextResponse.json({ error: '指定した圃場がこの農場に属していません' }, { status: 400 })
     }
 
     let plantingDate: Date | null = null
@@ -41,43 +56,32 @@ export async function POST(request: NextRequest) {
       if (!Number.isNaN(d.getTime())) harvestDate = d
     }
 
-    let validatedFieldId: string | null = null
-    if (farmId) {
-      const farm = await prisma.farm.findFirst({
-        where: { id: farmId, userId },
-        include: { fields: true },
-      })
-      if (!farm) {
-        return NextResponse.json(
-          { error: '指定した農場が見つかりません' },
-          { status: 400 }
-        )
-      }
-      if (fieldId) {
-        const fieldBelongsToFarm = farm.fields.some((f) => f.id === fieldId)
-        if (!fieldBelongsToFarm) {
-          return NextResponse.json(
-            { error: '指定した圃場がこの農場に属していません' },
-            { status: 400 }
-          )
-        }
-        validatedFieldId = fieldId
-      }
-    }
-
-    const baseTemperature = resolveBaseTemperature(body.baseTemperature, name, variety)
+    const kind = cropKindByKey(conditions.cropKind)
+    const baseTemperature = resolveBaseTemperature(
+      body.baseTemperature,
+      kind?.benchmarkName ?? conditions.name,
+      variety
+    )
     if (typeof baseTemperature === 'object') {
       return NextResponse.json({ error: baseTemperature.error }, { status: 400 })
     }
 
     const crop = await prisma.crop.create({
       data: {
-        name,
+        name: conditions.name,
+        cropKind: conditions.cropKind,
+        growingSite: conditions.growingSite,
+        covers: conditions.covers,
+        heating: conditions.heating,
+        plantingMethod: conditions.plantingMethod,
+        plantCount: conditions.plantCount,
+        areaM2: conditions.areaM2,
+        fieldUndivided: conditions.fieldUndivided,
         ...(farmId ? { farmId } : { userId }),
         variety,
         plantingDate,
         harvestDate,
-        fieldId: validatedFieldId,
+        fieldId: conditions.fieldId,
         baseTemperature,
         status: 'growing',
       },

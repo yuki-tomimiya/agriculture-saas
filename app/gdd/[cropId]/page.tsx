@@ -19,6 +19,7 @@ import {
   projectHarvestWindow,
 } from '@/lib/insights/harvest-date-window'
 import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
+import { adviceNames } from '@/lib/crops/conditions'
 
 function cropLabel(name: string, variety: string | null): string {
   return variety ? `${name}（${variety}）` : name
@@ -141,7 +142,10 @@ export default async function GddCropPage({
   const daysFromPlanting = Math.floor(
     (today.getTime() - new Date(selectedCrop.plantingDate!).getTime()) / (24 * 60 * 60 * 1000)
   )
-  const daylengthCrop = isDaylengthCrop(selectedCrop.name, selectedCrop.variety)
+  const gddAdvice = adviceNames(selectedCrop)
+  const daylengthCrop = gddAdvice.recordOnly
+    ? false
+    : isDaylengthCrop(gddAdvice.name, gddAdvice.variety)
   const provisionalTarget = harvestBasis.source === 'provisional'
   const harvestWindow =
     !daylengthCrop && archive && targetGDD > 0

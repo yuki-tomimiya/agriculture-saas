@@ -66,6 +66,7 @@ export default async function GDDPage({
             crops={crops.map((c) => ({
               id: c.id,
               name: c.name,
+              cropKind: c.cropKind,
               variety: c.variety,
               plantingDate: c.plantingDate,
               harvestDate: c.harvestDate,

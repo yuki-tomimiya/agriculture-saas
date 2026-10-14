@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import { defaultBaseTemperature } from '@/lib/benchmarks/base-temperature'
+import { adviceNames } from '@/lib/crops/conditions'
 
 type Crop = {
   id: string
   name: string
+  cropKind?: string | null
   variety: string | null
   plantingDate: Date | null
   harvestDate: Date | null
@@ -46,7 +48,10 @@ function CropCard({ crop }: { crop: Crop }) {
           基準温度 {crop.baseTemperature ?? 10}℃
         </Link>
         {(() => {
-          const usual = defaultBaseTemperature(crop.name, crop.variety)
+          const listAdvice = adviceNames(crop)
+          const usual = listAdvice.recordOnly
+            ? null
+            : defaultBaseTemperature(listAdvice.name, listAdvice.variety)
           const shown = crop.baseTemperature ?? 10
           if (usual == null || shown === usual) return null
           return <span className="gdd-crop-card-meta">一般値は{usual}℃</span>

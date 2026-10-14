@@ -12,6 +12,7 @@ export type CropSeasonRetrospective = {
   cropId: string
   label: string
   cropName: string
+  cropKind: string | null
   variety: string | null
   farmName: string | null
   farmId: string | null
@@ -267,6 +268,7 @@ export async function getCropSeasonRetrospective(
     cropId: crop.id,
     label,
     cropName: crop.name,
+    cropKind: crop.cropKind,
     variety: crop.variety,
     farmName: crop.farm?.name ?? null,
     farmId: crop.farmId,

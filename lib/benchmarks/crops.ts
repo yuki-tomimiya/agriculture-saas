@@ -63,7 +63,7 @@ export const CROP_BENCHMARKS: CropBenchmark[] = [
     generalTips: ['整枝・摘葉で風通しを確保', 'ハダニ・アザミウマへの注意'],
   },
   {
-    keywords: ['ピーマン', 'ししとう', 'シシトウ', 'パプリカ', '唐辛子', 'トウガラシ'],
+    keywords: ['ピーマン'],
     displayName: 'ピーマン類',
     yieldHint: '中小規模の目安：1作付けあたりおおよそ 40〜120kg（規模・品種で変動）',
     yieldKgRange: { min: 40, max: 120 },

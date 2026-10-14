@@ -15,6 +15,7 @@ import {
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones'
 import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
+import { adviceNames, conditionsMissing, CONDITIONS_PROMPT, RECORD_ONLY_NOTE } from '@/lib/crops/conditions'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { SOIL_TIMING_DURING, soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
@@ -466,6 +467,10 @@ export async function scoreGrowingCrops(
   for (const { crop, currentGDD } of measured) {
     const days = daysSince(crop.plantingDate, today)
     if (days === null) continue
+    const advice = adviceNames(crop)
+    const inHouse = crop.growingSite === 'house'
+    const matchName = advice.recordOnly ? '' : advice.name
+    const matchVariety = advice.recordOnly ? null : advice.variety
     const hasHarvest = crop.harvests.length > 0
     const basis = pickHarvestBasis(harvestSamples, crop.name, crop.variety)
     const targetGDD = basis.gdd
@@ -487,7 +492,7 @@ export async function scoreGrowingCrops(
           provisional: basis.source === 'provisional',
         })}。`
       : ''
-    const stage = resolveCropStage(crop.name, crop.variety, {
+    const stage = resolveCropStage(matchName, matchVariety, {
       daysSincePlanting: days,
       gddRatio,
       hasHarvest,
@@ -498,14 +503,14 @@ export async function scoreGrowingCrops(
     const harvestDatePast =
       crop.harvestDate != null && new Date(crop.harvestDate).setHours(0, 0, 0, 0) < today.getTime()
     const overTarget = gddRatio != null && gddRatio >= 1
-    const kind = cropHarvestKind(crop.name, crop.variety)
+    const kind = cropHarvestKind(matchName, matchVariety)
     if (
       askSeasonFinish({
         kind,
         hasHarvest,
         harvestDatePast,
         overTarget,
-        daylength: isDaylengthCrop(crop.name, crop.variety),
+        daylength: isDaylengthCrop(matchName, matchVariety),
       })
     ) {
       hits.push({
@@ -518,7 +523,8 @@ export async function scoreGrowingCrops(
       })
     }
 
-    const coolNight = isTomatoCrop(crop.name, crop.variety) ? climate?.coolNight ?? null : null
+    const coolNight =
+      !inHouse && isTomatoCrop(matchName, matchVariety) ? climate?.coolNight ?? null : null
     if (coolNight && isOnOrAfterCoolNight(today, coolNight)) {
       hits.push({
         trigger: 'season-finish',
@@ -531,7 +537,7 @@ export async function scoreGrowingCrops(
       })
     }
 
-    const skipGddHarvest = isDaylengthCrop(crop.name, crop.variety)
+    const skipGddHarvest = isDaylengthCrop(matchName, matchVariety)
     if (!skipGddHarvest && kind === 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 0.9) {
       hits.push({
         trigger: 'harvest-window',
@@ -646,8 +652,8 @@ export async function scoreGrowingCrops(
       .filter((row) => row.cropId === crop.id && isMilestoneTrigger(row.trigger))
       .map((row) => row.trigger.slice('milestone:'.length))
     const ask = pickMilestoneAsk({
-      cropName: crop.name,
-      variety: crop.variety,
+      cropName: matchName,
+      variety: matchVariety,
       daysSincePlanting: days,
       gddRatio,
       hasHarvest,
@@ -656,7 +662,7 @@ export async function scoreGrowingCrops(
     })
     const hasSeenRoots = hasHarvest || crop.milestones.some((row) => row.key === 'test-dig')
     const frost: SweetPotatoFrost | null =
-      climate && isSweetPotatoCrop(crop.name, crop.variety)
+      climate && !inHouse && isSweetPotatoCrop(matchName, matchVariety)
         ? assessSweetPotatoFrost({
             today,
             forecast: climate.forecast,
@@ -748,7 +754,7 @@ export async function scoreGrowingCrops(
         farmName,
       }),
       Promise.resolve(
-        buildGeneralLayer(crop.name, crop.variety, {
+        buildGeneralLayer(matchName, matchVariety, {
           daysSincePlanting: days,
           gddRatio,
           hasHarvest,
@@ -801,11 +807,13 @@ export async function scoreGrowingCrops(
       layers: mergeLayers({
         personal: personalText,
         regional,
-        general: coolFinish
-          ? climate?.coolSource === 'station' && climate.coolStationName
-            ? `${TOMATO_NIGHT_SOURCE}。過去10年の観測では、${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。出典：気象庁ホームページ『過去の気象データ検索』（${JMA_SEARCH_TOP}）の日別値を加工して作成`
-            : TOMATO_NIGHT_SOURCE
-          : general,
+        general: advice.recordOnly
+          ? RECORD_ONLY_NOTE
+          : coolFinish
+            ? climate?.coolSource === 'station' && climate.coolStationName
+              ? `${TOMATO_NIGHT_SOURCE}。過去10年の観測では、${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。出典：気象庁ホームページ『過去の気象データ検索』（${JMA_SEARCH_TOP}）の日別値を加工して作成`
+              : TOMATO_NIGHT_SOURCE
+            : general,
         conclusion: best.conclusion,
       }),
     })
@@ -835,7 +843,9 @@ export async function scoreGrowingCrops(
     if (isProposalDismissed(dismissed, 'soil-ph', crop.id)) continue
     const diagnosis = latestByFarm.get(crop.farmId)
     if (!diagnosis || diagnosis.ph == null) continue
-    const range = matchedSoilPh(crop.name, crop.variety)
+    const soilAdvice = adviceNames(crop)
+    if (soilAdvice.recordOnly) continue
+    const range = matchedSoilPh(soilAdvice.name, soilAdvice.variety)
     if (!range) continue
     const signal = soilPhSignal(diagnosis.ph, range)
     if (!signal) continue
@@ -866,7 +876,7 @@ export async function scoreGrowingCrops(
     const farmId = key.split('|')[0]
     const hasSweetPotato = crops.some((crop) => {
       if (crop.farmId !== farmId) return false
-      const range = matchedSoilPh(crop.name, crop.variety)
+      const range = matchedSoilPh(adviceNames(crop).name, adviceNames(crop).variety)
       return range != null && !range.adviseLow
     })
     const rangeNames = [...new Set(group.crops.map((crop) => crop.rangeName))]
@@ -950,6 +960,36 @@ export async function scoreGrowingCrops(
         personal: `${farmName}の${dateLabel}の診断です。`,
         general: hits.map((hit) => hit.sentence).join(''),
         conclusion,
+      }),
+    })
+  }
+
+  const missingConditions = await prisma.crop.findMany({
+    where: { OR: [{ userId }, { farm: { userId } }] },
+    select: {
+      id: true,
+      growingSite: true,
+      covers: true,
+      heating: true,
+      plantingMethod: true,
+      plantCount: true,
+      areaM2: true,
+    },
+  })
+  const missingCount = missingConditions.filter((crop) => conditionsMissing(crop)).length
+  if (missingCount > 0 && !isProposalDismissed(dismissed, 'conditions-missing')) {
+    cards.push({
+      id: 'conditions-missing',
+      urgency: 'today',
+      score: 50,
+      trigger: 'conditions-missing',
+      title: `${missingCount}件の作付けで、育て方の型などが未入力です`,
+      conclusion: CONDITIONS_PROMPT,
+      layers: mergeLayers({
+        personal: null,
+        regional: null,
+        general: null,
+        conclusion: CONDITIONS_PROMPT,
       }),
     })
   }

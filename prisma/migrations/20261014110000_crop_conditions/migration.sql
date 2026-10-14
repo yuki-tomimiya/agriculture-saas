@@ -1,0 +1,9 @@
+-- AlterTable
+ALTER TABLE "Crop" ADD COLUMN "cropKind" TEXT;
+ALTER TABLE "Crop" ADD COLUMN "growingSite" TEXT;
+ALTER TABLE "Crop" ADD COLUMN "covers" TEXT;
+ALTER TABLE "Crop" ADD COLUMN "heating" TEXT;
+ALTER TABLE "Crop" ADD COLUMN "plantingMethod" TEXT;
+ALTER TABLE "Crop" ADD COLUMN "plantCount" INTEGER;
+ALTER TABLE "Crop" ADD COLUMN "areaM2" REAL;
+ALTER TABLE "Crop" ADD COLUMN "fieldUndivided" BOOLEAN NOT NULL DEFAULT false;

@@ -133,7 +133,7 @@ function isEggplant(cropName: string, variety?: string | null): boolean {
 }
 
 function isPepper(cropName: string, variety?: string | null): boolean {
-  return nameIncludes(cropName, variety, ['ピーマン', 'パプリカ', 'ししとう'])
+  return nameIncludes(cropName, variety, ['ピーマン'])
 }
 
 function isPotato(cropName: string, variety?: string | null): boolean {

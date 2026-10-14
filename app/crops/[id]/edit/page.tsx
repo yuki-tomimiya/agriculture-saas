@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import CropEditForm from './CropEditForm'
+import { parseCovers } from '@/lib/crops/conditions'
 
 function toDateInputValue(d: Date | null): string {
   if (!d) return ''
@@ -49,12 +50,21 @@ export default async function CropEditPage({
     orderBy: { name: 'asc' },
   })
 
+  const covers = parseCovers(crop.covers)
   const initial = {
-    id: crop.id,
     name: crop.name,
+    cropKind: crop.cropKind ?? '',
     variety: crop.variety ?? '',
     farmId: crop.farmId ?? '',
     fieldId: crop.fieldId ?? '',
+    fieldUndivided: crop.fieldUndivided,
+    growingSite: crop.growingSite ?? '',
+    covers: covers.filter((key) => key !== 'none'),
+    coverNone: covers.includes('none'),
+    heating: crop.heating ?? '',
+    plantingMethod: crop.plantingMethod ?? '',
+    plantCount: crop.plantCount == null ? '' : String(crop.plantCount),
+    areaM2: crop.areaM2 == null ? '' : String(crop.areaM2),
     plantingDate: toDateInputValue(crop.plantingDate),
     harvestDate: toDateInputValue(crop.harvestDate),
     status: crop.status,

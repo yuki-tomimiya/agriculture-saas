@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { resolveBaseTemperature } from '@/lib/benchmarks/base-temperature'
+import { cropKindByKey, parseCropConditions } from '@/lib/crops/conditions'
 
 export async function PATCH(
   request: NextRequest,
@@ -37,19 +38,35 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const name = typeof body.name === 'string' ? body.name.trim() : undefined
     const farmId = body.farmId === null || body.farmId === '' ? null : typeof body.farmId === 'string' ? body.farmId.trim() || null : undefined
     const variety = body.variety === null || body.variety === '' ? null : typeof body.variety === 'string' ? body.variety.trim() || null : undefined
     const plantingDateStr = body.plantingDate
     const harvestDateStr = body.harvestDate
-    const fieldId = body.fieldId === null || body.fieldId === '' ? null : typeof body.fieldId === 'string' && body.fieldId.trim() ? body.fieldId.trim() : undefined
     const status = typeof body.status === 'string' && ['growing', 'harvested', 'completed'].includes(body.status) ? body.status : undefined
+    const nextFarmId = farmId === undefined ? existing.farmId : farmId
+    const editingConditions = typeof body.cropKind === 'string'
 
-    if (name !== undefined && !name) {
-      return NextResponse.json(
-        { error: '作物名は必須です' },
-        { status: 400 }
-      )
+    let farmHasFields = false
+    let farmFields: { id: string }[] = []
+    if (editingConditions && nextFarmId) {
+      const farm = await prisma.farm.findFirst({
+        where: { id: nextFarmId, userId },
+        include: { fields: true },
+      })
+      if (!farm) {
+        return NextResponse.json({ error: '指定した農場が見つかりません' }, { status: 400 })
+      }
+      farmHasFields = farm.fields.length > 0
+      farmFields = farm.fields
+    }
+
+    const parsed = editingConditions ? parseCropConditions(body, { farmHasFields }) : null
+    if (parsed && 'error' in parsed) {
+      return NextResponse.json({ error: parsed.error }, { status: 400 })
+    }
+    const conditions = parsed && 'value' in parsed ? parsed.value : null
+    if (conditions?.fieldId && !farmFields.some((field) => field.id === conditions.fieldId)) {
+      return NextResponse.json({ error: '指定した圃場がこの農場に属していません' }, { status: 400 })
     }
 
     let plantingDate: Date | null | undefined = undefined
@@ -69,48 +86,25 @@ export async function PATCH(
       }
     }
 
-    let validatedFieldId: string | null | undefined = undefined
-
-    if (farmId !== undefined) {
-      if (farmId) {
-        const farm = await prisma.farm.findFirst({
-          where: { id: farmId, userId },
-          include: { fields: true },
-        })
-        if (!farm) {
-          return NextResponse.json(
-            { error: '指定した農場が見つかりません' },
-            { status: 400 }
-          )
-        }
-        const rawFieldId = fieldId !== undefined ? fieldId : existing.fieldId
-        if (rawFieldId) {
-          const ok = farm.fields.some((f) => f.id === rawFieldId)
-          if (!ok) {
-            return NextResponse.json(
-              { error: '指定した圃場がこの農場に属していません' },
-              { status: 400 }
-            )
-          }
-          validatedFieldId = rawFieldId
-        } else {
-          validatedFieldId = null
-        }
-      } else {
-        validatedFieldId = null
-      }
-    } else if (fieldId !== undefined && existing.farmId) {
-      const farm = await prisma.farm.findFirst({
-        where: { id: existing.farmId, userId },
-        include: { fields: true },
-      })
-      if (farm && (!fieldId || farm.fields.some((f) => f.id === fieldId))) {
-        validatedFieldId = fieldId || null
-      }
-    }
-
     const updateData: Parameters<typeof prisma.crop.update>[0]['data'] = {}
-    if (name !== undefined) updateData.name = name
+    if (conditions) {
+      updateData.name = conditions.name
+      updateData.cropKind = conditions.cropKind
+      updateData.growingSite = conditions.growingSite
+      updateData.covers = conditions.covers
+      updateData.heating = conditions.heating
+      updateData.plantingMethod = conditions.plantingMethod
+      updateData.plantCount = conditions.plantCount
+      updateData.areaM2 = conditions.areaM2
+      updateData.fieldId = conditions.fieldId
+      updateData.fieldUndivided = conditions.fieldUndivided
+    } else if (typeof body.name === 'string') {
+      const name = body.name.trim()
+      if (!name) {
+        return NextResponse.json({ error: '作物名は必須です' }, { status: 400 })
+      }
+      updateData.name = name
+    }
     if (variety !== undefined) updateData.variety = variety
     if (plantingDate !== undefined) updateData.plantingDate = plantingDate
     if (harvestDate !== undefined) updateData.harvestDate = harvestDate
@@ -119,11 +113,11 @@ export async function PATCH(
       updateData.farmId = farmId
       updateData.userId = farmId ? null : userId
     }
-    if (validatedFieldId !== undefined) updateData.fieldId = validatedFieldId
     if ('baseTemperature' in body) {
+      const kind = cropKindByKey(conditions?.cropKind ?? existing.cropKind)
       const baseTemperature = resolveBaseTemperature(
         body.baseTemperature,
-        name ?? existing.name,
+        kind?.benchmarkName ?? conditions?.name ?? existing.name,
         variety === undefined ? existing.variety : variety
       )
       if (typeof baseTemperature === 'object') {

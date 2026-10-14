@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { findCropBenchmark, type CropBenchmark } from '@/lib/benchmarks/crops'
+import { adviceNames } from '@/lib/crops/conditions'
 import { seasonName } from '@/lib/insights/season'
 import { latestHarvestDate, sharesFieldPeriod, type FieldStay } from '@/lib/benchmarks/national-yield'
 
@@ -175,7 +176,10 @@ export async function getCropSeasonComparisons(userId: string): Promise<SeasonCo
         ? pctDiff(salesAmount, previousSalesAmount)
         : null
 
-    const benchmark = findCropBenchmark(current.name, current.variety)
+    const compareAdvice = adviceNames(current)
+    const benchmark = compareAdvice.recordOnly
+      ? null
+      : findCropBenchmark(compareAdvice.name, compareAdvice.variety)
     const yieldComment = null
 
     rows.push({

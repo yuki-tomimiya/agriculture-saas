@@ -8,6 +8,17 @@ import CropMilestones from '@/components/CropMilestones'
 import { milestoneFormItems } from '@/lib/proposals/milestones'
 import { cropPoints } from '@/lib/benchmarks/crop-points'
 import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
+import {
+  adviceNames,
+  CONDITIONS_PROMPT,
+  conditionsMissing,
+  coverLabel,
+  heatingLabel,
+  methodLabel,
+  plantingDateLabel,
+  RECORD_ONLY_NOTE,
+  siteLabel,
+} from '@/lib/crops/conditions'
 import { formatDateShort } from '@/lib/utils'
 
 export default async function CropDetailPage({
@@ -60,8 +71,10 @@ export default async function CropDetailPage({
 
   const statusLabel =
     crop.status === 'growing' ? '栽培中' : crop.status === 'harvested' ? '収穫済み' : '完了'
-  const points = cropPoints(crop.name, crop.variety)
-  const daylength = isDaylengthCrop(crop.name, crop.variety)
+  const advice = adviceNames(crop)
+  const points = advice.recordOnly ? [] : cropPoints(advice.name, advice.variety)
+  const daylength = advice.recordOnly ? false : isDaylengthCrop(advice.name, advice.variety)
+  const missingConditions = conditionsMissing(crop)
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -117,6 +130,19 @@ export default async function CropDetailPage({
           </div>
         </div>
 
+        {advice.recordOnly && (
+          <p className="bg-white p-4 rounded-lg shadow mb-6 text-gray-800">{RECORD_ONLY_NOTE}</p>
+        )}
+        {missingConditions && (
+          <p className="bg-white p-4 rounded-lg shadow mb-6 text-gray-800">
+            {CONDITIONS_PROMPT}
+            {' '}
+            <Link href={`/crops/${id}/edit`} className="text-green-700 hover:underline">
+              編集して選ぶ
+            </Link>
+          </p>
+        )}
+
         {/* 基本情報 */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <h2 className="text-xl font-semibold mb-4">栽培情報</h2>
@@ -137,9 +163,51 @@ export default async function CropDetailPage({
                 <dd className="text-gray-900">{crop.field.name}</dd>
               </div>
             )}
+            {crop.fieldUndivided && (
+              <div>
+                <dt className="text-sm text-gray-500">圃場</dt>
+                <dd className="text-gray-900">圃場を分けていない</dd>
+              </div>
+            )}
+            {siteLabel(crop.growingSite) && (
+              <div>
+                <dt className="text-sm text-gray-500">場所</dt>
+                <dd className="text-gray-900">{siteLabel(crop.growingSite)}</dd>
+              </div>
+            )}
+            {crop.growingSite === 'open' && coverLabel(crop.covers) && (
+              <div>
+                <dt className="text-sm text-gray-500">覆い</dt>
+                <dd className="text-gray-900">{coverLabel(crop.covers)}</dd>
+              </div>
+            )}
+            {crop.growingSite === 'house' && heatingLabel(crop.heating) && (
+              <div>
+                <dt className="text-sm text-gray-500">暖房</dt>
+                <dd className="text-gray-900">{heatingLabel(crop.heating)}</dd>
+              </div>
+            )}
+            {methodLabel(crop.plantingMethod) && (
+              <div>
+                <dt className="text-sm text-gray-500">植え方</dt>
+                <dd className="text-gray-900">{methodLabel(crop.plantingMethod)}</dd>
+              </div>
+            )}
+            {crop.plantCount != null && (
+              <div>
+                <dt className="text-sm text-gray-500">株数</dt>
+                <dd className="text-gray-900">{crop.plantCount}本</dd>
+              </div>
+            )}
+            {crop.areaM2 != null && (
+              <div>
+                <dt className="text-sm text-gray-500">栽培面積</dt>
+                <dd className="text-gray-900">{crop.areaM2}㎡</dd>
+              </div>
+            )}
             {crop.plantingDate && (
               <div>
-                <dt className="text-sm text-gray-500">植え付け日</dt>
+                <dt className="text-sm text-gray-500">{plantingDateLabel(crop.plantingMethod)}</dt>
                 <dd className="text-gray-900">{formatDateShort(crop.plantingDate)}</dd>
               </div>
             )}
@@ -181,7 +249,7 @@ export default async function CropDetailPage({
 
         <CropMilestones
           cropId={crop.id}
-          items={milestoneFormItems(crop.name, crop.variety, crop.milestones)}
+          items={milestoneFormItems(advice.recordOnly ? '' : advice.name, advice.variety, crop.milestones)}
         />
 
         {/* 収穫履歴 */}

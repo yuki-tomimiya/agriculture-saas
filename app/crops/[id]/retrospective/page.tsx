@@ -7,6 +7,7 @@ import { getCropSeasonRetrospective, getRetrospectiveGdd } from '@/lib/insights/
 import { formatDateShort } from '@/lib/utils'
 import NationalYieldNote from '@/components/NationalYieldNote'
 import { DAYLENGTH_NOTE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
+import { adviceNames } from '@/lib/crops/conditions'
 
 function formatYen(n: number): string {
   return `¥${n.toLocaleString('ja-JP')}`
@@ -55,6 +56,9 @@ export default async function CropRetrospectivePage({
 
   const data = await getCropSeasonRetrospective(user.id, id)
   if (!data) notFound()
+  const advice = adviceNames({ cropKind: data.cropKind, name: data.cropName, variety: data.variety })
+  const adviceName = advice.recordOnly ? '' : advice.name
+  const adviceVariety = advice.recordOnly ? null : advice.variety
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -180,8 +184,8 @@ export default async function CropRetrospectivePage({
             </p>
           )}
           <NationalYieldNote
-            cropName={data.cropName}
-            variety={data.variety}
+            cropName={adviceName}
+            variety={adviceVariety}
             qty={data.harvestQty}
             unit={data.harvestUnit}
             areaM2={data.fieldAreaM2}
@@ -280,7 +284,7 @@ export default async function CropRetrospectivePage({
                 </Suspense>
               </span>
             </div>
-            {!isDaylengthCrop(data.cropName, data.variety) && (
+            {!isDaylengthCrop(adviceName, adviceVariety) && (
             <div>
               <span className="insights-regional-stat-label">
                 {data.gddBasis?.source === 'provisional' ? '一般の目安（暫定）' : '収穫時点の実績'}
@@ -291,7 +295,7 @@ export default async function CropRetrospectivePage({
             </div>
             )}
           </div>
-          {isDaylengthCrop(data.cropName, data.variety) ? (
+          {isDaylengthCrop(adviceName, adviceVariety) ? (
             <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
               {DAYLENGTH_NOTE}
             </p>

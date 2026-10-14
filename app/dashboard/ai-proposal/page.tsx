@@ -182,6 +182,11 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                         タスクを見る →
                       </Link>
                     )}
+                    {p.trigger === 'conditions-missing' && (
+                      <Link href="/crops" className="ai-proposal-card-link">
+                        作物一覧 →
+                      </Link>
+                    )}
                     {p.relatedCropId && (
                       <Link href={`/crops/${p.relatedCropId}`} className="ai-proposal-card-link">
                         作物を見る →
@@ -266,7 +271,8 @@ export default async function AiProposalPage() {
   if (!user) redirect('/auth/signin')
 
   const proposals = await getTodayProposals(user.id)
-  const isConfirm = (trigger?: string) => trigger === 'season-finish' || isMilestoneTrigger(trigger)
+  const isConfirm = (trigger?: string) =>
+    trigger === 'season-finish' || trigger === 'conditions-missing' || isMilestoneTrigger(trigger)
   const confirmItems = proposals.filter((item) => isConfirm(item.trigger))
   const todayItems = proposals.filter((item) => item.urgency === 'today' && !isConfirm(item.trigger))
   const weekItems = proposals.filter((item) => item.urgency === 'thisWeek' && !isConfirm(item.trigger))

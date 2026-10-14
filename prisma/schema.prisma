@@ -60,7 +60,15 @@ model Field {
 
 model Crop {
   id              String       @id @default(cuid())
-  name            String
+  name            String // 呼び名。空なら品目の表示名
+  cropKind        String? // 品目のキー。空の古い作付けだけ名前から探す
+  growingSite     String? // open / house
+  covers          String? // 露地の覆い。none または mulch,tunnel,rowcover
+  heating         String? // ハウスの暖房。yes / no
+  plantingMethod  String? // transplant / direct
+  plantCount      Int?
+  areaM2          Float?
+  fieldUndivided  Boolean      @default(false) // 圃場を分けていない
   variety         String?      // 品種
   plantingDate    DateTime?
   harvestDate     DateTime?
