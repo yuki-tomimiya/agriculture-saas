@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import CropEditForm from './CropEditForm'
 import { parseCovers } from '@/lib/crops/conditions'
+import { springBriefsForFarms } from '@/lib/jma/frost-record'
 
 function toDateInputValue(d: Date | null): string {
   if (!d) return ''
@@ -76,6 +77,7 @@ export default async function CropEditPage({
     name: f.name,
     fields: f.fields.map((field) => ({ id: field.id, name: field.name })),
   }))
+  const springByFarm = await springBriefsForFarms(farms)
 
-  return <CropEditForm cropId={id} initial={initial} farms={farmsWithFields} />
+  return <CropEditForm cropId={id} initial={initial} farms={farmsWithFields} springByFarm={springByFarm} />
 }

@@ -4,7 +4,7 @@ export const STATION_NEAR_KM = 20
 export const STATION_NEAR_ELEV_M = 100
 /** これより遠い観測所は使わず、推計に戻す */
 export const STATION_FAR_KM = 40
-/** 8/15〜12/31 で欠けた日がこの割合を超える年は、霜の集計に入れない */
+/** 集計の期間で欠けた日がこの割合を超える年は、霜の集計に入れない。秋は8/15〜12/31、春は1/1〜6/30 */
 export const STATION_MISSING_RATE = 0.1
 /** これ以上の年が欠け少なくそろっていて、4℃以下に届かないときは、推計に戻さない */
 export const STATION_ENOUGH_YEARS = 8

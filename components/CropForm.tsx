@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import BaseTempField from '@/components/BaseTempField'
 import { defaultBaseTemperature } from '@/lib/benchmarks/base-temperature'
+import { plantingConditionForKind } from '@/lib/benchmarks/planting-conditions'
 import {
   COVER_OPTIONS,
   cropKindByKey,
@@ -14,6 +15,20 @@ import {
 import { CROP_KINDS } from '@/lib/crops/conditions'
 
 type FarmWithFields = { id: string; name: string; fields: { id: string; name: string }[] }
+
+export type SpringDateBrief = {
+  latest: { month: number; day: number } | null
+  observed: boolean
+  dateLabel: string | null
+}
+
+function dateIsBeforeLatest(ymd: string, latest: { month: number; day: number }): boolean {
+  const [, monthText, dayText] = ymd.split('-')
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (!month || !day) return false
+  return month * 100 + day < latest.month * 100 + latest.day
+}
 
 export type CropFormInitial = {
   name: string
@@ -60,11 +75,13 @@ export default function CropForm({
   cropId,
   initial,
   farms,
+  springByFarm = {},
 }: {
   mode: 'new' | 'edit'
   cropId?: string
   initial: CropFormInitial
   farms: FarmWithFields[]
+  springByFarm?: Record<string, SpringDateBrief>
 }) {
   const router = useRouter()
   const [form, setForm] = useState(() => {
@@ -78,6 +95,15 @@ export default function CropForm({
   const kind = cropKindByKey(form.cropKind)
   const selectedFarm = form.farmId ? farms.find((farm) => farm.id === form.farmId) : null
   const fields = selectedFarm?.fields ?? []
+  const spring = form.farmId ? springByFarm[form.farmId] : undefined
+  const plantingCondition =
+    form.growingSite === 'open' && kind && !kind.recordOnly ? plantingConditionForKind(kind.key) : null
+  const springEarly =
+    plantingCondition && spring?.latest && spring.dateLabel && form.plantingDate && dateIsBeforeLatest(form.plantingDate, spring.latest)
+      ? `この日付は、過去10年の${spring.observed ? '観測' : '推計'}でいちばん遅い霜（${spring.dateLabel}）より前です。${
+          spring.observed ? '' : '近くの観測所の記録が使えないため、推計の気温から出しています。'
+        }`
+      : null
   const adviceName = kind?.benchmarkName ?? ''
 
   function patch(next: Partial<CropFormInitial>) {
@@ -319,6 +345,12 @@ export default function CropForm({
                   value={form.plantingDate}
                   onChange={(e) => patch({ plantingDate: e.target.value })}
                 />
+                {springEarly && (
+                  <p className="text-sm text-amber-800 mt-1">
+                    {springEarly}
+                    {plantingCondition ? plantingCondition.text : ''}
+                  </p>
+                )}
               </div>
               <div className="auth-field farm-new-half">
                 <label htmlFor="crop-harvest" className="label">収穫予定日</label>

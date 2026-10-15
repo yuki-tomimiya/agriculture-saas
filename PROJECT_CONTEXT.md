@@ -76,7 +76,8 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 領域 | パス |
 |------|------|
 | 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
-| 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切） |
+| 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切。春の霜の終わりは1〜6月の最後の4℃以下） |
+| 植える条件 | `lib/benchmarks/planting-conditions.ts`。登録画面・来年の計画・農場の詳細・植えた後の遅霜のカード。推計の地温は出さない |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準） |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |

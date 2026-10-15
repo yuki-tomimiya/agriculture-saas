@@ -15,10 +15,21 @@ export type FirstFrostSummary = {
   years: number
 }
 
+/** 1月1日〜6月30日で、最低気温が4℃以下になった最後の日 */
+export type LastFrostSummary = {
+  mean: MonthDay
+  latest: MonthDay
+  years: number
+}
+
 function inAutumnWindow(month: number, day: number): boolean {
   if (month < 8 || month > 12) return false
   if (month === 8 && day < 15) return false
   return true
+}
+
+function inSpringWindow(month: number): boolean {
+  return month >= 1 && month <= 6
 }
 
 function monthDayOrder(value: MonthDay): number {
@@ -59,6 +70,49 @@ export function summarizeAutumnFirstFrost(
     monthDayOrder(value) < monthDayOrder(soonest) ? value : soonest
   )
   return { mean: averageMonthDay(found), earliest, years: found.length }
+}
+
+/**
+ * 年ごとに、1月1日〜6月30日で最低気温が最後に4℃以下になった日を出す。
+ * 一度も4℃以下にならない年は平均に入れない。
+ */
+export function summarizeSpringLastFrost(
+  times: string[],
+  mins: Array<number | null>
+): LastFrostSummary | null {
+  const lastByYear = new Map<number, MonthDay | null>()
+  const length = Math.min(times.length, mins.length)
+  for (let i = 0; i < length; i++) {
+    const [yearText, monthText, dayText] = times[i].split('-')
+    const year = Number(yearText)
+    const month = Number(monthText)
+    const day = Number(dayText)
+    if (!year || !month || !day || !inSpringWindow(month)) continue
+    if (!lastByYear.has(year)) lastByYear.set(year, null)
+    const min = mins[i]
+    if (min == null || min > FROST_RISK_MAX_C) continue
+    const next = { month, day }
+    const current = lastByYear.get(year)
+    if (!current || monthDayOrder(next) > monthDayOrder(current)) lastByYear.set(year, next)
+  }
+  const found = [...lastByYear.values()].filter((value): value is MonthDay => value != null)
+  if (found.length === 0) return null
+  const latest = found.reduce((slowest, value) =>
+    monthDayOrder(value) > monthDayOrder(slowest) ? value : slowest
+  )
+  return { mean: averageMonthDay(found), latest, years: found.length }
+}
+
+export function monthDayIsBefore(ymd: string, latest: MonthDay): boolean {
+  const [, monthText, dayText] = ymd.split('-')
+  const month = Number(monthText)
+  const day = Number(dayText)
+  if (!month || !day) return false
+  return month * 100 + day < latest.month * 100 + latest.day
+}
+
+export function dateIsBeforeMonthDay(date: Date, latest: MonthDay): boolean {
+  return date.getMonth() + 1 < latest.month || (date.getMonth() + 1 === latest.month && date.getDate() < latest.day)
 }
 
 export async function getLocationFirstFrost(

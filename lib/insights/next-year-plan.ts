@@ -13,6 +13,9 @@ import {
 } from '@/lib/insights/harvest-gdd-basis'
 import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 import { adviceNames } from '@/lib/crops/conditions'
+import { plantingConditionForKind } from '@/lib/benchmarks/planting-conditions'
+import { dateIsBeforeMonthDay, formatMonthDay } from '@/lib/weather-frost'
+import { readFarmSpringFrost, springFrostSentence, type SpringFrostOrigin } from '@/lib/jma/frost-record'
 
 export type PlanWorkHint = {
   taskType: string
@@ -52,6 +55,9 @@ export type NextYearPlanCard = {
   windowLate: Date | null
   workHints: PlanWorkHint[]
   workCount: number
+  springLine: string | null
+  plantingCondition: string | null
+  springEarlyNote: string | null
 }
 
 function monthDayKey(month: number, day: number): string {
@@ -214,6 +220,14 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
     archiveCache.set(key, pending)
     return pending
   }
+  const springCache = new Map<string, Promise<SpringFrostOrigin | null>>()
+  const springFor = (farmId: string, latitude: number, longitude: number) => {
+    const existing = springCache.get(farmId)
+    if (existing) return existing
+    const pending = readFarmSpringFrost({ latitude, longitude })
+    springCache.set(farmId, pending)
+    return pending
+  }
 
   const today = new Date()
   const harvestSamples = await loadHarvestSamples(userId)
@@ -361,6 +375,18 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         }
       }
 
+      const springOrigin =
+        crop.farm && hasWeatherCoordinates(point)
+          ? await springFor(crop.farm.id, Number(point.latitude), Number(point.longitude))
+          : null
+      const showPlanting =
+        crop.growingSite !== 'house' && !planAdvice.recordOnly && Boolean(crop.cropKind)
+      const condition = showPlanting ? plantingConditionForKind(crop.cropKind) : null
+      const springEarlyNote =
+        showPlanting && springOrigin?.summary && nextPlant && dateIsBeforeMonthDay(nextPlant, springOrigin.summary.latest)
+          ? `この見込みの日は、過去10年の${springOrigin.source === 'estimate' ? '推計' : '観測'}でいちばん遅い霜（${formatMonthDay(springOrigin.summary.latest)}）より前です。`
+          : null
+
       return {
         cropId: crop.id,
         name: crop.name,
@@ -391,6 +417,9 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         windowLate,
         workHints,
         workCount: crop.workRecords.length,
+        springLine: springOrigin ? springFrostSentence(springOrigin) : null,
+        plantingCondition: condition ? `${condition.text}（${condition.scopeLabel}）` : null,
+        springEarlyNote,
       }
     })
   )

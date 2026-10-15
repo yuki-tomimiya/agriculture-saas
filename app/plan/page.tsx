@@ -148,6 +148,14 @@ export default async function NextYearPlanPage() {
                       {conclusion}
                     </p>
                   )}
+                  {plan.springLine && (
+                    <p className="insights-regional-text">
+                      <span className="insights-layer-tag">地域</span>
+                      {plan.springLine}
+                      {plan.plantingCondition ? ` ${plan.plantingCondition}` : ''}
+                      {plan.springEarlyNote ? ` ${plan.springEarlyNote}` : ''}
+                    </p>
+                  )}
                   {plan.workHints.length > 0 && (
                     <ul className="insights-hint-list">
                       {plan.workHints.map((work) => (

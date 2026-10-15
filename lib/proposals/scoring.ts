@@ -14,12 +14,14 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones'
-import { assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
+import { assessSpringLateFrost, assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
+import { LATE_FROST_COVER, LATE_FROST_POTATO, plantingConditionForKind, plantedThisSpring } from '@/lib/benchmarks/planting-conditions'
 import {
   adviceNames,
   appendPlantingGapNote,
   conditionsMissing,
   CONDITIONS_PROMPT,
+  cropKindByKey,
   personalGroupKey,
   plantingGapNote,
   previousPlanting,
@@ -315,6 +317,59 @@ function groupFrostCards(cards: ScoredProposal[]): ScoredProposal[] {
   return grouped
 }
 
+/** 同じ農場・同じ日付の遅霜は1枚。ジャガイモが混ざっていれば土寄せの文を足す */
+function groupSpringFrostCards(cards: ScoredProposal[]): ScoredProposal[] {
+  const buckets = new Map<string, ScoredProposal[]>()
+  for (const card of cards) {
+    const key = `${card.farmId ?? ''}|${card.title}`
+    const list = buckets.get(key) ?? []
+    list.push(card)
+    buckets.set(key, list)
+  }
+  const grouped: ScoredProposal[] = []
+  for (const list of buckets.values()) {
+    const head = list.some((card) => card.urgency === 'today')
+      ? list.find((card) => card.urgency === 'today')!
+      : list[0]
+    const potato = list.some((card) => card.conclusion.includes(LATE_FROST_POTATO))
+    const conclusion = `霜のおそれがあります。${LATE_FROST_COVER}${potato ? LATE_FROST_POTATO : ''}`
+    if (list.length < 2) {
+      grouped.push({ ...head, conclusion, layers: { ...head.layers, conclusion } })
+      continue
+    }
+    grouped.push({
+      ...head,
+      id: `group-${head.trigger}-${list.length}-${grouped.length}`,
+      title: `${head.title}（${list.length}件）`,
+      score: Math.max(...list.map((card) => card.score)),
+      conclusion,
+      cropId: undefined,
+      cropName: undefined,
+      farmId: head.farmId,
+      farmName: head.farmName,
+      daysSincePlanting: undefined,
+      layers: {
+        ...head.layers,
+        personal: null,
+        conclusion,
+      },
+      lines: list.map((card) => ({
+        cropId: card.cropId!,
+        cropName: card.cropName!,
+        variety: card.variety ?? null,
+        farmId: card.farmId,
+        farmName: card.farmName,
+        daysSincePlanting: card.daysSincePlanting,
+        currentGDD: card.currentGDD ?? null,
+        targetGDD: card.targetGDD ?? 0,
+        targetCaption: card.targetCaption,
+        action: card.action,
+      })),
+    })
+  }
+  return grouped
+}
+
 function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
   const alone: ScoredProposal[] = []
   const buckets = new Map<string, ScoredProposal[]>()
@@ -479,6 +534,7 @@ export async function scoreGrowingCrops(
   const cards: ScoredProposal[] = []
   const milestoneCards: ScoredProposal[] = []
   const frostCards: ScoredProposal[] = []
+  const springFrostCards: ScoredProposal[] = []
   const frostNoteByCrop = new Map<string, string>()
 
   for (const { crop, currentGDD } of measured) {
@@ -725,6 +781,52 @@ export async function scoreGrowingCrops(
           regional: null,
           general: frost.sourceLine,
           conclusion: frostConclusion,
+        }),
+      })
+    }
+    const cropKind = cropKindByKey(crop.cropKind)
+    const plantingCondition = cropKind && !cropKind.recordOnly ? plantingConditionForKind(cropKind.key) : null
+    const openGround = crop.growingSite !== 'house'
+    const springFrost =
+      climate &&
+      openGround &&
+      plantingCondition &&
+      crop.plantingDate &&
+      plantedThisSpring(crop.plantingDate, today)
+        ? assessSpringLateFrost({
+            today,
+            forecast: climate.forecast,
+            potato: cropKind?.key === 'potato',
+          })
+        : null
+    if (springFrost && !isProposalDismissed(dismissed, springFrost.trigger, crop.id)) {
+      const withinWeek = springFrost.urgency === 'today'
+      springFrostCards.push({
+        id: `${springFrost.trigger}-${crop.id}`,
+        urgency: springFrost.urgency,
+        score: withinWeek ? 96 : 88,
+        trigger: springFrost.trigger,
+        title: springFrost.title,
+        cropId: crop.id,
+        cropName: crop.name,
+        farmId: crop.farmId ?? undefined,
+        farmName,
+        daysSincePlanting: days,
+        variety: crop.variety,
+        currentGDD,
+        targetGDD,
+        targetCaption: basis.summary,
+        conclusion: springFrost.conclusion,
+        action: {
+          kind: 'work',
+          taskType: springFrost.potato ? '土寄せ' : 'べたがけ',
+          title: springFrost.potato ? `${crop.name}を軽く土寄せする` : `${crop.name}を覆って霜を避ける`,
+        },
+        layers: mergeLayers({
+          personal: `${crop.name}は栽培中です（${farmName}）。`,
+          regional: null,
+          general: `${springFrost.generalLine} ${springFrost.sourceLine}`,
+          conclusion: springFrost.conclusion,
         }),
       })
     }
@@ -1059,7 +1161,7 @@ export async function scoreGrowingCrops(
   }
 
   const otherCards = cards.filter((card) => card.trigger !== 'soil-ph')
-  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...groupFrostCards(frostCards), ...soilCards].sort(
+  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...groupFrostCards(frostCards), ...groupSpringFrostCards(springFrostCards), ...soilCards].sort(
     (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
   )
 }

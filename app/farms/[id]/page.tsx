@@ -7,7 +7,7 @@ import FarmDeleteButton from '@/components/FarmDeleteButton'
 import { formatDateShort } from '@/lib/utils'
 import { climateRegionSentence, CLIMATE_REGION_SOURCE, meanAnnualTemp } from '@/lib/benchmarks/climate-region'
 import { getLocationDailyNormals } from '@/lib/weather-normals'
-import { chooseStation, frostStationLine } from '@/lib/jma/frost-record'
+import { chooseStation, frostStationLine, readFarmFrost, readFarmSpringFrost, autumnFirstFrostSentence, springFrostSentence } from '@/lib/jma/frost-record'
 import { PLACE_PROMPT, municipalityByCode, prefectureByCode } from '@/lib/places/catalog'
 
 export default async function FarmDetailPage({
@@ -63,18 +63,27 @@ export default async function FarmDetailPage({
   }
 
   let frostLine: string | null = null
+  let springLine: string | null = null
+  let autumnLine: string | null = null
   if (farm.latitude != null && farm.longitude != null) {
+    const point = { latitude: farm.latitude, longitude: farm.longitude }
     try {
-      const pick = await chooseStation({
-        latitude: farm.latitude,
-        longitude: farm.longitude,
-      })
+      const pick = await chooseStation(point)
       const count = pick
         ? await prisma.jmaDailyTemp.count({ where: { blockNo: pick.station.blockNo } })
         : 0
       frostLine = frostStationLine(pick, count > 0)
     } catch {
       frostLine = frostStationLine(null, false)
+    }
+    try {
+      const spring = await readFarmSpringFrost(point)
+      springLine = spring ? springFrostSentence(spring) : null
+      const autumn = await readFarmFrost(point)
+      autumnLine = autumn ? autumnFirstFrostSentence(autumn) : null
+    } catch {
+      springLine = null
+      autumnLine = null
     }
   }
 
@@ -165,6 +174,8 @@ export default async function FarmDetailPage({
             {frostLine && (
               <p className={`text-gray-800 ${regionSentence ? 'mt-4' : ''}`}>{frostLine}</p>
             )}
+            {springLine && <p className="text-gray-800 mt-2">{springLine}</p>}
+            {autumnLine && <p className="text-gray-800 mt-2">{autumnLine}</p>}
           </div>
         )}
 

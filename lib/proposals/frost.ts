@@ -1,4 +1,5 @@
 import { normalizeCropNameForMatch } from '@/lib/benchmarks/crops'
+import { LATE_FROST_COVER, LATE_FROST_POTATO, LATE_FROST_SOURCE } from '@/lib/benchmarks/planting-conditions'
 import { formatHarvestWindow, type HarvestDateWindow } from '@/lib/insights/harvest-date-window'
 import { MILESTONE_SOURCE_CHIBA } from '@/lib/proposals/milestones'
 import type { ForecastDay } from '@/lib/weather-forecast'
@@ -18,6 +19,7 @@ import type { FrostOrigin } from '@/lib/jma/frost-record'
 
 export const FROST_FORECAST_TRIGGER = 'frost-forecast'
 export const FROST_SEASON_TRIGGER = 'frost-season'
+export const SPRING_FROST_TRIGGER = 'spring-frost'
 
 export const FROST_SOURCE_FUKUOKA = {
   publisher: '福岡管区気象台',
@@ -40,7 +42,7 @@ const STATION_FROST_NOTE =
   '観測所と畑では冷え込みが違うことがあります。窪地や内陸の畑は、これより早く霜がおりることがあります。'
 
 export function isFrostTrigger(trigger: string | undefined): boolean {
-  return trigger === FROST_FORECAST_TRIGGER || trigger === FROST_SEASON_TRIGGER
+  return trigger === FROST_FORECAST_TRIGGER || trigger === FROST_SEASON_TRIGGER || trigger === SPRING_FROST_TRIGGER
 }
 
 export function isSweetPotatoCrop(cropName: string, variety?: string | null): boolean {
@@ -163,5 +165,42 @@ export function assessSweetPotatoFrost(args: {
     conclusion: `収穫の目安に届くのは${span}。それより、霜が先になる年があります。${action}。`,
     generalLine: `${when}。収穫の目安に届くのは${span}。それより、霜が先になる年があります。${after}。${note}`,
     sourceLine: sourceLine(origin),
+  }
+}
+
+export type SpringLateFrost = {
+  trigger: typeof SPRING_FROST_TRIGGER
+  urgency: 'today' | 'thisWeek'
+  title: string
+  conclusion: string
+  generalLine: string
+  sourceLine: string
+  potato: boolean
+}
+
+export function assessSpringLateFrost(args: {
+  today: Date
+  forecast: ForecastDay[]
+  potato: boolean
+}): SpringLateFrost | null {
+  const upcoming = args.forecast.find((day) => {
+    if (day.minTemp > FROST_RISK_MAX_C) return false
+    const month = Number(day.date.slice(5, 7))
+    return month >= 1 && month <= 6
+  })
+  if (!upcoming) return null
+  const when = formatYmd(upcoming.date)
+  const temp = formatCelsius(upcoming.minTemp)
+  const withinWeek = daysUntilYmd(args.today, upcoming.date) <= FORECAST_TODAY_DAYS
+  const hill = args.potato ? LATE_FROST_POTATO : ''
+  const conclusion = `霜のおそれがあります。${LATE_FROST_COVER}${hill}`
+  return {
+    trigger: SPRING_FROST_TRIGGER,
+    urgency: withinWeek ? 'today' : 'thisWeek',
+    title: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です`,
+    conclusion,
+    generalLine: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です。霜のおそれがあります。${LATE_FROST_COVER}${hill}${FORECAST_FROST_NOTE}`,
+    sourceLine: `出典：${LATE_FROST_SOURCE}。`,
+    potato: args.potato,
   }
 }

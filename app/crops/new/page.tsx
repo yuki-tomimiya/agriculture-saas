@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import CropNewForm from './CropNewForm'
+import { springBriefsForFarms } from '@/lib/jma/frost-record'
 
 export default async function NewCropPage() {
   const user = await getCurrentUser()
@@ -23,6 +24,7 @@ export default async function NewCropPage() {
     name: f.name,
     fields: f.fields.map((field) => ({ id: field.id, name: field.name })),
   }))
+  const springByFarm = await springBriefsForFarms(farms)
 
-  return <CropNewForm farms={farmsWithFields} />
+  return <CropNewForm farms={farmsWithFields} springByFarm={springByFarm} />
 }
