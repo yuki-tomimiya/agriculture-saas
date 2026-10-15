@@ -25,6 +25,7 @@ import {
   previousPlanting,
   RECORD_ONLY_NOTE,
 } from '@/lib/crops/conditions'
+import { PLACE_PROMPT } from '@/lib/places/catalog'
 import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
@@ -1030,6 +1031,29 @@ export async function scoreGrowingCrops(
         regional: null,
         general: null,
         conclusion: CONDITIONS_PROMPT,
+      }),
+    })
+  }
+
+  const missingPlaces = await prisma.farm.count({
+    where: {
+      userId,
+      OR: [{ prefectureCode: null }, { municipalityCode: null }],
+    },
+  })
+  if (missingPlaces > 0 && !isProposalDismissed(dismissed, 'place-missing')) {
+    cards.push({
+      id: 'place-missing',
+      urgency: 'today',
+      score: 46,
+      trigger: 'place-missing',
+      title: `${missingPlaces}件の農場で、都道府県か市区町村が未入力です`,
+      conclusion: PLACE_PROMPT,
+      layers: mergeLayers({
+        personal: null,
+        regional: null,
+        general: null,
+        conclusion: PLACE_PROMPT,
       }),
     })
   }

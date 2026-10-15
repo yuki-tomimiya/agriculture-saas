@@ -24,6 +24,8 @@ export default async function FarmEditPage({
     description: farm.description ?? '',
     latitude: farm.latitude != null ? String(farm.latitude) : '',
     longitude: farm.longitude != null ? String(farm.longitude) : '',
+    prefectureCode: farm.prefectureCode ?? '',
+    municipalityCode: farm.municipalityCode ?? '',
   }
 
   return <FarmEditForm farmId={id} initial={initial} />

@@ -32,6 +32,8 @@ model Farm {
   description String?
   latitude    Float?
   longitude   Float?
+  prefectureCode   String? // 総務省の都道府県コード（2桁）。候補は近い観測所から。本人が保存する
+  municipalityCode String? // 全国地方公共団体コード（6桁）。名前は合併で変わるのでコードを持つ
   userId      String
   user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt   DateTime     @default(now())

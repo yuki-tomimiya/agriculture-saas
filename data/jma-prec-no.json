@@ -1,0 +1,246 @@
+{
+  "sourceUrl": "https://www.data.jma.go.jp/stats/etrn/select/prefecture00.php",
+  "checkedOn": "2026-10-14",
+  "areas": [
+    {
+      "precNo": 11,
+      "name": "宗谷地方"
+    },
+    {
+      "precNo": 12,
+      "name": "上川地方"
+    },
+    {
+      "precNo": 13,
+      "name": "留萌地方"
+    },
+    {
+      "precNo": 14,
+      "name": "石狩地方"
+    },
+    {
+      "precNo": 15,
+      "name": "空知地方"
+    },
+    {
+      "precNo": 16,
+      "name": "後志地方"
+    },
+    {
+      "precNo": 17,
+      "name": "網走・北見・紋別地方"
+    },
+    {
+      "precNo": 18,
+      "name": "根室地方"
+    },
+    {
+      "precNo": 19,
+      "name": "釧路地方"
+    },
+    {
+      "precNo": 20,
+      "name": "十勝地方"
+    },
+    {
+      "precNo": 21,
+      "name": "胆振地方"
+    },
+    {
+      "precNo": 22,
+      "name": "日高地方"
+    },
+    {
+      "precNo": 23,
+      "name": "渡島地方"
+    },
+    {
+      "precNo": 24,
+      "name": "檜山地方"
+    },
+    {
+      "precNo": 31,
+      "name": "青森県"
+    },
+    {
+      "precNo": 32,
+      "name": "秋田県"
+    },
+    {
+      "precNo": 33,
+      "name": "岩手県"
+    },
+    {
+      "precNo": 34,
+      "name": "宮城県"
+    },
+    {
+      "precNo": 35,
+      "name": "山形県"
+    },
+    {
+      "precNo": 36,
+      "name": "福島県"
+    },
+    {
+      "precNo": 40,
+      "name": "茨城県"
+    },
+    {
+      "precNo": 41,
+      "name": "栃木県"
+    },
+    {
+      "precNo": 42,
+      "name": "群馬県"
+    },
+    {
+      "precNo": 43,
+      "name": "埼玉県"
+    },
+    {
+      "precNo": 44,
+      "name": "東京都"
+    },
+    {
+      "precNo": 45,
+      "name": "千葉県"
+    },
+    {
+      "precNo": 46,
+      "name": "神奈川県"
+    },
+    {
+      "precNo": 48,
+      "name": "長野県"
+    },
+    {
+      "precNo": 49,
+      "name": "山梨県"
+    },
+    {
+      "precNo": 50,
+      "name": "静岡県"
+    },
+    {
+      "precNo": 51,
+      "name": "愛知県"
+    },
+    {
+      "precNo": 52,
+      "name": "岐阜県"
+    },
+    {
+      "precNo": 53,
+      "name": "三重県"
+    },
+    {
+      "precNo": 54,
+      "name": "新潟県"
+    },
+    {
+      "precNo": 55,
+      "name": "富山県"
+    },
+    {
+      "precNo": 56,
+      "name": "石川県"
+    },
+    {
+      "precNo": 57,
+      "name": "福井県"
+    },
+    {
+      "precNo": 60,
+      "name": "滋賀県"
+    },
+    {
+      "precNo": 61,
+      "name": "京都府"
+    },
+    {
+      "precNo": 62,
+      "name": "大阪府"
+    },
+    {
+      "precNo": 63,
+      "name": "兵庫県"
+    },
+    {
+      "precNo": 64,
+      "name": "奈良県"
+    },
+    {
+      "precNo": 65,
+      "name": "和歌山県"
+    },
+    {
+      "precNo": 66,
+      "name": "岡山県"
+    },
+    {
+      "precNo": 67,
+      "name": "広島県"
+    },
+    {
+      "precNo": 68,
+      "name": "島根県"
+    },
+    {
+      "precNo": 69,
+      "name": "鳥取県"
+    },
+    {
+      "precNo": 71,
+      "name": "徳島県"
+    },
+    {
+      "precNo": 72,
+      "name": "香川県"
+    },
+    {
+      "precNo": 73,
+      "name": "愛媛県"
+    },
+    {
+      "precNo": 74,
+      "name": "高知県"
+    },
+    {
+      "precNo": 81,
+      "name": "山口県"
+    },
+    {
+      "precNo": 82,
+      "name": "福岡県"
+    },
+    {
+      "precNo": 83,
+      "name": "大分県"
+    },
+    {
+      "precNo": 84,
+      "name": "長崎県"
+    },
+    {
+      "precNo": 85,
+      "name": "佐賀県"
+    },
+    {
+      "precNo": 86,
+      "name": "熊本県"
+    },
+    {
+      "precNo": 87,
+      "name": "宮崎県"
+    },
+    {
+      "precNo": 88,
+      "name": "鹿児島県"
+    },
+    {
+      "precNo": 91,
+      "name": "沖縄県"
+    }
+  ]
+}

@@ -5,8 +5,15 @@ import { SOIL_NUTRIENT_SOURCE_MAFF, SOIL_PH_SOURCE_MIYAZAKI } from '@/lib/benchm
 import { FROST_SOURCE_FUKUOKA, FROST_SOURCE_JMA } from '@/lib/proposals/frost'
 import { MILESTONE_SOURCE_CHIBA, MILESTONE_SOURCE_LINKS, milestoneFaqRows } from '@/lib/proposals/milestones'
 import type { FaqSlug } from '@/lib/faq-index'
+import PestForecastLinks from '@/components/PestForecastLinks'
 
-export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
+export default function FaqAnswer({
+  slug,
+  prefectureCodes = [],
+}: {
+  slug: FaqSlug
+  prefectureCodes?: string[]
+}) {
   if (slug === 'gdd') {
     return (
       <>
@@ -281,7 +288,10 @@ export default function FaqAnswer({ slug }: { slug: FaqSlug }) {
           国の総合防除の考え方と、千葉県の病害虫防除指針が示しているのは、次の順番です。
         </p>
         <ol className="faq-section-text list-decimal pl-5">
-          <li>県の病害虫防除所が出す発生予察情報（注意報・警報）を確認します。</li>
+          <li>
+            県の病害虫防除所が出す発生予察情報（注意報・警報）を確認します。
+            <PestForecastLinks prefectureCodes={prefectureCodes} />
+          </li>
           <li>見回りで、発生の初期に見つけたら防除します。</li>
           <li>農薬は、ラベルの使用時期（収穫◯日前まで）と総使用回数を守り、使用記録をつけます。</li>
           <li>同じ系統の薬剤を続けて使わず、ローテーションします。</li>

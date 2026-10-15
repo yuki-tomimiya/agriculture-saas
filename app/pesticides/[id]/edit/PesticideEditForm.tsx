@@ -4,9 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import PestForecastLinks from '@/components/PestForecastLinks'
 
 type CropOption = { id: string; name: string; farmName: string | null }
-type FarmOption = { id: string; name: string }
+type FarmOption = { id: string; name: string; prefectureCode: string | null }
 export type RecordForForm = {
   id: string
   appliedAt: string
@@ -148,6 +149,11 @@ export default function PesticideEditForm({
             <p className="text-sm text-gray-600">
               ラベルの使用時期（収穫◯日前まで）と総使用回数を確かめてください。
             </p>
+            {farmId && (
+              <PestForecastLinks
+                prefectureCodes={[farms.find((farm) => farm.id === farmId)?.prefectureCode]}
+              />
+            )}
             <div className="auth-field">
               <label htmlFor="pesticide-application-count" className="label">使用回数</label>
               <input id="pesticide-application-count" type="number" min="1" value={applicationCount} onChange={(e) => setApplicationCount(e.target.value)} className="input" />

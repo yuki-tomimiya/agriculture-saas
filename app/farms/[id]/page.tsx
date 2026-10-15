@@ -8,6 +8,7 @@ import { formatDateShort } from '@/lib/utils'
 import { climateRegionSentence, CLIMATE_REGION_SOURCE, meanAnnualTemp } from '@/lib/benchmarks/climate-region'
 import { getLocationDailyNormals } from '@/lib/weather-normals'
 import { chooseStation, frostStationLine } from '@/lib/jma/frost-record'
+import { PLACE_PROMPT, municipalityByCode, prefectureByCode } from '@/lib/places/catalog'
 
 export default async function FarmDetailPage({
   params,
@@ -92,6 +93,19 @@ export default async function FarmDetailPage({
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{farm.name}</h1>
             {farm.description && (
               <p className="text-gray-600 max-w-2xl">{farm.description}</p>
+            )}
+            <p className="text-gray-600 mt-2">
+              {prefectureByCode(farm.prefectureCode)?.name ?? '都道府県未選択'}
+              {' '}
+              {municipalityByCode(farm.municipalityCode)?.name ?? ''}
+            </p>
+            {(!farm.prefectureCode || !farm.municipalityCode) && (
+              <p className="text-sm text-gray-600 mt-2">
+                {PLACE_PROMPT}{' '}
+                <Link href={`/farms/${farm.id}/edit`} className="text-green-700 hover:underline">
+                  選ぶ
+                </Link>
+              </p>
             )}
           </div>
           <div className="flex gap-2">

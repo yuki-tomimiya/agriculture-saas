@@ -4,9 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
+import PestForecastLinks from '@/components/PestForecastLinks'
 
 type CropOption = { id: string; name: string; farmName: string | null }
-type FarmOption = { id: string; name: string }
+type FarmOption = { id: string; name: string; prefectureCode: string | null }
 
 export default function PesticideNewForm({
   crops,
@@ -196,6 +197,11 @@ export default function PesticideNewForm({
             <p className="text-sm text-gray-600">
               ラベルの使用時期（収穫◯日前まで）と総使用回数を確かめてください。
             </p>
+            {farmId && (
+              <PestForecastLinks
+                prefectureCodes={[farms.find((farm) => farm.id === farmId)?.prefectureCode]}
+              />
+            )}
             <div className="auth-field">
               <label htmlFor="pesticide-application-count" className="label">使用回数（この作付けで何回目か）</label>
               <input

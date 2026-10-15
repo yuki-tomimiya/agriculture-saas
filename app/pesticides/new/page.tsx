@@ -34,7 +34,11 @@ export default async function NewPesticidePage({
     name: c.name,
     farmName: c.farm?.name ?? null,
   }))
-  const farmsForSelect = farms.map((f) => ({ id: f.id, name: f.name }))
+  const farmsForSelect = farms.map((f) => ({
+    id: f.id,
+    name: f.name,
+    prefectureCode: f.prefectureCode,
+  }))
 
   return (
     <PesticideNewForm

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { farmDeleteBlockMessage } from '@/lib/farms/delete-guard'
+import { parseFarmPlace } from '@/lib/places/catalog'
 
 export async function PATCH(
   request: NextRequest,
@@ -48,6 +49,10 @@ export async function PATCH(
         { status: 400 }
       )
     }
+    const place = parseFarmPlace(body)
+    if ('error' in place) {
+      return NextResponse.json({ error: place.error }, { status: 400 })
+    }
 
     const farm = await prisma.farm.update({
       where: { id },
@@ -56,6 +61,8 @@ export async function PATCH(
         description,
         latitude: latitude != null && !Number.isNaN(latitude) ? latitude : null,
         longitude: longitude != null && !Number.isNaN(longitude) ? longitude : null,
+        prefectureCode: place.prefectureCode,
+        municipalityCode: place.municipalityCode,
       },
     })
 

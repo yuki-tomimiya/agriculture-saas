@@ -1,0 +1,335 @@
+{
+  "maffListUrl": "https://www.maff.go.jp/j/syouan/syokubo/gaicyu/yosatu/boujosho.html",
+  "maffCheckedOn": "2026-10-14",
+  "offices": [
+    {
+      "prefectureName": "北海道",
+      "officeName": "北海道病害虫防除所",
+      "url": "http://www.agri.hro.or.jp/boujosho/yosatsu/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "青森県",
+      "officeName": "青森県病害虫防除所",
+      "url": "https://www.nounavi-aomori.jp/farmer/category/news/prevent",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "岩手県",
+      "officeName": "岩手県病害虫防除所",
+      "url": "https://www.pref.iwate.jp/agri/i-agri/boujo/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "宮城県",
+      "officeName": "宮城県病害虫防除所",
+      "url": "https://www.pref.miyagi.jp/soshiki/byogai/",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "秋田県",
+      "officeName": "秋田県病害虫防除所",
+      "url": "https://www.pref.akita.lg.jp/pages/genre/bojo",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "山形県",
+      "officeName": "山形県病害虫防除所",
+      "url": "https://agrin.jp/theme/safe_products/yosatsu/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "福島県",
+      "officeName": "福島県病害虫防除所",
+      "url": "https://www.pref.fukushima.lg.jp/sec/37200b/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "茨城県",
+      "officeName": "茨城県農業総合センター病害虫防除部（茨城県病害虫防除所）",
+      "url": "https://www.maff.go.jp/j/syouan/syokubo/gaicyu/yosatu/boujosho.html",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": false
+    },
+    {
+      "prefectureName": "栃木県",
+      "officeName": "栃木県農業総合研究センター（栃木県病害虫防除所）",
+      "url": "https://www.pref.tochigi.lg.jp/g59/boujo/yosatsu.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "群馬県",
+      "officeName": "群馬県農業技術センター（群馬県病害虫防除所）",
+      "url": "https://www.pref.gunma.jp/page/20720.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "埼玉県",
+      "officeName": "埼玉県病害虫防除所",
+      "url": "https://www.pref.saitama.lg.jp/soshiki/b0916/yosatsuho/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "千葉県",
+      "officeName": "千葉県農林総合研究センター病害虫防除課（千葉県病害虫防除所）",
+      "url": "https://www.pref.chiba.lg.jp/lab-nourin/nourin/boujo/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "東京都",
+      "officeName": "東京都病害虫防除所",
+      "url": "https://www.sangyo-rodo.metro.tokyo.lg.jp/nourin/shoku/boujyo/yosatsu",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "神奈川県",
+      "officeName": "神奈川県農業技術センター病害虫防除部（神奈川県病害虫防除所）",
+      "url": "http://www.pref.kanagawa.jp/docs/cf7/cnt/f450002/",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "新潟県",
+      "officeName": "新潟県病害虫防除所",
+      "url": "https://www.pref.niigata.lg.jp/sec/bojo/",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "富山県",
+      "officeName": "富山県農林水産総合技術センター農業研究所（富山県病害虫防除所）",
+      "url": "https://taffrc.pref.toyama.jp/nsgc/nougyou/blog/kenkyuseika_cate/kenkyu_byougaityu/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "石川県",
+      "officeName": "石川県農業総合研究センター総合研究部病害虫防除室（石川県病害虫防除所）",
+      "url": "https://www.pref.ishikawa.lg.jp/noken/noushi/byougaityu_yosatsu/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "福井県",
+      "officeName": "福井県農業試験場病害虫防除室（福井県病害虫防除所）",
+      "url": "https://www.pref.fukui.lg.jp/doc/noushi/kankyo/boujyo.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "山梨県",
+      "officeName": "山梨県総合農業技術センター調査部（山梨県病害虫防除所）",
+      "url": "https://www.pref.yamanashi.jp/byogaichu/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "長野県",
+      "officeName": "長野県農業試験場病害虫防除部",
+      "url": "https://www.pref.nagano.lg.jp/bojo/joho/byogaichu/yosatsu.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "岐阜県",
+      "officeName": "岐阜県病害虫防除所",
+      "url": "https://www.pref.gifu.lg.jp/soshiki/24321/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "静岡県",
+      "officeName": "静岡県農林技術研究所（静岡県病害虫防除所）",
+      "url": "https://www.pref.shizuoka.jp/sangyoshigoto/norinjimusho/1058658/boujo/yosatsu/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "愛知県",
+      "officeName": "愛知県農業総合試験場環境基盤研究部病害虫防除室（愛知県病害虫防除所）",
+      "url": "https://www.pref.aichi.jp/site/byogaichu/index.html",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "三重県",
+      "officeName": "三重県病害虫防除所",
+      "url": "https://www.pref.mie.lg.jp/byogai/hp/index.htm",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "滋賀県",
+      "officeName": "滋賀県病害虫防除所",
+      "url": "https://www.pref.shiga.lg.jp/boujyo/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "京都府",
+      "officeName": "京都府病害虫防除所",
+      "url": "https://www.pref.kyoto.jp/byogai/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "大阪府",
+      "officeName": "大阪府環境農林水産部農政室推進課病害虫防除グループ（大阪府病害虫防除所）",
+      "url": "https://www.pref.osaka.lg.jp/o120090/nosei/byogaicyu/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "兵庫県",
+      "officeName": "兵庫県立農林水産技術総合センター病害虫部（兵庫県病害虫防除所）",
+      "url": "https://bojo.hyogo-nourinsuisangc.jp/news",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "奈良県",
+      "officeName": "奈良県病害虫防除所",
+      "url": "https://www.pref.nara.lg.jp/n128/66263.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "和歌山県",
+      "officeName": "和歌山県農作物病害虫防除所",
+      "url": "https://www.pref.wakayama.lg.jp/prefg/072000/d00216368.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "鳥取県",
+      "officeName": "鳥取県病害虫防除所",
+      "url": "https://www.pref.tottori.lg.jp/boujosyo/",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "島根県",
+      "officeName": "島根県病害虫防除所",
+      "url": "https://www.pref.shimane.lg.jp/industry/norin/gijutsu/nougyo_tech/byougaityuu/",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "岡山県",
+      "officeName": "岡山県病害虫防除所",
+      "url": "https://www.pref.okayama.jp/soshiki/239/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "広島県",
+      "officeName": "広島県農業技術指導所（広島県病害虫防除所）",
+      "url": "https://www.pref.hiroshima.lg.jp/site/byogaichu/list3239-12370.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "山口県",
+      "officeName": "山口県病害虫防除所",
+      "url": "https://www.pref.yamaguchi.lg.jp/soshiki/122/22321.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "徳島県",
+      "officeName": "徳島県立農林水産総合技術支援センター病害虫防除所（徳島県病害虫防除所）",
+      "url": "https://www.pref.tokushima.lg.jp/tafftsc/t-boujosho/preliminaryguessinformation/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "香川県",
+      "officeName": "香川県農業試験場病害虫防除所（香川県病害虫防除所）",
+      "url": "https://www.pref.kagawa.lg.jp/byogaichubojo/byogaichu/yosatujouhou.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "愛媛県",
+      "officeName": "愛媛県病害虫防除所",
+      "url": "https://www.pref.ehime.jp/site/byocyubojo/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "高知県",
+      "officeName": "高知県病害虫防除所",
+      "url": "https://www.nogyo.tosa.pref.kochi.lg.jp/info/dtl.php?ID=5091",
+      "checkedOn": "2026-10-10",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "福岡県",
+      "officeName": "福岡県病害虫防除所",
+      "url": "https://www.pref.fukuoka.lg.jp/contents/fukuoka-bouzyosyo-yosatu.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "佐賀県",
+      "officeName": "佐賀県農業技術防除センター病害虫防除部（佐賀県病害虫防除所）",
+      "url": "https://www.pref.saga.lg.jp/kiji00321899/index.html",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "長崎県",
+      "officeName": "長崎県農林技術開発センター環境研究部門病害虫発生予察室（長崎県病害虫防除所）",
+      "url": "https://www.pref.nagasaki.jp/e-nourin/nougi/JPP/index.html",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "熊本県",
+      "officeName": "熊本県病害虫防除所",
+      "url": "https://www.pref.kumamoto.jp/soshiki/75/125504.html",
+      "checkedOn": "2026-10-14",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "大分県",
+      "officeName": "大分県農林水産研究指導センター農業研究部（大分県病害虫防除所）",
+      "url": "https://www.pref.oita.jp/site/oita-boujosho/",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "宮崎県",
+      "officeName": "宮崎県病害虫防除・肥料検査センター（宮崎県病害虫防除所）",
+      "url": "https://hinatamafin.pref.miyazaki.lg.jp/soshiki/noshi_byogai/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "鹿児島県",
+      "officeName": "鹿児島県病害虫防除所",
+      "url": "https://www.pref.kagoshima.jp/ag13/kiad/boujosho/yosatu.html",
+      "checkedOn": "2026-10-10",
+      "officePageVerified": true
+    },
+    {
+      "prefectureName": "沖縄県",
+      "officeName": "沖縄県病害虫防除技術センター（沖縄県病害虫防除所）",
+      "url": "https://www.pref.okinawa.jp/shigoto/nogyo/1010700/index.html",
+      "checkedOn": "2026-10-09",
+      "officePageVerified": true
+    }
+  ]
+}

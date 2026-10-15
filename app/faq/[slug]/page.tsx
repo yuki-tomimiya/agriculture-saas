@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import FaqAnswer from '@/app/faq/articles'
 import { faqEntry, isFaqSlug } from '@/lib/faq-index'
+import { prisma } from '@/lib/prisma'
 
 export default async function FaqDetailPage({
   params,
@@ -16,6 +17,12 @@ export default async function FaqDetailPage({
   const { slug } = await params
   if (!isFaqSlug(slug)) notFound()
   const entry = faqEntry(slug)
+  const farms = slug === 'pest-timing'
+    ? await prisma.farm.findMany({
+        where: { userId: user.id },
+        select: { prefectureCode: true },
+      })
+    : []
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -35,7 +42,10 @@ export default async function FaqDetailPage({
         </div>
 
         <div className="faq-content card">
-          <FaqAnswer slug={slug} />
+          <FaqAnswer
+            slug={slug}
+            prefectureCodes={farms.map((farm) => farm.prefectureCode).filter((code): code is string => Boolean(code))}
+          />
         </div>
 
         {entry.related.length > 0 && (

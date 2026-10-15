@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
+import { parseFarmPlace } from '@/lib/places/catalog'
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
+    const place = parseFarmPlace(body)
+    if ('error' in place) {
+      return NextResponse.json({ error: place.error }, { status: 400 })
+    }
 
     const farm = await prisma.farm.create({
       data: {
@@ -33,6 +38,8 @@ export async function POST(request: NextRequest) {
         description,
         latitude: latitude != null && !Number.isNaN(latitude) ? latitude : null,
         longitude: longitude != null && !Number.isNaN(longitude) ? longitude : null,
+        prefectureCode: place.prefectureCode,
+        municipalityCode: place.municipalityCode,
         userId,
       },
     })

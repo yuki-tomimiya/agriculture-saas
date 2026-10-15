@@ -192,6 +192,11 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                         過去の作付け →
                       </Link>
                     )}
+                    {p.trigger === 'place-missing' && (
+                      <Link href="/farms" className="ai-proposal-card-link">
+                        農場一覧 →
+                      </Link>
+                    )}
                     {p.relatedCropId && (
                       <Link href={`/crops/${p.relatedCropId}`} className="ai-proposal-card-link">
                         作物を見る →
@@ -280,6 +285,7 @@ export default async function AiProposalPage() {
     trigger === 'season-finish' ||
     trigger === 'conditions-missing' ||
     trigger === 'result-missing' ||
+    trigger === 'place-missing' ||
     isMilestoneTrigger(trigger)
   const confirmItems = proposals.filter((item) => isConfirm(item.trigger))
   const todayItems = proposals.filter((item) => item.urgency === 'today' && !isConfirm(item.trigger))
