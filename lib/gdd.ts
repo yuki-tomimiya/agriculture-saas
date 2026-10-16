@@ -3,10 +3,7 @@
  * 予報気温から「目標℃日に達する日」を算出し、提案文を生成する
  */
 
-/** 1日のGDD = max(0, 平均気温 - 基準温度) */
-function dailyGDD(avgTemp: number, baseTemp: number): number {
-  return Math.max(0, avgTemp - baseTemp)
-}
+import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 
 export type GDDProjectionResult = {
   /** 予報期間中の日別累積GDD（現在値 + 予報分） */
@@ -21,16 +18,15 @@ export type GDDProjectionResult = {
   suggestions: string[]
 }
 
-const DEFAULT_TARGET_GDD = 1000
-
 /**
  * 現在の累積GDDと予報気温から、今後14日間のGDD見通しと目標到達日・提案を算出する
  */
 export function computeGDDProjection(
   currentGDD: number,
+  count: HeatCount,
   baseTemp: number,
   forecastDailyTemps: { date: Date; avgTemp: number }[],
-  targetGDD: number = DEFAULT_TARGET_GDD,
+  targetGDD: number,
   options?: { harvestWindowText?: string | null; seasonUnreachable?: boolean }
 ): GDDProjectionResult {
   let cumulative = currentGDD
@@ -39,7 +35,7 @@ export function computeGDDProjection(
   let daysToTarget: number | null = null
 
   for (const day of forecastDailyTemps) {
-    const dGDD = dailyGDD(day.avgTemp, baseTemp)
+    const dGDD = dailyHeat(day.avgTemp, count, baseTemp)
     cumulative += dGDD
     dailyProjections.push({
       date: day.date,
@@ -113,37 +109,3 @@ function buildSuggestions(args: {
   return list
 }
 
-/** 作物種別の目標GDD目安（Q&Aの表と揃えた目安） */
-export const TARGET_GDD_BY_CROP: Record<string, number> = {
-  トマト: 900,
-  ナス: 1000,
-  ピーマン: 950,
-  キュウリ: 750,
-  スイートコーン: 1400,
-  イチゴ: 700,
-  さつまいも: 1700,
-}
-
-/**
- * 品種別の目標GDD目安（優先適用）
- * - ふくむらさき: 在圃160日前後（茨城県資料）をベースに、base10換算で約1900を採用
- * - 紅はるか: 在圃130日前後（各栽培資料）をベースに、base10換算で約1550を採用
- */
-export const TARGET_GDD_BY_VARIETY: Record<string, number> = {
-  ふくむらさき: 1900,
-  紅はるか: 1550,
-}
-
-export function getTargetGDDForCrop(cropName: string, variety?: string | null): number {
-  const varietyName = (variety ?? '').trim()
-  if (varietyName) {
-    for (const [key, value] of Object.entries(TARGET_GDD_BY_VARIETY)) {
-      if (varietyName.includes(key)) return value
-    }
-  }
-
-  for (const [key, value] of Object.entries(TARGET_GDD_BY_CROP)) {
-    if (cropName.includes(key)) return value
-  }
-  return DEFAULT_TARGET_GDD
-}

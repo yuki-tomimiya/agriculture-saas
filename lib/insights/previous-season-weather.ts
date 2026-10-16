@@ -1,6 +1,7 @@
 /**
  * 前回作付けシーズンの気象系列（植付けからの日数で揃えて昨年比較用）
  */
+import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import { prisma } from '@/lib/prisma'
 import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
 import {
@@ -82,7 +83,8 @@ export async function getPreviousSeasonWeather(args: {
   plantingDate: Date
   latitude: number | null
   longitude: number | null
-  baseTemperature: number
+  count: HeatCount
+  baseTemp: number
 }): Promise<PreviousSeasonWeather | null> {
   const siblings = await prisma.crop.findMany({
     where: args.farmId ? { farmId: args.farmId } : { name: args.name, farmId: null },
@@ -137,7 +139,7 @@ export async function getPreviousSeasonWeather(args: {
         let gdd = 0
         const gddPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
         temps.forEach((t, i) => {
-          gdd += Math.max(0, t.avgTemp - args.baseTemperature)
+          gdd += dailyHeat(t.avgTemp, args.count, args.baseTemp)
           gddPts.push({
             dayFromPlanting: i + 1,
             value: Math.round(gdd * 10) / 10,

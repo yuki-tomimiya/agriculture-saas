@@ -71,7 +71,7 @@ export default async function GDDPage({
               plantingDate: c.plantingDate,
               harvestDate: c.harvestDate,
               status: c.status,
-              baseTemperature: c.baseTemperature,
+              plantingMethod: c.plantingMethod,
               farm: c.farm ? { name: c.farm.name } : null,
             }))}
           />

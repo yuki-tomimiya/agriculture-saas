@@ -1,3 +1,4 @@
+import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import { hasWeatherCoordinates, type WeatherPoint } from '@/lib/weather-forecast'
 
 export type DayNormal = {
@@ -199,6 +200,7 @@ export function sumNormalGdd(
   normals: Map<string, DayNormal>,
   start: Date,
   end: Date,
+  count: HeatCount,
   baseTemp: number
 ): number | null {
   const cursor = new Date(start)
@@ -214,7 +216,7 @@ export function sumNormalGdd(
     if (month === 2 && day === 29) day = 28
     const row = normals.get(`${month}-${day}`)
     if (row && Number.isFinite(row.tempMean)) {
-      heat += Math.max(0, row.tempMean - baseTemp)
+      heat += dailyHeat(row.tempMean, count, baseTemp)
       days += 1
     }
     cursor.setDate(cursor.getDate() + 1)
@@ -228,6 +230,7 @@ export function accumulateNormals(args: {
   normals: Map<string, DayNormal>
   plantingDate: Date
   days: number
+  count: HeatCount
   baseTemp: number
 }): NormalSeries {
   const start = new Date(args.plantingDate)
@@ -248,7 +251,7 @@ export function accumulateNormals(args: {
     if (row) {
       precip += row.precipMm
       radiation += row.radiationMj
-      heat += Math.max(0, row.tempMean - args.baseTemp)
+      heat += dailyHeat(row.tempMean, args.count, args.baseTemp)
     }
     precipMm.push(Math.round(precip * 10) / 10)
     radiationMj.push(Math.round(radiation * 10) / 10)

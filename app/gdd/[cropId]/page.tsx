@@ -9,6 +9,7 @@ import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
 import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDailyPrecipitation, getHistoricalDailyRadiation, getHistoricalDailyTemps, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { computeGDDProjection } from '@/lib/gdd'
+import { dailyHeat, displayHeat, type ActiveGddMethod } from '@/lib/benchmarks/gdd-methods'
 import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
 import { accumulateNormals, getLocationDailyNormals, loadLocationArchive } from '@/lib/weather-normals'
@@ -18,9 +19,6 @@ import {
   formatHarvestWindow,
   projectHarvestWindow,
 } from '@/lib/insights/harvest-date-window'
-import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
-import { adviceNames } from '@/lib/crops/conditions'
-
 function cropLabel(name: string, variety: string | null): string {
   return variety ? `${name}（${variety}）` : name
 }
@@ -67,7 +65,11 @@ export default async function GddCropPage({
     ? await getForecastDailyTemps(today, { latitude: Number(point.latitude), longitude: Number(point.longitude) })
     : []
   const forecastTemps = forecastTempsRaw.filter((d) => d.date.getTime() > today.getTime())
-  const baseTemp = selectedCrop.baseTemperature ?? 10
+  const harvestSamples = await loadHarvestSamples(user.id)
+  const harvestBasis = pickHarvestBasis(harvestSamples, selectedCrop)
+  const heat = displayHeat(harvestBasis.view)
+  const activeMethod: ActiveGddMethod | null =
+    harvestBasis.view.status === 'active' ? harvestBasis.view : null
   const historicalTemps = canFetchWeather
     ? await getHistoricalDailyTemps({
         startDate: new Date(selectedCrop.plantingDate!),
@@ -97,7 +99,7 @@ export default async function GddCropPage({
     : []
   let cumulativeGDD = 0
   const historicalCumulative = historicalTemps.map((day) => {
-    cumulativeGDD += Math.max(0, day.avgTemp - baseTemp)
+    cumulativeGDD += dailyHeat(day.avgTemp, heat.count, heat.baseTemp)
     return {
       date: day.date,
       cumulativeGDD: Math.round(cumulativeGDD * 10) / 10,
@@ -120,9 +122,7 @@ export default async function GddCropPage({
     }
   })
   const currentGDD = historicalCumulative[historicalCumulative.length - 1]?.cumulativeGDD ?? 0
-  const harvestSamples = await loadHarvestSamples(user.id)
-  const harvestBasis = pickHarvestBasis(harvestSamples, selectedCrop)
-  const targetGDD = harvestBasis.gdd
+  const targetGDD = harvestBasis.gdd ?? 0
   const weatherPoint = canFetchWeather
     ? { latitude: Number(point.latitude), longitude: Number(point.longitude) }
     : null
@@ -136,33 +136,30 @@ export default async function GddCropPage({
           normals: normalTable,
           plantingDate: new Date(selectedCrop.plantingDate),
           days: 220,
-          baseTemp,
+          count: heat.count,
+          baseTemp: heat.baseTemp,
         })
       : null
   const daysFromPlanting = Math.floor(
     (today.getTime() - new Date(selectedCrop.plantingDate!).getTime()) / (24 * 60 * 60 * 1000)
   )
-  const gddAdvice = adviceNames(selectedCrop)
-  const daylengthCrop = gddAdvice.recordOnly
-    ? false
-    : isDaylengthCrop(gddAdvice.name, gddAdvice.variety)
-  const provisionalTarget = harvestBasis.source === 'provisional'
   const harvestWindow =
-    !daylengthCrop && archive && targetGDD > 0
+    activeMethod && archive && targetGDD > 0
       ? projectHarvestWindow({
           today,
           currentGdd: currentGDD,
           targetGdd: targetGDD,
-          baseTemp,
+          count: heat.count,
+          baseTemp: heat.baseTemp,
           archive,
           forecastByYmd: forecastAvgByDate(forecastTemps),
         })
       : null
-  const projection = canFetchWeather
-    ? computeGDDProjection(currentGDD, baseTemp, forecastTemps, targetGDD, {
+  const projection = canFetchWeather && activeMethod && targetGDD > 0
+    ? computeGDDProjection(currentGDD, heat.count, heat.baseTemp, forecastTemps, targetGDD, {
         harvestWindowText:
           harvestWindow && currentGDD < targetGDD
-            ? formatHarvestWindow(harvestWindow, { provisional: provisionalTarget })
+            ? formatHarvestWindow(harvestWindow)
             : null,
         seasonUnreachable: Boolean(archive) && !harvestWindow && currentGDD < targetGDD,
       })
@@ -178,7 +175,8 @@ export default async function GddCropPage({
     plantingDate: new Date(selectedCrop.plantingDate!),
     latitude: selectedCrop.farm?.latitude ?? null,
     longitude: selectedCrop.farm?.longitude ?? null,
-    baseTemperature: baseTemp,
+    count: heat.count,
+    baseTemp: heat.baseTemp,
   })
   const lastYearShortLabel = previousSeason
     ? `${previousSeason.plantingDate.getFullYear()}年作${previousSeason.source === 'demo' ? '・仮' : ''}`
@@ -257,8 +255,19 @@ export default async function GddCropPage({
             }}
             currentGDD={currentGDD}
             targetGDD={targetGDD}
-            showHarvestTarget={!daylengthCrop}
-            targetCaption={harvestBasis.summary}
+            showHarvestTarget={activeMethod != null}
+            targetCaption={
+              activeMethod
+                ? harvestBasis.source === 'variety' || harvestBasis.source === 'crop'
+                  ? `${harvestBasis.summary}（${activeMethod.scopeLabel}の幅は${activeMethod.rangeLabel}）`
+                  : `${activeMethod.scopeLabel}の目安 ${activeMethod.rangeLabel}`
+                : undefined
+            }
+            valueCaption={
+              activeMethod
+                ? undefined
+                : `現在：${currentGDD} ℃日（参考：植え付けから日平均気温をそのまま足したもの）`
+            }
             daysFromPlanting={daysFromPlanting}
             historicalPoints={historicalCumulative}
             dailyProjections={projection?.dailyProjections.map((p) => ({ date: p.date, cumulativeGDD: p.cumulativeGDD })) ?? []}
@@ -266,15 +275,30 @@ export default async function GddCropPage({
             lastYearLabel={lastYearShortLabel}
             normalGddByDay={canFetchWeather ? normalSeries?.gdd ?? null : undefined}
           />
-          {daylengthCrop ? (
+          <p className="dashboard-gdd-summary-text">
+            {activeMethod
+              ? `${activeMethod.countLabel}。目安は${activeMethod.rangeLabel}（${activeMethod.scopeLabel}）。`
+              : harvestBasis.summary}
+            {harvestBasis.source === 'variety' || harvestBasis.source === 'crop'
+              ? ` ${harvestBasis.summary}。`
+              : ''}
+          </p>
+          {activeMethod && (
             <p className="dashboard-gdd-summary-text">
-              {DAYLENGTH_NOTE}出典：{DAYLENGTH_SOURCE}。
+              出典：{activeMethod.sourceLine}
             </p>
-          ) : projection?.suggestions[0] ? (
+          )}
+          {activeMethod && currentGDD >= activeMethod.low && (
+            <p className="dashboard-gdd-summary-text">{activeMethod.reachBody}</p>
+          )}
+          {activeMethod && currentGDD < targetGDD && harvestWindow && (
             <p className="dashboard-gdd-summary-text">
-              {projection.suggestions[0].replace(/<\/?strong>/g, '')}
+              目安に届くのは{formatHarvestWindow(harvestWindow)}。
             </p>
-          ) : null}
+          )}
+          {activeMethod && currentGDD < targetGDD && archive && !harvestWindow && (
+            <p className="dashboard-gdd-summary-text">今季は、この目安に届かない見込みです。</p>
+          )}
 
           {canFetchWeather && (
             <RainfallDataCard

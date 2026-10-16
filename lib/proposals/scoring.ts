@@ -1,8 +1,7 @@
 import { prisma } from '@/lib/prisma'
-import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
+import { heatForCrop, loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   forecastAvgByYmd,
-  formatHarvestWindow,
   projectHarvestWindow,
 } from '@/lib/insights/harvest-date-window'
 import {
@@ -518,10 +517,12 @@ export async function scoreGrowingCrops(
       if (!crop.plantingDate || !crop.farm || !hasWeatherCoordinates(crop.farm)) {
         return { crop, currentGDD: null as number | null }
       }
+      const heat = heatForCrop(crop)
       const currentGDD = await getAccumulatedGDDFromApi({
         startDate: new Date(crop.plantingDate),
         endDate: today,
-        baseTemp: crop.baseTemperature ?? 10,
+        count: heat.count,
+        baseTemp: heat.baseTemp,
         point: {
           latitude: Number(crop.farm.latitude),
           longitude: Number(crop.farm.longitude),
@@ -546,8 +547,10 @@ export async function scoreGrowingCrops(
     const matchVariety = advice.recordOnly ? null : advice.variety
     const hasHarvest = crop.harvests.length > 0
     const basis = pickHarvestBasis(harvestSamples, crop)
-    const targetGDD = basis.gdd
-    const gddRatio = currentGDD != null && targetGDD > 0 ? currentGDD / targetGDD : null
+    const heat = heatForCrop(crop)
+    const targetGDD = basis.gdd ?? 0
+    const ratioBase = basis.view.status === 'active' ? basis.view.low : 0
+    const gddRatio = currentGDD != null && ratioBase > 0 ? currentGDD / ratioBase : null
     const climate = crop.farmId ? climateByFarm.get(crop.farmId) : undefined
     const harvestWindowReady = Boolean(climate?.archive && currentGDD != null && targetGDD > 0)
     const harvestWindow = harvestWindowReady
@@ -555,16 +558,12 @@ export async function scoreGrowingCrops(
           today,
           currentGdd: currentGDD ?? 0,
           targetGdd: targetGDD,
-          baseTemp: crop.baseTemperature ?? 10,
+          count: heat.count,
+          baseTemp: heat.baseTemp,
           archive: climate!.archive!,
           forecastByYmd: forecastAvgByYmd(climate!.forecast),
         })
       : null
-    const windowSentence = harvestWindow
-      ? `収穫の目安に届くのは${formatHarvestWindow(harvestWindow, {
-          provisional: basis.source === 'provisional',
-        })}。`
-      : ''
     const stage = resolveCropStage(matchName, matchVariety, {
       daysSincePlanting: days,
       gddRatio,
@@ -610,47 +609,39 @@ export async function scoreGrowingCrops(
       })
     }
 
-    const skipGddHarvest = isDaylengthCrop(matchName, matchVariety)
-    if (!skipGddHarvest && kind === 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 0.9) {
-      hits.push({
-        trigger: 'harvest-window',
-        urgency: gddRatio >= 1 ? 'today' : 'thisWeek',
-        score: gddRatio >= 1 ? 100 : 80,
-        title: '収穫が始まるころです',
-        conclusion: windowSentence
-          ? `採り始めの準備をしましょう。${windowSentence}`
-          : '採り始めの準備をしましょう。',
-        action: { kind: 'work', taskType: '収穫', title: `${crop.name}の収穫` },
-      })
-    } else if (!skipGddHarvest && kind !== 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 1) {
-      hits.push({
-        trigger: 'harvest-window',
-        urgency: 'today',
-        score: 100,
-        title: '収穫適期に入っています',
-        conclusion: '積算温度が収穫の目安に達しています。',
-        action: { kind: 'work', taskType: '収穫', title: `${crop.name}の収穫` },
-      })
-    } else if (!skipGddHarvest && kind !== 'continuous' && !hasHarvest && gddRatio != null && gddRatio >= 0.9) {
+    if (
+      basis.view.status === 'active' &&
+      !hasHarvest &&
+      currentGDD != null &&
+      currentGDD >= basis.view.low
+    ) {
       const waitingForTestDig = crop.milestones.every((row) => row.key !== 'test-dig')
       const sweetPotatoAsk =
+        basis.view.key === 'sweet-potato' &&
         waitingForTestDig &&
         pickMilestoneAsk({
-          cropName: crop.name,
-          variety: crop.variety,
+          cropName: matchName,
+          variety: matchVariety,
           daysSincePlanting: days,
           gddRatio,
           hasHarvest,
           records: crop.milestones,
         })?.key === 'test-dig'
+      const personal =
+        basis.source === 'variety' || basis.source === 'crop' ? `${basis.summary}。` : ''
       if (!sweetPotatoAsk) {
         hits.push({
           trigger: 'harvest-window',
-          urgency: 'thisWeek',
-          score: 80,
-          title: '収穫の目安に近づいています',
-          conclusion: `試し掘りで太りを見て、問題があれば収穫を前倒ししましょう。${windowSentence}`,
-          action: { kind: 'work', taskType: '試し掘り', title: `${crop.name}の試し掘り` },
+          urgency: 'today',
+          score: 100,
+          title: basis.view.reachTitle,
+          conclusion: personal ? `${basis.view.reachBody} ${personal}` : basis.view.reachBody,
+          action: {
+            kind: 'work',
+            taskType: basis.view.key === 'sweet-potato' ? '試し掘り' : '収穫',
+            title:
+              basis.view.key === 'sweet-potato' ? `${crop.name}の試し掘り` : `${crop.name}の収穫`,
+          },
         })
       }
     }
@@ -751,13 +742,8 @@ export async function scoreGrowingCrops(
           })
         : null
     if (frost && !isProposalDismissed(dismissed, frost.trigger, crop.id)) {
-      const mentionsTarget = frost.conclusion.includes('収穫の目安') || frost.title.includes('届かない')
-      const provisionalNote =
-        basis.source === 'provisional' && mentionsTarget
-          ? '目安が暫定のため、これより大きくずれることがあります。'
-          : ''
-      const frostConclusion = `${frost.conclusion}${provisionalNote}`
-      frostNoteByCrop.set(crop.id, `${frost.generalLine}${provisionalNote}`)
+      const frostConclusion = frost.conclusion
+      frostNoteByCrop.set(crop.id, frost.generalLine)
       const withinWeek = frost.urgency === 'today'
       frostCards.push({
         id: `${frost.trigger}-${crop.id}`,
@@ -889,9 +875,9 @@ export async function scoreGrowingCrops(
     ])
     const measuredLine =
       currentGDD != null
-        ? skipGddHarvest
-          ? `${crop.name}の積算温度は ${currentGDD}℃日です（植付から${days}日）。`
-          : `${crop.name}の積算温度は ${currentGDD}℃日です（${basis.summary}、植付から${days}日）。`
+        ? basis.view.status === 'active'
+          ? `${crop.name}の積算温度は ${currentGDD}℃日です（${basis.summary}、植付から${days}日）。`
+          : `${crop.name}の積算温度は ${currentGDD}℃日です（参考：植え付けから日平均気温をそのまま足したもの。植付から${days}日）。`
         : `${crop.name}は植付から${days}日目です（${farmName}）。`
     const coolFinish = best.title.includes('下回る時期')
     const finishReason = coolFinish

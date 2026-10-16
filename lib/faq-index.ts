@@ -24,19 +24,19 @@ export const FAQ_ENTRIES: FaqEntry[] = [
   {
     slug: 'gdd',
     title: '積算温度（GDD）とは？',
-    summary: 'その日の平均気温から基準温度を引いた値を、植え付け日から足し合わせたものです。',
+    summary: '品目ごとの数え方で、毎日の平均気温を足したものです。',
     related: ['base-temp', 'harvest-window', 'normals'],
   },
   {
     slug: 'base-temp',
     title: '基準温度とは？',
-    summary: 'その作物がほとんど生長しない気温の下限です。',
+    summary: '有効積算温度で引く温度です。品目の資料に固定し、作付けごとに変えられません。',
     related: ['gdd', 'gdd-reference'],
   },
   {
     slug: 'gdd-reference',
-    title: '主な作物の収穫までに必要な積算温度の目安',
-    summary: '主な作物の、定植から初収穫までの積算温度の目安です。',
+    title: '品目ごとの積算温度の数え方',
+    summary: '起点・単純か有効か・値・出典です。目安が無い品目は節目で判断します。',
     related: ['gdd', 'base-temp', 'harvest-window'],
   },
   {

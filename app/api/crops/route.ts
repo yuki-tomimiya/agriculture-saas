@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { resolveBaseTemperature } from '@/lib/benchmarks/base-temperature'
-import { cropKindByKey, parseCropConditions } from '@/lib/crops/conditions'
+import { parseCropConditions } from '@/lib/crops/conditions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,16 +58,6 @@ export async function POST(request: NextRequest) {
       if (!Number.isNaN(d.getTime())) harvestDate = d
     }
 
-    const kind = cropKindByKey(conditions.cropKind)
-    const baseTemperature = resolveBaseTemperature(
-      body.baseTemperature,
-      kind?.benchmarkName ?? conditions.name,
-      variety
-    )
-    if (typeof baseTemperature === 'object') {
-      return NextResponse.json({ error: baseTemperature.error }, { status: 400 })
-    }
-
     const crop = await prisma.crop.create({
       data: {
         name: conditions.name,
@@ -85,7 +74,6 @@ export async function POST(request: NextRequest) {
         plantingDate,
         harvestDate,
         fieldId: conditions.fieldId,
-        baseTemperature,
         status: 'growing',
       },
     })

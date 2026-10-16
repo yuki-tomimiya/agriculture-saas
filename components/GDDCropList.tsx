@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
-import { defaultBaseTemperature } from '@/lib/benchmarks/base-temperature'
+import { gddAvailability } from '@/lib/benchmarks/gdd-methods'
 import { adviceNames } from '@/lib/crops/conditions'
 
 type Crop = {
@@ -11,7 +11,7 @@ type Crop = {
   plantingDate: Date | null
   harvestDate: Date | null
   status: string
-  baseTemperature: number | null
+  plantingMethod?: string | null
   farm: { name: string } | null
 }
 
@@ -44,17 +44,22 @@ function CropCard({ crop }: { crop: Crop }) {
         </span>
       </div>
       <div className="gdd-crop-card-extra">
-        <Link href="/faq/base-temp" className="gdd-crop-card-base">
-          基準温度 {crop.baseTemperature ?? 10}℃
-        </Link>
         {(() => {
           const listAdvice = adviceNames(crop)
-          const usual = listAdvice.recordOnly
-            ? null
-            : defaultBaseTemperature(listAdvice.name, listAdvice.variety)
-          const shown = crop.baseTemperature ?? 10
-          if (usual == null || shown === usual) return null
-          return <span className="gdd-crop-card-meta">一般値は{usual}℃</span>
+          const view = gddAvailability({
+            cropKind: crop.cropKind,
+            name: listAdvice.recordOnly ? '' : listAdvice.name,
+            variety: listAdvice.recordOnly ? null : listAdvice.variety,
+            plantingMethod: crop.plantingMethod,
+            recordOnly: listAdvice.recordOnly,
+          })
+          const label =
+            view.status === 'active' || view.status === 'pending' ? view.countLabel : '積算温度の目安なし'
+          return (
+            <Link href="/faq/gdd-reference" className="gdd-crop-card-base">
+              {label}
+            </Link>
+          )
         })()}
         <span className="gdd-crop-card-status">栽培中</span>
         <Link

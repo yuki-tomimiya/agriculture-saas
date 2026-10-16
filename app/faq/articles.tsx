@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { CROP_BASE_TEMPERATURES } from '@/lib/benchmarks/base-temperature'
+import { GDD_FAQ_ROWS, GDD_NONE_CROPS } from '@/lib/benchmarks/gdd-methods'
 import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
 import { SOIL_NUTRIENT_SOURCE_MAFF, SOIL_PH_SOURCE_MIYAZAKI } from '@/lib/benchmarks/soil-nutrients'
 import { FROST_SOURCE_FUKUOKA, FROST_SOURCE_JMA } from '@/lib/proposals/frost'
@@ -18,13 +18,10 @@ export default function FaqAnswer({
     return (
       <>
         <p className="faq-section-text">
-          積算温度は「その日の平均気温から基準温度を引いた値」を、植え付け日から足し合わせたものです。
-          作物の生長スピードは気温に左右されるため、<strong>「○日後」より「○℃日（積算温度）で収穫」</strong>と考えると、
-          年ごとの気温差に左右されず、収穫時期の目安を立てやすくなります。
+          積算温度は、毎日の平均気温を足したものです。品目によって、日平均気温をそのまま足すもの（単純）と、決まった温度を引いてから足すもの（有効）があります。引く温度は品目の資料に固定していて、作付けごとに変えることはできません。
         </p>
         <p className="faq-section-text">
-          生育ナビでは、登録した作物の植え付け日と日々の気温から積算温度を計算し、
-          同じ地点の10年平均（推計）との比較や「あとどれくらいで収穫目安か」を確認できます。
+          数え方が無い品目は、積算温度で収穫の目安を出しません。節目の見た目で判断します。
         </p>
         <p className="faq-section-text">
           <Link href="/gdd" className="faq-link">生育ナビページへ →</Link>
@@ -37,12 +34,13 @@ export default function FaqAnswer({
     return (
       <>
         <p className="faq-section-text">
-          基準温度は、その作物がほとんど生長しない気温の下限です。
-          その日の平均気温から基準温度を引いた分だけを、積算温度に足します。
-          平均気温が基準温度以下の日は、足す量は 0 です。
+          基準温度は、有効積算温度で「その日の平均気温から引く温度」です。平均気温がそれ以下の日は、足す量は 0 です。
         </p>
         <p className="faq-section-text">
-          さつまいもなど多くの露地野菜は 10℃ を使っています。作物カードの「基準温度」は、この計算に使う値です。
+          いま画面に出しているさつまいもとダイコンは、資料が日平均気温をそのまま足しているので、基準温度は引きません。トマトも、第1花房の開花からそのまま足します（開花の日を聞くまでは、見込みは出しません）。基準温度を作付けごとに変える欄はありません。去年と今年を同じ数え方で比べるためです。
+        </p>
+        <p className="faq-section-text">
+          品目ごとの数え方は<Link href="/faq/gdd-reference" className="faq-link">収穫の目安の表</Link>にまとめています。
         </p>
       </>
     )
@@ -110,30 +108,38 @@ export default function FaqAnswer({
   if (slug === 'gdd-reference') {
     return (
       <>
-        <p className="faq-section-note">
-          ※ 品種・地域・栽培方法により前後します。あくまで目安としてご利用ください。
-          さつまいもの初期値 1700℃日、紅はるか 1550℃日、ふくむらさき 1900℃日は、在圃日数からの暫定換算です。出典が固まり次第、見直します。
+        <p className="faq-section-text">
+          数え方は品目の資料に合わせています。自分の収穫の記録があるときは、その積算温度を先に使います。
         </p>
         <div className="overflow-x-auto">
           <table className="gdd-reference-table">
             <thead>
               <tr>
-                <th>作物</th>
-                <th>基準温度</th>
-                <th>定植〜初収穫の目安（℃日）</th>
+                <th>品目</th>
+                <th>起点</th>
+                <th>数え方</th>
+                <th>値</th>
+                <th>判定</th>
+                <th>出典</th>
               </tr>
             </thead>
             <tbody>
-              {CROP_BASE_TEMPERATURES.map((row) => (
-                <tr key={row.name}>
-                  <td>{row.name}</td>
-                  <td>{row.baseTemp}℃</td>
-                  <td>{row.gddLabel}</td>
+              {GDD_FAQ_ROWS.map((row) => (
+                <tr key={row.crop}>
+                  <td>{row.crop}</td>
+                  <td>{row.start}</td>
+                  <td>{row.how}</td>
+                  <td>{row.value}</td>
+                  <td>{row.scope}</td>
+                  <td>{row.source}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+        <p className="faq-section-text">
+          積算温度の目安を出さない品目：{GDD_NONE_CROPS.join('、')}。記録だけの品目も同じです。見た目の節目で判断します。
+        </p>
       </>
     )
   }

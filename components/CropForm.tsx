@@ -4,8 +4,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
-import BaseTempField from '@/components/BaseTempField'
-import { defaultBaseTemperature } from '@/lib/benchmarks/base-temperature'
 import { plantingConditionForKind } from '@/lib/benchmarks/planting-conditions'
 import {
   COVER_OPTIONS,
@@ -47,7 +45,6 @@ export type CropFormInitial = {
   plantingDate: string
   harvestDate: string
   status: string
-  baseTemperature: string
 }
 
 export const emptyCropForm = (): CropFormInitial => ({
@@ -67,7 +64,6 @@ export const emptyCropForm = (): CropFormInitial => ({
   plantingDate: '',
   harvestDate: '',
   status: 'growing',
-  baseTemperature: '',
 })
 
 export default function CropForm({
@@ -88,7 +84,6 @@ export default function CropForm({
     if (initial.farmId || farms.length !== 1) return initial
     return { ...initial, farmId: farms[0].id }
   })
-  const [baseTouched, setBaseTouched] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -104,19 +99,12 @@ export default function CropForm({
           spring.observed ? '' : '近くの観測所の記録が使えないため、推計の気温から出しています。'
         }`
       : null
-  const adviceName = kind?.benchmarkName ?? ''
-
   function patch(next: Partial<CropFormInitial>) {
     setForm((current) => ({ ...current, ...next }))
   }
 
   function applyKind(key: string) {
-    const nextKind = cropKindByKey(key)
-    const usual = nextKind?.benchmarkName ? defaultBaseTemperature(nextKind.benchmarkName, form.variety) : null
-    patch({
-      cropKind: key,
-      ...(baseTouched ? {} : { baseTemperature: usual == null ? '' : String(usual) }),
-    })
+    patch({ cropKind: key })
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -144,7 +132,6 @@ export default function CropForm({
       fieldId: form.fieldUndivided ? null : form.fieldId || null,
       fieldUndivided: form.fieldUndivided,
       status: form.status,
-      baseTemperature: form.baseTemperature.trim() === '' ? null : Number(form.baseTemperature),
     }
     try {
       const res = await fetch(mode === 'new' ? '/api/crops' : `/api/crops/${cropId}`, {
@@ -238,14 +225,7 @@ export default function CropForm({
                 value={form.variety}
                 maxLength={100}
                 placeholder="例：紅はるか"
-                onChange={(e) => {
-                  const variety = e.target.value
-                  const usual = adviceName ? defaultBaseTemperature(adviceName, variety) : null
-                  patch({
-                    variety,
-                    ...(baseTouched ? {} : { baseTemperature: usual == null ? '' : String(usual) }),
-                  })
-                }}
+                onChange={(e) => patch({ variety: e.target.value })}
               />
             </div>
 
@@ -448,16 +428,6 @@ export default function CropForm({
                 </select>
               </div>
             )}
-
-            <BaseTempField
-              value={form.baseTemperature}
-              cropName={adviceName || form.name}
-              variety={form.variety}
-              onChange={(next) => {
-                setBaseTouched(true)
-                patch({ baseTemperature: next })
-              }}
-            />
 
             <div className="farm-new-actions">
               <button type="submit" disabled={loading} className="btn btn-primary farm-new-submit">

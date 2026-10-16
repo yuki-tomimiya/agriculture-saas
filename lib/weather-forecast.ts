@@ -2,6 +2,7 @@
  * 気象予報データ（気象ナビ・生育ナビで共通利用）
  * Open-Meteo APIから取得。失敗時はフォールバックを返す。
  */
+import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 export type ForecastDay = {
   /** Asia/Tokyo の YYYY-MM-DD。最低気温の日付を提案に使う */
   date: string
@@ -417,6 +418,7 @@ export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint
 export async function getAccumulatedGDDFromApi(args: {
   startDate: Date
   endDate: Date
+  count: HeatCount
   baseTemp: number
   point?: Partial<WeatherPoint>
 }): Promise<number | null> {
@@ -429,7 +431,7 @@ export async function getAccumulatedGDDFromApi(args: {
 
   let sum = 0
   for (const day of history) {
-    sum += Math.max(0, day.avgTemp - args.baseTemp)
+    sum += dailyHeat(day.avgTemp, args.count, args.baseTemp)
   }
   return Math.round(sum * 10) / 10
 }

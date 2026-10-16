@@ -7,7 +7,7 @@ import CropDeleteButton from '@/components/CropDeleteButton'
 import CropMilestones from '@/components/CropMilestones'
 import { milestoneFormItems } from '@/lib/proposals/milestones'
 import { cropPoints } from '@/lib/benchmarks/crop-points'
-import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
+import { gddAvailability } from '@/lib/benchmarks/gdd-methods'
 import {
   adviceNames,
   CONDITIONS_PROMPT,
@@ -76,7 +76,13 @@ export default async function CropDetailPage({
     crop.status === 'growing' ? '栽培中' : crop.status === 'harvested' ? '収穫済み' : '完了'
   const advice = adviceNames(crop)
   const points = advice.recordOnly ? [] : cropPoints(advice.name, advice.variety)
-  const daylength = advice.recordOnly ? false : isDaylengthCrop(advice.name, advice.variety)
+  const gddView = gddAvailability({
+    cropKind: crop.cropKind,
+    name: advice.recordOnly ? '' : advice.name,
+    variety: advice.recordOnly ? null : advice.variety,
+    plantingMethod: crop.plantingMethod,
+    recordOnly: advice.recordOnly,
+  })
   const missingConditions = conditionsMissing(crop)
   const missingResult = outcomeMissing(crop)
 
@@ -230,22 +236,22 @@ export default async function CropDetailPage({
                 <dd className="text-gray-900">{formatDateShort(crop.harvestDate)}</dd>
               </div>
             )}
-            {crop.baseTemperature != null && (
-              <div>
-                <dt className="text-sm text-gray-500">GDD基準温度</dt>
-                <dd className="text-gray-900">{crop.baseTemperature} ℃</dd>
-              </div>
-            )}
+            <div>
+              <dt className="text-sm text-gray-500">積算温度の数え方</dt>
+              <dd className="text-gray-900">
+                {gddView.status === 'active' || gddView.status === 'pending'
+                  ? gddView.countLabel
+                  : '目安なし'}
+              </dd>
+            </div>
           </dl>
         </div>
 
-        {(points.length > 0 || daylength) && (
+        {(points.length > 0 || gddView.status !== 'active') && (
           <div className="bg-white p-6 rounded-lg shadow mb-8">
             <h2 className="text-xl font-semibold mb-4">この品目のポイント</h2>
-            {daylength && (
-              <p className="text-gray-800 mb-3">
-                {DAYLENGTH_NOTE}出典：{DAYLENGTH_SOURCE}。
-              </p>
+            {gddView.status !== 'active' && (
+              <p className="text-gray-800 mb-3">{gddView.message}</p>
             )}
             {points.length > 0 && (
               <ul className="space-y-3">

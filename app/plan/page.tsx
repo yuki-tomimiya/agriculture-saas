@@ -67,7 +67,11 @@ export default async function NextYearPlanPage() {
                 plan.harvestDate
                   ? `収穫 ${formatDateShort(plan.harvestDate)}${plan.seasonDays !== null ? `（${plan.seasonDays}日間）` : ''}`
                   : '収穫日は記録なし',
-                plan.accumulatedGdd !== null ? `積算温度 ${plan.accumulatedGdd}℃日` : '積算温度は取れませんでした',
+                plan.accumulatedGdd !== null
+                  ? `積算温度 ${plan.accumulatedGdd}℃日`
+                  : plan.basis.source === 'none'
+                    ? '積算温度の収穫目安は出していません'
+                    : '積算温度は取れませんでした',
                 plan.harvestRecorded
                   ? `収量 ${plan.harvestQty}${plan.harvestUnit}`
                   : '収量は記録なし',
@@ -75,8 +79,8 @@ export default async function NextYearPlanPage() {
               ].join('。')
               const conclusion = plan.nextPlantingDate && plan.windowLabel
                 ? `来年も${formatYearMonthDay(plan.nextPlantingDate)}に植えると、${
-                    plan.basis.source === 'provisional'
-                      ? '一般の目安（暫定）までなら'
+                    plan.basis.source === 'method'
+                      ? `${plan.basis.view.status === 'active' ? plan.basis.view.scopeLabel : ''}の目安の下限までなら`
                       : plan.adjustNote
                         ? '10年平均に引き直した積算温度までなら'
                         : '過去の収穫と同じ積算温度までなら'
@@ -96,8 +100,8 @@ export default async function NextYearPlanPage() {
                   ? `来年も${formatYearMonthDay(plan.nextPlantingDate)}に植えると、10年平均の気温では同じ積算温度に季節内では届きません。これまでの栽培日数（平均${plan.normalDays}日）で見ると、${formatYearMonthDay(plan.normalHarvestDate)}ごろです。`
                   : plan.nextPlantingDate && plan.normalHarvestDate && plan.normalDays !== null
                     ? `来年も${formatYearMonthDay(plan.nextPlantingDate)}に植えると、${
-                        plan.forecastKind === 'provisional'
-                          ? '一般の目安（暫定）までなら'
+                        plan.forecastKind === 'method'
+                          ? `${plan.basis.view.status === 'active' ? plan.basis.view.scopeLabel : ''}の目安の下限までなら`
                           : plan.forecastKind === 'adjusted'
                             ? '10年平均に引き直した積算温度までなら'
                             : '過去の収穫と同じ積算温度までなら'
@@ -117,25 +121,29 @@ export default async function NextYearPlanPage() {
                   </p>
                   <p className="insights-regional-text">
                     <span className="insights-layer-tag">地域</span>
-                    {plan.normalNote?.includes('日の長さ')
-                      ? 'この品目は、積算温度の収穫目安を出していません。'
+                    {plan.basis.source === 'none'
+                      ? plan.basis.summary
                       : plan.windowLabel
-                      ? `この農場の過去10年それぞれの気温を、植付日から足しています。基準温度は${plan.baseTemp}℃です。`
+                      ? `この農場の過去10年それぞれの気温を足しています。${plan.countLabel}。`
                       : plan.forecastKind === 'season-days' || plan.normalStatus === 'unreachable'
-                      ? `10年平均の気温は取れています。基準温度は${plan.baseTemp}℃です。`
+                      ? `10年平均の気温は取れています。${plan.countLabel}。`
                       : plan.normalStatus === 'reached'
-                        ? `この農場の過去10年の日平均気温を、植付日から足しています。基準温度は${plan.baseTemp}℃です。`
+                        ? `この農場の過去10年の日平均気温を足しています。${plan.countLabel}。`
                         : '10年平均の気温は取れていません。'}
                   </p>
                   <p className="insights-regional-text">
                     <span className="insights-layer-tag">
-                      {plan.basis.source === 'provisional' ? '一般' : 'あなた'}
+                      {plan.basis.source === 'variety' || plan.basis.source === 'crop'
+                        ? 'あなた'
+                        : plan.basis.view.status === 'active'
+                          ? plan.basis.view.scopeLabel
+                          : '一般'}
                     </span>
                     {plan.basis.summary}。
                     {plan.basis.detail ? ` ${plan.basis.detail}。` : ''}
                     {plan.basis.spreadNote ? ` ${plan.basis.spreadNote}` : ''}
                     {plan.adjustNote ? ` ${plan.adjustNote}。` : ''}
-                    {plan.basis.source === 'provisional' && (
+                    {plan.basis.source === 'method' && (
                       <Link href="/faq/gdd-reference" className="faq-link">
                         {' '}
                         目安の説明

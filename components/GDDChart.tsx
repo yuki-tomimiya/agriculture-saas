@@ -19,6 +19,8 @@ type GDDChartProps = {
   showHarvestTarget?: boolean
   /** 赤線の意味。未指定のときは「目標」と書く */
   targetCaption?: string
+  /** 目安の線を出さないときの、現在値の説明 */
+  valueCaption?: string
   daysFromPlanting?: number
   historicalPoints?: ProjectionPoint[]
   dailyProjections?: ProjectionPoint[]
@@ -89,9 +91,10 @@ function chooseStep(maxValue: number): number {
 export default function GDDChart({
   crop,
   currentGDD = 0,
-  targetGDD = 1000,
+  targetGDD = 0,
   showHarvestTarget = true,
   targetCaption,
+  valueCaption,
   daysFromPlanting = 0,
   historicalPoints = [],
   dailyProjections = [],
@@ -234,7 +237,9 @@ export default function GDDChart({
         <div className="dashboard-gdd-graph-header">
           <span>植え付けからの推移（累積 ℃日）</span>
           <span className="dashboard-gdd-graph-current">
-            現在：{currentGDD} ℃日 / {basisLabel}
+            {showHarvestTarget
+              ? `現在：${currentGDD} ℃日 / ${basisLabel}`
+              : valueCaption ?? `現在：${currentGDD} ℃日`}
           </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">

@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
-import { getTargetGDDForCrop } from '@/lib/gdd'
+import { displayHeat, gddAvailability, type GddAvailability, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { formatPlantingLabel } from '@/lib/insights/crop-season-compare'
 import { adviceNames, compareSubject } from '@/lib/crops/conditions'
@@ -19,17 +19,22 @@ export type HarvestSample = {
   plantingTime: number
   plantingDate: Date
   endDate: Date
+  count: HeatCount
   baseTemp: number
   latitude: number
   longitude: number
 }
 
 export type HarvestBasis = {
-  gdd: number
-  source: 'variety' | 'crop' | 'provisional'
+  /** 自分の実績の平均。無いときは数え方の下限。目安が無いときは null */
+  gdd: number | null
+  source: 'variety' | 'crop' | 'method' | 'none'
   summary: string
   detail: string | null
   spreadNote: string | null
+  view: GddAvailability
+  /** 見込みの幅と霜に使う値。自分の実績があればその平均、無ければ数え方の下限 */
+  windowGdd: number | null
 }
 
 function daysBetween(start: Date, end: Date): number {
@@ -67,10 +72,20 @@ export async function loadHarvestSamples(userId: string): Promise<HarvestSample[
       const end = lastHarvest ?? crop.harvestDate
       const point = { latitude: crop.farm?.latitude ?? null, longitude: crop.farm?.longitude ?? null }
       if (!end || !hasWeatherCoordinates(point)) return null
+      const advice = adviceNames(crop)
+      const view = gddAvailability({
+        cropKind: crop.cropKind,
+        name: advice.recordOnly ? '' : advice.name,
+        variety: advice.recordOnly ? null : advice.variety,
+        plantingMethod: crop.plantingMethod,
+        recordOnly: advice.recordOnly,
+      })
+      if (view.status !== 'active') return null
       const gdd = await getAccumulatedGDDFromApi({
         startDate: crop.plantingDate,
         endDate: end,
-        baseTemp: crop.baseTemperature ?? 10,
+        count: view.count,
+        baseTemp: view.baseTemp,
         point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
       })
       if (gdd == null) return null
@@ -90,7 +105,8 @@ export async function loadHarvestSamples(userId: string): Promise<HarvestSample[
         plantingTime: crop.plantingDate.getTime(),
         plantingDate: crop.plantingDate,
         endDate: end,
-        baseTemp: crop.baseTemperature ?? 10,
+        count: view.count,
+        baseTemp: view.baseTemp,
         latitude: Number(point.latitude),
         longitude: Number(point.longitude),
       } satisfies HarvestSample
@@ -126,14 +142,24 @@ export type HarvestBasisCrop = {
   name: string
   variety?: string | null
   growingSite?: string | null
+  plantingMethod?: string | null
+}
+
+export function viewForCrop(crop: HarvestBasisCrop): GddAvailability {
+  const advice = adviceNames(crop)
+  return gddAvailability({
+    cropKind: crop.cropKind,
+    name: advice.recordOnly ? '' : advice.name,
+    variety: advice.recordOnly ? null : advice.variety,
+    plantingMethod: crop.plantingMethod,
+    recordOnly: advice.recordOnly,
+  })
 }
 
 export function chosenHarvestSamples(
   samples: HarvestSample[],
   crop: HarvestBasisCrop
-): { source: HarvestBasis['source']; samples: HarvestSample[]; provisional: number } {
-  const advice = adviceNames(crop)
-  const provisional = getTargetGDDForCrop(advice.recordOnly ? '' : advice.name, advice.variety)
+): { source: 'variety' | 'crop' | 'none'; samples: HarvestSample[] } {
   const subject = compareSubject(crop)
   const siteOf = (site?: string | null) => (site === 'open' || site === 'house' ? site : '')
   const pool = samples.filter(
@@ -141,39 +167,65 @@ export function chosenHarvestSamples(
   )
   const varietyLabel = (crop.variety ?? '').trim()
   const byVariety = varietyLabel ? pool.filter((row) => row.varietyLabel === varietyLabel) : []
-  if (byVariety.length > 0) return { source: 'variety', samples: byVariety, provisional }
-  if (pool.length > 0) return { source: 'crop', samples: pool, provisional }
-  return { source: 'provisional', samples: [], provisional }
+  if (byVariety.length > 0) return { source: 'variety', samples: byVariety }
+  if (pool.length > 0) return { source: 'crop', samples: pool }
+  return { source: 'none', samples: [] }
+}
+
+function methodSummary(view: GddAvailability): string {
+  if (view.status === 'active') {
+    return `${view.scopeLabel}の目安 ${view.rangeLabel}（${view.countLabel}）`
+  }
+  if (view.status === 'pending') return view.message
+  return view.message
 }
 
 export function pickHarvestBasis(samples: HarvestSample[], crop: HarvestBasisCrop): HarvestBasis {
-  const picked = chosenHarvestSamples(samples, crop)
-  const { source } = picked
-  const chosen = picked.samples
-  const provisional = picked.provisional
-  const key = compareSubject(crop).label
-  if (source === 'provisional') {
+  const view = viewForCrop(crop)
+  const empty = {
+    view,
+    detail: null,
+    spreadNote: null,
+  }
+  if (view.status !== 'active') {
     return {
-      gdd: provisional,
-      source,
-      summary: `一般の目安（暫定）${provisional}℃日`,
-      detail: null,
-      spreadNote: null,
+      ...empty,
+      gdd: null,
+      source: 'none',
+      summary: methodSummary(view),
+      windowGdd: null,
     }
   }
-  const gdd = average(chosen)
-  const count = chosen.length
+  const picked = chosenHarvestSamples(samples, crop)
+  if (picked.source === 'none') {
+    return {
+      ...empty,
+      gdd: view.low,
+      source: 'method',
+      summary: methodSummary(view),
+      windowGdd: view.low,
+    }
+  }
+  const gdd = average(picked.samples)
+  const count = picked.samples.length
+  const key = compareSubject(crop).label
   const summary =
-    source === 'crop'
+    picked.source === 'crop'
       ? `同じ品種の実績がないので、${key}の過去${count}作の平均 ${gdd}℃日`
       : count === 1
-        ? `過去1作の収穫時点 ${gdd}℃日（1年分の実績です）`
+        ? `去年のあなたは${gdd}℃日で収穫しました`
         : `過去${count}作の収穫時点の平均 ${gdd}℃日`
   return {
     gdd,
-    source,
+    source: picked.source,
     summary,
-    detail: detailLine(chosen, gdd),
-    spreadNote: spreadNote(chosen, gdd),
+    detail: detailLine(picked.samples, gdd),
+    spreadNote: spreadNote(picked.samples, gdd),
+    view,
+    windowGdd: gdd,
   }
+}
+
+export function heatForCrop(crop: HarvestBasisCrop): { count: HeatCount; baseTemp: number } {
+  return displayHeat(viewForCrop(crop))
 }

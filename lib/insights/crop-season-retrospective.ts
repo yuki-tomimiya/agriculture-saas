@@ -3,7 +3,7 @@ import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-se
 import { seasonName } from '@/lib/insights/season'
 import { latestHarvestDate, ownYieldRates, sharesFieldPeriod } from '@/lib/benchmarks/national-yield'
 import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
-import { loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
+import { heatForCrop, loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   getAccumulatedGDDFromApi,
   hasWeatherCoordinates,
@@ -341,10 +341,12 @@ export async function getRetrospectiveGdd(
   if (!crop.plantingDate || !endDate || !hasWeatherCoordinates(point)) {
     return { accumulatedGdd: null }
   }
+  const heat = heatForCrop(crop)
   const accumulatedGdd = await getAccumulatedGDDFromApi({
     startDate: crop.plantingDate,
     endDate,
-    baseTemp: crop.baseTemperature ?? 10,
+    count: heat.count,
+    baseTemp: heat.baseTemp,
     point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
   })
   return { accumulatedGdd }

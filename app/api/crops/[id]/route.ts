@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { resolveBaseTemperature } from '@/lib/benchmarks/base-temperature'
-import { cropKindByKey, parseCropConditions } from '@/lib/crops/conditions'
+import { parseCropConditions } from '@/lib/crops/conditions'
 
 export async function PATCH(
   request: NextRequest,
@@ -116,19 +115,6 @@ export async function PATCH(
       updateData.farmId = farmId
       updateData.userId = farmId ? null : userId
     }
-    if ('baseTemperature' in body) {
-      const kind = cropKindByKey(conditions?.cropKind ?? existing.cropKind)
-      const baseTemperature = resolveBaseTemperature(
-        body.baseTemperature,
-        kind?.benchmarkName ?? conditions?.name ?? existing.name,
-        variety === undefined ? existing.variety : variety
-      )
-      if (typeof baseTemperature === 'object') {
-        return NextResponse.json({ error: baseTemperature.error }, { status: 400 })
-      }
-      updateData.baseTemperature = baseTemperature
-    }
-
     const crop = await prisma.crop.update({
       where: { id },
       data: updateData,

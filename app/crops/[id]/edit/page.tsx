@@ -69,7 +69,6 @@ export default async function CropEditPage({
     plantingDate: toDateInputValue(crop.plantingDate),
     harvestDate: toDateInputValue(crop.harvestDate),
     status: crop.status,
-    baseTemperature: crop.baseTemperature == null ? '' : String(crop.baseTemperature),
   }
 
   const farmsWithFields = farms.map((f) => ({

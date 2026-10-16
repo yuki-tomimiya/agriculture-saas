@@ -148,9 +148,9 @@ export function assessSweetPotatoFrost(args: {
     return {
       trigger: FROST_SEASON_TRIGGER,
       urgency: 'thisWeek',
-      title: '今季は、収穫の目安に届かない見込みです',
+      title: '今季は、試し掘りの目安に届かない見込みです',
       conclusion: `${when}。${action}。`,
-      generalLine: `今季は、収穫の目安に届かない見込みです。${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。${note}`,
+      generalLine: `今季は、試し掘りの目安に届かない見込みです。${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。${note}`,
       sourceLine: sourceLine(origin),
     }
   }
@@ -162,8 +162,8 @@ export function assessSweetPotatoFrost(args: {
     trigger: FROST_SEASON_TRIGGER,
     urgency: 'thisWeek',
     title: when,
-    conclusion: `収穫の目安に届くのは${span}。それより、霜が先になる年があります。${action}。`,
-    generalLine: `${when}。収穫の目安に届くのは${span}。それより、霜が先になる年があります。${after}。${note}`,
+    conclusion: `試し掘りの目安に届くのは${span}。それより、霜が先になる年があります。${action}。`,
+    generalLine: `${when}。試し掘りの目安に届くのは${span}。それより、霜が先になる年があります。${after}。${note}`,
     sourceLine: sourceLine(origin),
   }
 }

@@ -6,7 +6,6 @@ import Sidebar from '@/components/Sidebar'
 import { getCropSeasonRetrospective, getRetrospectiveGdd } from '@/lib/insights/crop-season-retrospective'
 import { formatDateShort } from '@/lib/utils'
 import NationalYieldNote from '@/components/NationalYieldNote'
-import { DAYLENGTH_NOTE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 import { adviceNames } from '@/lib/crops/conditions'
 import { prisma } from '@/lib/prisma'
 import CropOutcomeForm from '@/components/CropOutcomeForm'
@@ -317,23 +316,20 @@ export default async function CropRetrospectivePage({
                 </Suspense>
               </span>
             </div>
-            {!isDaylengthCrop(adviceName, adviceVariety) && (
+            {data.gddBasis && data.gddBasis.gdd != null && (
             <div>
               <span className="insights-regional-stat-label">
-                {data.gddBasis?.source === 'provisional' ? '一般の目安（暫定）' : '収穫時点の実績'}
+                {data.gddBasis.source === 'method' ? '目安の下限' : '収穫時点の実績'}
               </span>
               <span className="insights-regional-stat-value">
-                {data.gddBasis ? `${data.gddBasis.gdd}℃日` : '—'}
+                {data.gddBasis.gdd}℃日
               </span>
             </div>
             )}
           </div>
-          {isDaylengthCrop(adviceName, adviceVariety) ? (
+          {data.gddBasis && (
             <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
-              {DAYLENGTH_NOTE}
-            </p>
-          ) : data.gddBasis && (
-            <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
+              {data.gddBasis.source === 'none' ? '参考：植え付けから日平均気温をそのまま足したもの。' : ''}
               {data.gddBasis.summary}
               {data.gddBasis.detail ? `。${data.gddBasis.detail}` : ''}
               {data.gddBasis.spreadNote ? `。${data.gddBasis.spreadNote}` : '。'}

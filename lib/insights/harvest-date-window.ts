@@ -1,3 +1,4 @@
+import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import type { LocationArchive } from '@/lib/weather-normals'
 
 /** 明日からこの日数までは、過去のその年の気温ではなく予報の平均気温を足す */
@@ -118,6 +119,7 @@ export function projectHarvestWindow(args: {
   today: Date
   currentGdd: number
   targetGdd: number
+  count: HeatCount
   baseTemp: number
   archive: LocationArchive
   forecastByYmd?: Map<string, number> | null
@@ -142,7 +144,7 @@ export function projectHarvestWindow(args: {
         const cursor = addDays(today, offset)
         if (cursor.getTime() > seasonEnd.getTime()) break
         const temp = tempOn(temps, cursor, today, forecastUntil, args.forecastByYmd)
-        if (temp != null) heat += Math.max(0, temp - args.baseTemp)
+        if (temp != null) heat += dailyHeat(temp, args.count, args.baseTemp)
         if (heat >= args.targetGdd) {
           reached = cursor
           break

@@ -11,7 +11,7 @@ import {
   type HarvestBasis,
   type HarvestSample,
 } from '@/lib/insights/harvest-gdd-basis'
-import { DAYLENGTH_NOTE, DAYLENGTH_SOURCE, isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
+import { dailyHeat, displayHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import { adviceNames } from '@/lib/crops/conditions'
 import { plantingConditionForKind } from '@/lib/benchmarks/planting-conditions'
 import { dateIsBeforeMonthDay, formatMonthDay } from '@/lib/weather-frost'
@@ -37,17 +37,18 @@ export type NextYearPlanCard = {
   salesAmount: number | null
   salesRecorded: boolean
   accumulatedGdd: number | null
-  targetGdd: number
+  targetGdd: number | null
   basis: HarvestBasis
+  count: HeatCount
   baseTemp: number
-  provisionalTarget: boolean
+  countLabel: string
   nextPlantingDate: Date | null
   normalHarvestDate: Date | null
   normalDays: number | null
   normalStatus: 'reached' | 'missing' | 'unreachable' | 'no-date' | 'no-place'
   normalNote: string | null
   /** 日付の出し方。adjusted は平年換算、season-days は栽培日数 */
-  forecastKind: 'adjusted' | 'season-days' | 'provisional' | 'actual' | 'none'
+  forecastKind: 'adjusted' | 'season-days' | 'method' | 'actual' | 'none'
   adjustNote: string | null
   /** 平年換算した℃日は変えない。日付だけ、年ごとの幅で出す */
   windowLabel: string | null
@@ -93,6 +94,7 @@ export type GddReach =
 export function daysToTargetGdd(args: {
   normals: Map<string, DayNormal>
   start: Date
+  count: HeatCount
   baseTemp: number
   targetGdd: number
   maxDays?: number
@@ -108,7 +110,7 @@ export function daysToTargetGdd(args: {
     const row = args.normals.get(monthDayKey(date.getMonth() + 1, date.getDate()))
     if (row && Number.isFinite(row.tempMean)) {
       daysWithData += 1
-      heat += Math.max(0, row.tempMean - args.baseTemp)
+      heat += dailyHeat(row.tempMean, args.count, args.baseTemp)
     }
     if (heat >= args.targetGdd && daysWithData > 0) return { status: 'reached', days: offset }
   }
@@ -151,7 +153,7 @@ async function adjustHarvestsToNormal(
   for (const sample of samples) {
     const normals = await normalsFor(sample.latitude, sample.longitude)
     if (!normals) continue
-    const normal = sumNormalGdd(normals, sample.plantingDate, sample.endDate, sample.baseTemp)
+    const normal = sumNormalGdd(normals, sample.plantingDate, sample.endDate, sample.count, sample.baseTemp)
     if (normal == null || normal <= 0 || sample.gdd <= 0) continue
     years.push({
       label: sample.seasonLabel,
@@ -170,11 +172,6 @@ async function adjustHarvestsToNormal(
       ? `${years[0].label}は${heatTone(years[0].pct)}（${TEN_YEAR_MEAN}比${years[0].pct}%）、${TEN_YEAR_MEAN}に引き直すと${gdd}℃日にあたります`
       : `${years.map((year) => `${year.label}は${TEN_YEAR_MEAN}比${year.pct}%`).join('、')}。引き直した平均は${gdd}℃日です`
   return { gdd, avgDays, note }
-}
-
-function provisionalTarget(name: string, variety: string | null): boolean {
-  const text = `${name}${variety ?? ''}`
-  return text.includes('さつまいも') || text.includes('紅はるか') || text.includes('ふくむらさき')
 }
 
 export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard[]> {
@@ -248,10 +245,15 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       const harvestDate = lastHarvest ?? crop.harvestDate
       const seasonDays =
         crop.plantingDate && harvestDate ? daysBetween(crop.plantingDate, harvestDate) : null
-      const baseTemp = crop.baseTemperature ?? 10
       const picked = chosenHarvestSamples(harvestSamples, crop)
       const basis = pickHarvestBasis(harvestSamples, crop)
       const targetGdd = basis.gdd
+      const heat = displayHeat(basis.view)
+      const baseTemp = heat.baseTemp
+      const countLabel =
+        basis.view.status === 'active' || basis.view.status === 'pending'
+          ? basis.view.countLabel
+          : '植え付けから、日平均気温をそのまま足す（参考）'
       const point = {
         latitude: crop.farm?.latitude ?? null,
         longitude: crop.farm?.longitude ?? null,
@@ -269,9 +271,8 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       let windowLate: Date | null = null
       let windowAdjustNote: string | null = null
       let seasonDayFallback: number | null = seasonDays
-      const planAdvice = adviceNames(crop)
-      if (!planAdvice.recordOnly && isDaylengthCrop(planAdvice.name, planAdvice.variety)) {
-        normalNote = `${DAYLENGTH_NOTE}出典：${DAYLENGTH_SOURCE}。`
+      if (basis.view.status !== 'active' || targetGdd == null) {
+        normalNote = basis.summary
       } else if (!crop.plantingDate) {
         normalStatus = 'no-date'
         normalNote = '植付日がないので、来年の収穫日は出せません。'
@@ -287,7 +288,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
           normalNote = '10年平均の気温を取れなかったので、収穫日は出せません。'
         } else {
           let walkTarget = targetGdd
-          if (basis.source !== 'provisional') {
+          if (basis.source === 'variety' || basis.source === 'crop') {
             const adjusted = await adjustHarvestsToNormal(picked.samples, normalsFor)
             if (adjusted) {
               walkTarget = adjusted.gdd
@@ -299,6 +300,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
           const reach = daysToTargetGdd({
             normals,
             start: nextPlant,
+            count: heat.count,
             baseTemp,
             targetGdd: walkTarget,
           })
@@ -312,7 +314,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
             normalDays = reach.days
             normalHarvest = addDays(nextPlant, reach.days)
             forecastKind =
-              basis.source === 'provisional' ? 'provisional' : adjustNote ? 'adjusted' : 'actual'
+              basis.source === 'method' ? 'method' : adjustNote ? 'adjusted' : 'actual'
           } else if (seasonDayFallback != null && reach.status !== 'missing') {
             normalStatus = 'reached'
             normalDays = seasonDayFallback
@@ -332,12 +334,13 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
               today: plantOn,
               currentGdd: 0,
               targetGdd: walkTarget,
+              count: heat.count,
               baseTemp,
               archive,
               includeToday: true,
             })
             if (window) {
-              windowLabel = formatHarvestWindow(window, { provisional: basis.source === 'provisional' })
+              windowLabel = formatHarvestWindow(window)
               windowEarly = window.early
               windowLate = window.late
               if (forecastKind === 'season-days' && windowAdjustNote) adjustNote = windowAdjustNote
@@ -347,10 +350,11 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       }
 
       let accumulatedGdd: number | null = null
-      if (crop.plantingDate && harvestDate && hasWeatherCoordinates(point)) {
+      if (basis.view.status === 'active' && crop.plantingDate && harvestDate && hasWeatherCoordinates(point)) {
         accumulatedGdd = await getAccumulatedGDDFromApi({
           startDate: crop.plantingDate,
           endDate: harvestDate,
+          count: heat.count,
           baseTemp,
           point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
         })
@@ -379,6 +383,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         crop.farm && hasWeatherCoordinates(point)
           ? await springFor(crop.farm.id, Number(point.latitude), Number(point.longitude))
           : null
+      const planAdvice = adviceNames(crop)
       const showPlanting =
         crop.growingSite !== 'house' && !planAdvice.recordOnly && Boolean(crop.cropKind)
       const condition = showPlanting ? plantingConditionForKind(crop.cropKind) : null
@@ -403,8 +408,9 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         accumulatedGdd,
         targetGdd,
         basis,
+        count: heat.count,
         baseTemp,
-        provisionalTarget: provisionalTarget(crop.name, crop.variety),
+        countLabel,
         nextPlantingDate: nextPlant,
         normalHarvestDate: normalHarvest,
         normalDays,
