@@ -3,7 +3,8 @@ import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-se
 import { seasonName } from '@/lib/insights/season'
 import { latestHarvestDate, ownYieldRates, sharesFieldPeriod } from '@/lib/benchmarks/national-yield'
 import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
-import { heatForCrop, loadHarvestSamples, pickHarvestBasis, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
+import { heatForCrop, loadHarvestSamples, pickHarvestBasis, viewForCrop, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
+import { gddStartDate } from '@/lib/benchmarks/gdd-methods'
 import {
   getAccumulatedGDDFromApi,
   hasWeatherCoordinates,
@@ -130,6 +131,7 @@ export async function getCropSeasonRetrospective(
     farm: true,
     field: { select: { area: true } },
     harvests: { orderBy: { date: 'asc' as const } },
+    milestones: { select: { key: true, observedAt: true } },
     sales: true,
     workRecords: { orderBy: { date: 'asc' as const } },
     pesticideRecords: true,
@@ -329,11 +331,20 @@ export async function getRetrospectiveGdd(
 ): Promise<{ accumulatedGdd: number | null } | null> {
   const crop = await prisma.crop.findFirst({
     where: { id: cropId, OR: [{ userId }, { farm: { userId } }] },
-    include: { farm: true, harvests: { orderBy: { date: 'asc' } } },
+    include: {
+      farm: true,
+      harvests: { orderBy: { date: 'asc' } },
+      milestones: { select: { key: true, observedAt: true } },
+    },
   })
   if (!crop) return null
+  const firstHarvestDate = crop.harvests[0]?.date ?? null
   const lastHarvestDate = crop.harvests[crop.harvests.length - 1]?.date ?? null
-  const endDate = crop.harvestDate ?? lastHarvestDate ?? (crop.status === 'growing' ? new Date() : null)
+  const view = viewForCrop(crop)
+  const endDate =
+    view.status === 'active' && view.startDate
+      ? firstHarvestDate ?? crop.harvestDate
+      : crop.harvestDate ?? lastHarvestDate ?? (crop.status === 'growing' ? new Date() : null)
   const point = {
     latitude: crop.farm?.latitude ?? null,
     longitude: crop.farm?.longitude ?? null,
@@ -341,9 +352,10 @@ export async function getRetrospectiveGdd(
   if (!crop.plantingDate || !endDate || !hasWeatherCoordinates(point)) {
     return { accumulatedGdd: null }
   }
+  if (view.status === 'pending' || view.status === 'days') return { accumulatedGdd: null }
   const heat = heatForCrop(crop)
   const accumulatedGdd = await getAccumulatedGDDFromApi({
-    startDate: crop.plantingDate,
+    startDate: view.status === 'active' ? gddStartDate(view, crop.plantingDate) : crop.plantingDate,
     endDate,
     count: heat.count,
     baseTemp: heat.baseTemp,

@@ -9,7 +9,7 @@ import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
 import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDailyPrecipitation, getHistoricalDailyRadiation, getHistoricalDailyTemps, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { computeGDDProjection } from '@/lib/gdd'
-import { dailyHeat, displayHeat, type ActiveGddMethod } from '@/lib/benchmarks/gdd-methods'
+import { dailyHeat, displayHeat, gddStartDate, type ActiveDayMethod, type ActiveGddMethod } from '@/lib/benchmarks/gdd-methods'
 import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
 import { accumulateNormals, getLocationDailyNormals, loadLocationArchive } from '@/lib/weather-normals'
@@ -21,6 +21,24 @@ import {
 } from '@/lib/insights/harvest-date-window'
 function cropLabel(name: string, variety: string | null): string {
   return variety ? `${name}（${variety}）` : name
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date)
+  result.setDate(result.getDate() + days)
+  return result
+}
+
+function formatMonthDay(date: Date): string {
+  return `${date.getMonth() + 1}月${date.getDate()}日`
+}
+
+function calendarDaysBetween(start: Date, end: Date): number {
+  const from = new Date(start)
+  from.setHours(0, 0, 0, 0)
+  const to = new Date(end)
+  to.setHours(0, 0, 0, 0)
+  return Math.max(0, Math.floor((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000)))
 }
 
 export default async function GddCropPage({
@@ -35,12 +53,12 @@ export default async function GddCropPage({
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   let crops = await prisma.crop.findMany({
     where: cropWhere,
-    include: { farm: true },
+    include: { farm: true, milestones: { select: { key: true, observedAt: true } } },
     orderBy: { name: 'asc' },
   }).catch(() =>
     prisma.crop.findMany({
       where: cropWhereFallback,
-      include: { farm: true },
+      include: { farm: true, milestones: { select: { key: true, observedAt: true } } },
       orderBy: { name: 'asc' },
     })
   )
@@ -70,9 +88,14 @@ export default async function GddCropPage({
   const heat = displayHeat(harvestBasis.view)
   const activeMethod: ActiveGddMethod | null =
     harvestBasis.view.status === 'active' ? harvestBasis.view : null
+  const dayMethod: ActiveDayMethod | null =
+    harvestBasis.view.status === 'days' ? harvestBasis.view : null
+  const gddOriginDate = activeMethod
+    ? gddStartDate(activeMethod, new Date(selectedCrop.plantingDate!))
+    : new Date(selectedCrop.plantingDate!)
   const historicalTemps = canFetchWeather
     ? await getHistoricalDailyTemps({
-        startDate: new Date(selectedCrop.plantingDate!),
+        startDate: gddOriginDate,
         endDate: today,
         point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
       })
@@ -140,11 +163,28 @@ export default async function GddCropPage({
           baseTemp: heat.baseTemp,
         })
       : null
+  const gddNormalSeries =
+    normalTable && selectedCrop.plantingDate
+      ? activeMethod?.startDate
+        ? accumulateNormals({
+            normals: normalTable,
+            plantingDate: gddOriginDate,
+            days: 220,
+            count: heat.count,
+            baseTemp: heat.baseTemp,
+          })
+        : normalSeries
+      : null
   const daysFromPlanting = Math.floor(
     (today.getTime() - new Date(selectedCrop.plantingDate!).getTime()) / (24 * 60 * 60 * 1000)
   )
+  const daysFromGddOrigin = Math.max(
+    0,
+    Math.floor((today.getTime() - gddOriginDate.getTime()) / (24 * 60 * 60 * 1000))
+  )
+  const allowHarvestDateWindow = Boolean(activeMethod && !activeMethod.startDate)
   const harvestWindow =
-    activeMethod && archive && targetGDD > 0
+    allowHarvestDateWindow && activeMethod && archive && targetGDD > 0
       ? projectHarvestWindow({
           today,
           currentGdd: currentGDD,
@@ -161,7 +201,8 @@ export default async function GddCropPage({
           harvestWindow && currentGDD < targetGDD
             ? formatHarvestWindow(harvestWindow)
             : null,
-        seasonUnreachable: Boolean(archive) && !harvestWindow && currentGDD < targetGDD,
+        seasonUnreachable:
+          allowHarvestDateWindow && Boolean(archive) && !harvestWindow && currentGDD < targetGDD,
       })
     : null
   const heavyRainDays = forecastRainfall.filter((d) => d.precipitationMm >= FORECAST_HEAVY_RAIN_MM)
@@ -250,7 +291,7 @@ export default async function GddCropPage({
               id: selectedCrop.id,
               name: selectedCrop.name,
               variety: selectedCrop.variety,
-              plantingDate: selectedCrop.plantingDate,
+              plantingDate: gddOriginDate,
               baseTemperature: selectedCrop.baseTemperature,
             }}
             currentGDD={currentGDD}
@@ -268,16 +309,19 @@ export default async function GddCropPage({
                 ? undefined
                 : `現在：${currentGDD} ℃日（参考：植え付けから日平均気温をそのまま足したもの）`
             }
-            daysFromPlanting={daysFromPlanting}
+            daysFromPlanting={daysFromGddOrigin}
+            originLabel={activeMethod?.originLabel}
             historicalPoints={historicalCumulative}
             dailyProjections={projection?.dailyProjections.map((p) => ({ date: p.date, cumulativeGDD: p.cumulativeGDD })) ?? []}
-            lastYearPoints={previousSeason?.gdd ?? []}
+            lastYearPoints={activeMethod?.startDate ? [] : previousSeason?.gdd ?? []}
             lastYearLabel={lastYearShortLabel}
-            normalGddByDay={canFetchWeather ? normalSeries?.gdd ?? null : undefined}
+            normalGddByDay={canFetchWeather ? gddNormalSeries?.gdd ?? null : undefined}
           />
           <p className="dashboard-gdd-summary-text">
             {activeMethod
               ? `${activeMethod.countLabel}。目安は${activeMethod.rangeLabel}（${activeMethod.scopeLabel}）。`
+              : dayMethod
+                ? `${dayMethod.countLabel}。収穫の目安は${formatMonthDay(addDays(dayMethod.startDate, dayMethod.lowDays))}〜${formatMonthDay(addDays(dayMethod.startDate, dayMethod.highDays))}ごろです。`
               : harvestBasis.summary}
             {harvestBasis.source === 'variety' || harvestBasis.source === 'crop'
               ? ` ${harvestBasis.summary}。`
@@ -288,15 +332,25 @@ export default async function GddCropPage({
               出典：{activeMethod.sourceLine}
             </p>
           )}
+          {dayMethod && (
+            <>
+              <p className="dashboard-gdd-summary-text">
+                今日は、ひげが出てから
+                {calendarDaysBetween(dayMethod.startDate, today)}
+                日目です。積算温度の目安の線は出しません。
+              </p>
+              <p className="dashboard-gdd-summary-text">出典：{dayMethod.sourceLine}</p>
+            </>
+          )}
           {activeMethod && currentGDD >= activeMethod.low && (
             <p className="dashboard-gdd-summary-text">{activeMethod.reachBody}</p>
           )}
-          {activeMethod && currentGDD < targetGDD && harvestWindow && (
+          {allowHarvestDateWindow && activeMethod && currentGDD < targetGDD && harvestWindow && (
             <p className="dashboard-gdd-summary-text">
               目安に届くのは{formatHarvestWindow(harvestWindow)}。
             </p>
           )}
-          {activeMethod && currentGDD < targetGDD && archive && !harvestWindow && (
+          {allowHarvestDateWindow && activeMethod && currentGDD < targetGDD && archive && !harvestWindow && (
             <p className="dashboard-gdd-summary-text">今季は、この目安に届かない見込みです。</p>
           )}
 

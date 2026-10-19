@@ -12,6 +12,7 @@ type Crop = {
   harvestDate: Date | null
   status: string
   plantingMethod?: string | null
+  milestones?: { key: string; observedAt: Date }[]
   farm: { name: string } | null
 }
 
@@ -52,9 +53,12 @@ function CropCard({ crop }: { crop: Crop }) {
             variety: listAdvice.recordOnly ? null : listAdvice.variety,
             plantingMethod: crop.plantingMethod,
             recordOnly: listAdvice.recordOnly,
+            milestones: crop.milestones,
           })
           const label =
-            view.status === 'active' || view.status === 'pending' ? view.countLabel : '積算温度の目安なし'
+            view.status === 'active' || view.status === 'days' || view.status === 'pending'
+              ? view.countLabel
+              : '積算温度の目安なし'
           return (
             <Link href="/faq/gdd-reference" className="gdd-crop-card-base">
               {label}

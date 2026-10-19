@@ -308,7 +308,11 @@ export default async function CropRetrospectivePage({
           <div className="insights-regional-stats">
             <div>
               <span className="insights-regional-stat-label">
-                {data.gddAsOf === 'harvest' ? '積算温度（収穫日時点）' : '積算温度（今日まで）'}
+                {data.gddBasis?.view.status === 'active' && data.gddBasis.view.originLabel
+                  ? `積算温度（${data.gddBasis.view.originLabel}から最初の収穫まで）`
+                  : data.gddAsOf === 'harvest'
+                    ? '積算温度（収穫日時点）'
+                    : '積算温度（今日まで）'}
               </span>
               <span className="insights-regional-stat-value">
                 <Suspense fallback={<span>集計中…</span>}>

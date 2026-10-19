@@ -82,6 +82,7 @@ export default async function CropDetailPage({
     variety: advice.recordOnly ? null : advice.variety,
     plantingMethod: crop.plantingMethod,
     recordOnly: advice.recordOnly,
+    milestones: crop.milestones,
   })
   const missingConditions = conditionsMissing(crop)
   const missingResult = outcomeMissing(crop)
@@ -239,7 +240,7 @@ export default async function CropDetailPage({
             <div>
               <dt className="text-sm text-gray-500">積算温度の数え方</dt>
               <dd className="text-gray-900">
-                {gddView.status === 'active' || gddView.status === 'pending'
+                {gddView.status === 'active' || gddView.status === 'days' || gddView.status === 'pending'
                   ? gddView.countLabel
                   : '目安なし'}
               </dd>
@@ -247,10 +248,10 @@ export default async function CropDetailPage({
           </dl>
         </div>
 
-        {(points.length > 0 || gddView.status !== 'active') && (
+        {(points.length > 0 || gddView.status === 'pending' || gddView.status === 'none') && (
           <div className="bg-white p-6 rounded-lg shadow mb-8">
             <h2 className="text-xl font-semibold mb-4">この品目のポイント</h2>
-            {gddView.status !== 'active' && (
+            {(gddView.status === 'pending' || gddView.status === 'none') && (
               <p className="text-gray-800 mb-3">{gddView.message}</p>
             )}
             {points.length > 0 && (

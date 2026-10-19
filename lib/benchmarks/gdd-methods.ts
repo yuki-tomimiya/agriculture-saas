@@ -10,7 +10,7 @@ export type GddSource = {
 
 export type ActiveGddMethod = {
   status: 'active'
-  key: 'sweet-potato' | 'daikon'
+  key: 'sweet-potato' | 'daikon' | 'tomato'
   count: HeatCount
   baseTemp: number
   low: number
@@ -22,6 +22,22 @@ export type ActiveGddMethod = {
   sources: GddSource[]
   reachTitle: string
   reachBody: string
+  /** 植付・播種以外から数える品目の起点。 */
+  startDate?: Date
+  originLabel?: string
+}
+
+export type ActiveDayMethod = {
+  status: 'days'
+  key: 'sweet-corn'
+  startDate: Date
+  lowDays: number
+  highDays: number
+  rangeLabel: string
+  countLabel: string
+  scopeLabel: string
+  sourceLine: string
+  sources: GddSource[]
 }
 
 export type PendingGddMethod = {
@@ -40,7 +56,12 @@ export type NoGddMethod = {
   message: string
 }
 
-export type GddAvailability = ActiveGddMethod | PendingGddMethod | NoGddMethod
+export type GddAvailability = ActiveGddMethod | ActiveDayMethod | PendingGddMethod | NoGddMethod
+
+export type GddMilestone = {
+  key: string
+  observedAt: Date
+}
 
 const SWEET_POTATO_SOURCES: GddSource[] = [
   {
@@ -118,7 +139,7 @@ export const GDD_FAQ_ROWS: {
     crop: 'トマト',
     start: '第1花房の開花',
     how: '単純（日平均気温をそのまま足す）',
-    value: '約1,000℃（大玉）・中玉950・ミニ850。起点を聞くまでは見込みを出さない',
+    value: '第1花房が咲いた日を記録すると、そこから数える。大玉 約1,000℃・中玉950・ミニ850。名前に区分が無いときは3つを示し、850℃で知らせる',
     scope: '【一般】（宮城・東京・熊本）',
     source: TOMATO_SOURCES.map((row) => row.label).join('／'),
   },
@@ -126,7 +147,7 @@ export const GDD_FAQ_ROWS: {
     crop: 'スイートコーン',
     start: '絹糸抽出',
     how: '日数',
-    value: '20〜25日。起点を聞くまでは見込みを出さない',
+    value: '絹糸（ひげ）が出た日を記録すると、そこから20〜25日後を日付で示す',
     scope: '【一般】（宮城・秋田・岩手・東京・長野）',
     source: CORN_SOURCES.map((row) => row.label).join('／'),
   },
@@ -180,6 +201,36 @@ function rangeLabel(low: number, high: number): string {
   return `${low.toLocaleString('ja-JP')}〜${high.toLocaleString('ja-JP')}℃`
 }
 
+function formatMonthDay(date: Date): string {
+  return `${date.getMonth() + 1}月${date.getDate()}日`
+}
+
+function milestoneDate(records: GddMilestone[] | undefined, key: string): Date | null {
+  return records?.find((record) => record.key === key)?.observedAt ?? null
+}
+
+function tomatoTarget(name: string, variety?: string | null): {
+  low: number
+  high: number
+  rangeLabel: string
+} {
+  const value = haystack(name, variety)
+  if (value.includes(normalizeCropNameForMatch('ミニ'))) {
+    return { low: 850, high: 850, rangeLabel: 'ミニ 850℃' }
+  }
+  if (value.includes(normalizeCropNameForMatch('中玉'))) {
+    return { low: 950, high: 950, rangeLabel: '中玉 950℃' }
+  }
+  if (value.includes(normalizeCropNameForMatch('大玉'))) {
+    return { low: 1000, high: 1000, rangeLabel: '大玉 約1,000℃' }
+  }
+  return {
+    low: 850,
+    high: 1000,
+    rangeLabel: '大玉 約1,000℃（中玉950・ミニ850）',
+  }
+}
+
 function noneMessage(cue: string | null): string {
   if (!cue) return 'この品目は積算温度の目安がありません。見た目の節目で判断します。'
   return `この品目は積算温度の目安がありません。${cue}で判断します。`
@@ -197,6 +248,7 @@ export function gddAvailability(args: {
   variety?: string | null
   plantingMethod?: string | null
   recordOnly?: boolean
+  milestones?: GddMilestone[]
 }): GddAvailability {
   if (args.recordOnly) return { status: 'none', message: noneMessage(null) }
   const key = args.cropKind ?? ''
@@ -244,10 +296,31 @@ export function gddAvailability(args: {
   }
   const tomato = key === 'tomato' || matchesWords(args.name, args.variety, ['トマト', 'とまと'])
   if (tomato) {
+    const flowerDate = milestoneDate(args.milestones, 'flower-1st')
+    if (flowerDate) {
+      const target = tomatoTarget(args.name, args.variety)
+      return {
+        status: 'active',
+        key: 'tomato',
+        count: 'simple',
+        baseTemp: 0,
+        low: target.low,
+        high: target.high,
+        rangeLabel: target.rangeLabel,
+        countLabel: `第1花房の開花（${formatMonthDay(flowerDate)}）から、日平均気温をそのまま足す`,
+        scopeLabel: '一般',
+        sourceLine: TOMATO_SOURCES.map((row) => row.label).join('／'),
+        sources: TOMATO_SOURCES,
+        reachTitle: 'いちばん下の実が色づき始めるころです',
+        reachBody: 'いちばん下の実が色づき始めるころです。収穫の準備をしましょう。',
+        startDate: flowerDate,
+        originLabel: '第1花房の開花',
+      }
+    }
     return {
       status: 'pending',
       key: 'tomato',
-      message: '第1花房の開花が分かると、収穫の見込みを出せます（準備中）。',
+      message: '第1花房が咲いた日を記録すると、そこから数えて収穫の見込みを出せます（準備中）。',
       countLabel: '第1花房の開花から、日平均気温をそのまま足す',
       scopeLabel: '一般',
       sourceLine: TOMATO_SOURCES.map((row) => row.label).join('／'),
@@ -257,10 +330,25 @@ export function gddAvailability(args: {
   }
   const corn = key === 'sweet-corn' || matchesWords(args.name, args.variety, ['スイートコーン', 'とうもろこし', 'トウモロコシ'])
   if (corn) {
+    const silkDate = milestoneDate(args.milestones, 'silk')
+    if (silkDate) {
+      return {
+        status: 'days',
+        key: 'sweet-corn',
+        startDate: silkDate,
+        lowDays: 20,
+        highDays: 25,
+        rangeLabel: '20〜25日',
+        countLabel: `絹糸（ひげ）が出た日（${formatMonthDay(silkDate)}）から20〜25日`,
+        scopeLabel: '一般',
+        sourceLine: CORN_SOURCES.map((row) => row.label).join('／'),
+        sources: CORN_SOURCES,
+      }
+    }
     return {
       status: 'pending',
       key: 'sweet-corn',
-      message: '絹糸（ひげ）が出た日が分かると、収穫の見込みを出せます（準備中）。',
+      message: '絹糸（ひげ）が出た日を記録すると、そこから20〜25日後の収穫目安を出せます（準備中）。',
       countLabel: '絹糸が出てから20〜25日',
       scopeLabel: '一般',
       sourceLine: CORN_SOURCES.map((row) => row.label).join('／'),
@@ -278,4 +366,8 @@ export function gddAvailability(args: {
 export function displayHeat(view: GddAvailability): { count: HeatCount; baseTemp: number } {
   if (view.status === 'active') return { count: view.count, baseTemp: view.baseTemp }
   return { count: 'simple', baseTemp: 0 }
+}
+
+export function gddStartDate(view: GddAvailability, plantingDate: Date): Date {
+  return view.status === 'active' && view.startDate ? view.startDate : plantingDate
 }

@@ -38,6 +38,10 @@ export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
   { label: '熊本県野菜振興協会「耕種基準」バレイショ（春作）', url: 'https://k-engei.net/contents/koushu_standard/74%E6%B7%BB%E5%89%8A%E5%BE%8C%20%E3%83%90%E3%83%AC%E3%82%A4%E3%82%B7%E3%83%A7%EF%BC%88%E6%98%A5%E4%BD%9C%EF%BC%89.pdf' },
   { label: '鹿児島県「有機野菜栽培事例」', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143757-1.pdf' },
   { label: '北海道立十勝農業試験場「ばれいしょの極早期培土効果」', url: 'https://www.hro.or.jp/agricultural/center/result/kenkyuseika/seikajoho/h06s_joho/h0600009.htm' },
+  { label: '東京都農林総合研究センター「トマトの生育制御（予測）のための日積算気温の利用」', url: 'https://www.tokyo-aff.or.jp/uploaded/attachment/9095.pdf' },
+  { label: '宮城県「野菜栽培指導指針」スイートコーン', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_11.pdf' },
+  { label: '秋田県「野菜栽培技術指針」スイートコーン', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-25.pdf' },
+  { label: '千葉・八重樫「スイートコーンの収穫適期と収穫後の品質変化」東北農業研究44', url: 'https://www.naro.go.jp/org/tarc/to-noken/DB/DATA/044/044-241.pdf' },
 ]
 
 export type MilestoneRecord = {
@@ -124,6 +128,10 @@ function isSweetPotato(cropName: string, variety?: string | null): boolean {
   return nameIncludes(cropName, variety, ['さつまいも', 'サツマイモ', '薩摩芋', 'かんしょ'])
 }
 
+function isSweetCorn(cropName: string, variety?: string | null): boolean {
+  return nameIncludes(cropName, variety, ['スイートコーン', 'とうもろこし', 'トウモロコシ'])
+}
+
 function isCucumber(cropName: string, variety?: string | null): boolean {
   return nameIncludes(cropName, variety, ['キュウリ', 'きゅうり', '胡瓜'])
 }
@@ -147,6 +155,22 @@ function isPotato(cropName: string, variety?: string | null): boolean {
  */
 const MILESTONES: MilestoneDef[] = [
   {
+    key: 'flower-1st',
+    cropLabel: 'トマト',
+    match: isTomato,
+    question: 'いちばん下の花のかたまり（第1花房）が咲きましたか？',
+    term: '第1花房の開花',
+    yesLabel: '咲いた',
+    ifYes: '咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。',
+    conditional: '第1花房が咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。',
+    recordedLine: (days) =>
+      `${days <= 0 ? '第1花房の開花は今日です' : `第1花房の開花から${days}日です`}。この日から収穫開始までの積算温度を数えます。`,
+    sourceLabel: '宮城県・東京都・熊本県の資料',
+    howTo: [],
+    window: { kind: 'days', from: 0, to: 21 },
+    windowNote: `植付から0〜21日（${WINDOW_PROVISIONAL}）`,
+  },
+  {
     key: 'flower-3rd',
     cropLabel: 'トマト',
     match: isTomato,
@@ -162,6 +186,22 @@ const MILESTONES: MilestoneDef[] = [
     howTo: [],
     window: { kind: 'days', from: 25, to: 50 },
     windowNote: `植付から25〜50日（${WINDOW_PROVISIONAL}）`,
+  },
+  {
+    key: 'silk',
+    cropLabel: 'スイートコーン',
+    match: isSweetCorn,
+    question: '実の先からひげ（絹糸）が出てきましたか？',
+    term: '絹糸（ひげ）',
+    yesLabel: '出てきた',
+    ifYes: '出てきた日を記録すると、その20〜25日後を収穫の目安として表示します。',
+    conditional: '絹糸（ひげ）が出た日を記録すると、その20〜25日後を収穫の目安として表示します。',
+    recordedLine: (days) =>
+      `${days <= 0 ? '絹糸（ひげ）が出たのは今日です' : `絹糸（ひげ）が出てから${days}日です`}。20〜25日後が収穫の目安です。`,
+    sourceLabel: '宮城県・秋田県・岩手県・東京都・長野県の資料',
+    howTo: [],
+    window: { kind: 'days', from: 40, to: 90 },
+    windowNote: `植付から40〜90日（${WINDOW_PROVISIONAL}）`,
   },
   {
     key: 'rooting',

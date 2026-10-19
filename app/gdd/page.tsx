@@ -20,12 +20,12 @@ export default async function GDDPage({
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   let crops = await prisma.crop.findMany({
     where: cropWhere,
-    include: { farm: true },
+    include: { farm: true, milestones: { select: { key: true, observedAt: true } } },
     orderBy: { name: 'asc' },
   }).catch(() =>
     prisma.crop.findMany({
       where: cropWhereFallback,
-      include: { farm: true },
+      include: { farm: true, milestones: { select: { key: true, observedAt: true } } },
       orderBy: { name: 'asc' },
     })
   )
@@ -72,6 +72,7 @@ export default async function GDDPage({
               harvestDate: c.harvestDate,
               status: c.status,
               plantingMethod: c.plantingMethod,
+              milestones: c.milestones,
               farm: c.farm ? { name: c.farm.name } : null,
             }))}
           />

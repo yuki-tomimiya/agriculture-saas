@@ -45,6 +45,7 @@ import {
 } from '@/lib/proposals/crop-kind'
 import { isOnOrAfterCoolNight } from '@/lib/weather-night'
 import { isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
+import { gddStartDate } from '@/lib/benchmarks/gdd-methods'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 
@@ -518,16 +519,21 @@ export async function scoreGrowingCrops(
         return { crop, currentGDD: null as number | null }
       }
       const heat = heatForCrop(crop)
-      const currentGDD = await getAccumulatedGDDFromApi({
-        startDate: new Date(crop.plantingDate),
-        endDate: today,
-        count: heat.count,
-        baseTemp: heat.baseTemp,
-        point: {
-          latitude: Number(crop.farm.latitude),
-          longitude: Number(crop.farm.longitude),
-        },
-      })
+      const view = pickHarvestBasis(harvestSamples, crop).view
+      const currentGDD = view.status === 'days'
+        ? null
+        : await getAccumulatedGDDFromApi({
+            startDate: view.status === 'active'
+              ? gddStartDate(view, new Date(crop.plantingDate))
+              : new Date(crop.plantingDate),
+            endDate: today,
+            count: heat.count,
+            baseTemp: heat.baseTemp,
+            point: {
+              latitude: Number(crop.farm.latitude),
+              longitude: Number(crop.farm.longitude),
+            },
+          })
       return { crop, currentGDD }
     })
   )
@@ -552,7 +558,13 @@ export async function scoreGrowingCrops(
     const ratioBase = basis.view.status === 'active' ? basis.view.low : 0
     const gddRatio = currentGDD != null && ratioBase > 0 ? currentGDD / ratioBase : null
     const climate = crop.farmId ? climateByFarm.get(crop.farmId) : undefined
-    const harvestWindowReady = Boolean(climate?.archive && currentGDD != null && targetGDD > 0)
+    const harvestWindowReady = Boolean(
+      basis.view.status === 'active' &&
+      !basis.view.startDate &&
+      climate?.archive &&
+      currentGDD != null &&
+      targetGDD > 0
+    )
     const harvestWindow = harvestWindowReady
       ? projectHarvestWindow({
           today,
@@ -571,6 +583,27 @@ export async function scoreGrowingCrops(
     })
     const taskTypes = crop.workRecords.map((work) => work.taskType)
     const hits: Hit[] = []
+
+    if (basis.view.status === 'days' && !hasHarvest) {
+      const elapsed = daysSince(basis.view.startDate, today)
+      if (elapsed != null && elapsed >= basis.view.lowDays) {
+        const pastWindow = elapsed > basis.view.highDays
+        hits.push({
+          trigger: 'harvest-window',
+          urgency: 'today',
+          score: 100,
+          title: pastWindow ? '目安の時期を過ぎています' : '収穫の目安の時期です',
+          conclusion: pastWindow
+            ? `ひげが出てから${elapsed}日です。目安の${basis.view.lowDays}〜${basis.view.highDays}日を過ぎています。実の様子を確かめてください。`
+            : 'ひげ（絹糸）が出てから20〜25日が収穫の目安です。早いほうが甘い時期なので、実の太りを確かめて収穫しましょう。',
+          action: {
+            kind: 'work',
+            taskType: '収穫',
+            title: `${crop.name}を収穫`,
+          },
+        })
+      }
+    }
 
     const harvestDatePast =
       crop.harvestDate != null && new Date(crop.harvestDate).setHours(0, 0, 0, 0) < today.getTime()
@@ -874,11 +907,13 @@ export async function scoreGrowingCrops(
       ),
     ])
     const measuredLine =
-      currentGDD != null
-        ? basis.view.status === 'active'
-          ? `${crop.name}の積算温度は ${currentGDD}℃日です（${basis.summary}、植付から${days}日）。`
-          : `${crop.name}の積算温度は ${currentGDD}℃日です（参考：植え付けから日平均気温をそのまま足したもの。植付から${days}日）。`
-        : `${crop.name}は植付から${days}日目です（${farmName}）。`
+      basis.view.status === 'days'
+        ? `${crop.name}は、ひげ（絹糸）が出てから${daysSince(basis.view.startDate, today) ?? 0}日目です（${basis.summary}）。`
+        : currentGDD != null
+          ? basis.view.status === 'active'
+            ? `${crop.name}の積算温度は ${currentGDD}℃日です（${basis.summary}、${basis.view.originLabel ? `${basis.view.originLabel}から${daysSince(basis.view.startDate ?? crop.plantingDate, today) ?? 0}日` : `植付から${days}日`}）。`
+            : `${crop.name}の積算温度は ${currentGDD}℃日です（参考：植え付けから日平均気温をそのまま足したもの。植付から${days}日）。`
+          : `${crop.name}は植付から${days}日目です（${farmName}）。`
     const coolFinish = best.title.includes('下回る時期')
     const finishReason = coolFinish
       ? ''

@@ -151,6 +151,7 @@ async function adjustHarvestsToNormal(
     days: number
   }[] = []
   for (const sample of samples) {
+    if (sample.latitude == null || sample.longitude == null || sample.gdd == null) continue
     const normals = await normalsFor(sample.latitude, sample.longitude)
     if (!normals) continue
     const normal = sumNormalGdd(normals, sample.plantingDate, sample.endDate, sample.count, sample.baseTemp)
