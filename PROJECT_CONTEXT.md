@@ -136,7 +136,9 @@ AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ 
 - 起動できないとき：`npm install` → `npx prisma generate` → `npx prisma migrate dev`。ポート3000が埋まっていれば `サーバー停止.bat`。`.env` と `prisma/dev.db` があるか確認（旧 SETUP.md の要点。2026-10-07 に統合）
 - 公開前のチェックリストは Obsidian の `調査/RELEASE_CHECKLIST.md`（2026-10-07 にリポジトリから移動）
 - 気象庁の観測所一覧は `npm run jma:stations`（地点が変わったとき。年1回で足りる）。日別の最低気温は `npm run jma:observations`（保存済みの月は取り直さない。年が明けたら、前年の12か月が足される）。画面を開いたときは保存済みだけを読む
+- 開発用の部品 `docx`（議事録の Word を作る）と `tsx`（気象庁の取り込みを動かす）は、版を固定して `package.json` に入れている。新しいPCでは `npm ci` で同じ版がそろう
+- 別のPCへ移すときは Obsidian の `PC移行/開発環境の移行手順.md`（`dev.db`・`.env`・ボールト・Claude のメモリは GitHub に無い）
 
 ---
 
-*最終更新: 2026-10-07 — 不要ファイルを整理（git 用 bat・初期手順書・案内メモを削除、SETUP.md を統合、RELEASE_CHECKLIST を Obsidian へ）。*
+*最終更新: 2026-10-19 — PC移行の準備（使っている部品を package.json に書いた）。10-13〜16 に霜（観測所の記録）・作付けの条件と結果・農場の都道府県と市区町村・予察へのリンク・春の締切・積算温度の品目ごとの数え方。*
