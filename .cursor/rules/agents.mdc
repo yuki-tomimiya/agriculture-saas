@@ -1,0 +1,6 @@
+---
+description: このリポジトリの決まりは AGENTS.md にある
+alwaysApply: true
+---
+
+このリポジトリの実装担当の決まりは、リポジトリの一番上の `AGENTS.md` にある。作業の前に必ず読み、それに従う。
