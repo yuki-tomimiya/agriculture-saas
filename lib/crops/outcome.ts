@@ -14,6 +14,8 @@ export const GRADE_A_REASONS = [
   { key: 'shape', label: '形が悪い' },
   { key: 'small', label: '小さい' },
   { key: 'rot', label: '腐れ' },
+  { key: 'color', label: '色・日焼け' },
+  { key: 'bolting', label: 'とう立ち・とり遅れ' },
   { key: 'wildlife', label: '獣害' },
   { key: 'other', label: 'その他' },
 ] as const
@@ -21,7 +23,11 @@ export const GRADE_A_REASONS = [
 export const GRADE_A_SHARES = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100] as const
 
 export const GRADE_A_DEFINITION =
-  'A品＝傷・割れ・虫食い・病気・形の乱れが無く、そのまま出荷・販売できるもの。だいたいでかまいません'
+  'A品＝形・色が良く、傷・割れ・病害虫・腐れが無く、熟度がちょうどよく、そのまま出荷・販売できるもの。割合は重さでだいたい何割かを選んでください'
+
+export function gradeLabel(cropName: string, cropKind?: string | null): string {
+  return (cropKind ? cropKind.startsWith('strawberry-') : /イチゴ|いちご|苺|strawberry/i.test(cropName)) ? '正品' : 'A品'
+}
 
 export const RESULT_PROMPT = '結果を記録してください'
 
@@ -55,7 +61,7 @@ export function parseCropOutcome(body: Record<string, unknown>): { error: string
   if (!noHarvest) {
     const share = typeof body.gradeAShare === 'number' ? body.gradeAShare : Number(body.gradeAShare)
     if (!GRADE_A_SHARES.includes(share as (typeof GRADE_A_SHARES)[number])) {
-      return { error: 'A品の割合を選んでください' }
+      return { error: '出荷・販売できるものの割合を選んでください' }
     }
     gradeAShare = share
   }
@@ -64,7 +70,7 @@ export function parseCropOutcome(body: Record<string, unknown>): { error: string
     ? reasonRaw
     : null
   if (gradeAReason && !GRADE_A_REASONS.some((item) => item.key === gradeAReason)) {
-    return { error: 'A品にならなかった主な理由を選び直してください' }
+    return { error: '出荷・販売できなかった主な理由を選び直してください' }
   }
   const note = typeof body.note === 'string' ? body.note.trim() || null : null
   return { value: { endReason, noHarvest, gradeAShare, gradeAReason, note } }

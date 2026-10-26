@@ -16,7 +16,7 @@ const ROWS: readonly PointRow[] = [
     keywords: ['トマト', 'とまと'],
     points: [
       {
-        text: 'わき芽は小さいうちにかきます。',
+        text: 'わき芽は、混みすぎないよう随時かきます。',
         source: '宮城県・秋田県・熊本県野菜振興協会',
       },
     ],

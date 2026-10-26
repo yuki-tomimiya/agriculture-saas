@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import {
   END_REASONS,
   GRADE_A_DEFINITION,
+  gradeLabel,
   GRADE_A_REASONS,
   GRADE_A_SHARES,
   needsGradeAReason,
@@ -20,12 +21,17 @@ export type CropOutcomeInitial = {
 
 export default function CropOutcomeForm({
   cropId,
+  cropName,
+  cropKind,
   initial,
 }: {
   cropId: string
+  cropName: string
+  cropKind: string | null
   initial: CropOutcomeInitial | null
 }) {
   const router = useRouter()
+  const grade = gradeLabel(cropName, cropKind)
   const [endReason, setEndReason] = useState(initial?.endReason ?? '')
   const [share, setShare] = useState(initial ? (initial.noHarvest ? 'none' : String(initial.gradeAShare ?? '')) : '')
   const [reason, setReason] = useState(initial?.gradeAReason ?? '')
@@ -88,7 +94,7 @@ export default function CropOutcomeForm({
       </div>
       <div className="auth-field">
         <label htmlFor="grade-a-share" className="label">
-          A品の割合 <span className="farm-new-required">必須</span>
+          {grade}の割合 <span className="farm-new-required">必須</span>
         </label>
         <select id="grade-a-share" className="input" value={share} onChange={(e) => setShare(e.target.value)} required>
           <option value="">選んでください</option>
@@ -97,11 +103,11 @@ export default function CropOutcomeForm({
             <option key={value} value={String(value)}>{value}%</option>
           ))}
         </select>
-        <p className="text-sm text-gray-500" style={{ marginTop: '0.35rem' }}>{GRADE_A_DEFINITION}</p>
+        <p className="text-sm text-gray-500" style={{ marginTop: '0.35rem' }}>{GRADE_A_DEFINITION.replace('A品', grade)}</p>
       </div>
       {askReason && (
         <div className="auth-field">
-          <label htmlFor="grade-a-reason" className="label">A品にならなかった主な理由（任意）</label>
+          <label htmlFor="grade-a-reason" className="label">{grade}にならなかった主な理由（任意）</label>
           <select id="grade-a-reason" className="input" value={reason} onChange={(e) => setReason(e.target.value)}>
             <option value="">選ばない</option>
             {GRADE_A_REASONS.map((item) => (

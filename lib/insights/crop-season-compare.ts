@@ -96,28 +96,8 @@ export function describeYieldChange(args: {
     return args.yieldComment ? `${base}。${args.yieldComment}` : `${base}。`
   }
   const pct = args.harvestDiffPct
-  const less = pct < -5
-  const more = pct > 5
-  const comment = args.yieldComment
-  if (!comment) {
-    if (more) return `収量は前回作付けより +${pct}%です。`
-    if (less) return `収量は前回作付けより ${pct}%です。`
-    return '収量は前回作付けと同程度です。'
-  }
-  const inRange = comment.includes('レンジ内')
-  const lowBench = comment.includes('少なめ') || comment.includes('下限')
-  const highBench = comment.includes('多め') || comment.includes('上限')
-  const pctLabel = more ? `+${pct}%` : `${pct}%`
-  if (less && inRange) return `前回より少ないですが、一般的な目安の範囲内です（${pctLabel}）。`
-  if (more && inRange) return `前回より多いですが、一般的な目安の範囲内です（${pctLabel}）。`
-  if (!less && !more && inRange) return '前回と同程度で、一般的な目安の範囲内です。'
-  if (less && lowBench) return `前回より少なく、一般的な目安よりも少なめです（${pctLabel}）。`
-  if (more && highBench) return `前回より多く、一般的な目安よりも多めです（${pctLabel}）。`
-  if (less && highBench) return `前回より少ない一方、一般的な目安よりは多めです（${pctLabel}）。`
-  if (more && lowBench) return `前回より多い一方、一般的な目安よりは少なめです（${pctLabel}）。`
-  if (more) return `収量は前回作付けより +${pct}%です。${comment}`
-  if (less) return `収量は前回作付けより ${pct}%です。${comment}`
-  return `収量は前回作付けと同程度です。${comment}`
+  const base = `収量は前回作付けより ${pct > 0 ? '+' : ''}${pct}%です。`
+  return args.yieldComment ? `${base}${args.yieldComment}` : base
 }
 
 /**

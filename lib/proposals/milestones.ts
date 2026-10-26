@@ -2,7 +2,7 @@ import { normalizeCropNameForMatch } from '@/lib/benchmarks/crops'
 
 /**
  * 節目は、答えが助言を変えるときだけ聞く。
- * 窓の日数・比率に出典はない。問いかけを出すかどうかだけに使い、断定には使わない。
+ * 窓の出典・暫定の区別は各 windowNote（台帳 C6）。問いかけを出すかどうかだけに使い、断定には使わない。
  */
 
 export const MILESTONE_SOURCE_AKITA = {
@@ -20,6 +20,12 @@ export const MILESTONE_SOURCE_CHIBA = {
 }
 
 export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
+  { label: '長崎県 成果情報 S-30-25', url: 'https://www.pref.nagasaki.jp/e-nourin/nougi/theme/result/H30seika-jouhou/shidou/S-30-25.pdf' },
+  { label: '長崎県 成果情報 F-30-09', url: 'https://www.pref.nagasaki.jp/e-nourin/nougi/theme/result/H30seika-jouhou/fukyu/F-30-09.pdf' },
+  { label: '長崎県 成果情報 S-20-35', url: 'https://www.pref.nagasaki.jp/e-nourin/nougi/theme/result/H20seika-jouhou/shidou/S-20-35.pdf' },
+  { label: '北海道立十勝農業試験場「ばれいしょ」', url: 'https://www.hro.or.jp/upload/43058/r03_potato.pdf' },
+  { label: '福島県「キュウリ」', url: 'https://www.pref.fukushima.lg.jp/uploaded/attachment/453761.pdf' },
+  { label: '岩手県「スイートコーン」東北農業研究40', url: 'https://www.naro.go.jp/org/tarc/to-noken/DB/DATA/040/040-155.pdf' },
   { label: '秋田県「野菜栽培技術指針」果菜類', url: MILESTONE_SOURCE_AKITA.url },
   { label: '宮城県「みやぎの野菜指導指針」トマト', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_05.pdf' },
   { label: '徳島県「主要農作物施肥基準」野菜', url: 'https://www.pref.tokushima.lg.jp/file/attachment/624144.pdf' },
@@ -102,7 +108,8 @@ type MilestoneDef = {
 }
 
 const WINDOW_PROVISIONAL = '⚠ 暫定・窓だけ。出典なし。問いかけを出すかどうかだけに使い、断定には使わない'
-const TOMATO_SOURCES = '秋田県・宮城県・徳島県の資料'
+const TOMATO_SOURCES = '秋田県・宮城県・徳島県・熊本県野菜振興協会の資料'
+const WINDOW_USE = '問いかけを出す期間だけに使い、断定には使わない'
 const CHIBA_P18 = `${MILESTONE_SOURCE_CHIBA.publisher}「${MILESTONE_SOURCE_CHIBA.name}」（${MILESTONE_SOURCE_CHIBA.year}）p.18`
 const CHIBA_P28 = `${MILESTONE_SOURCE_CHIBA.publisher}「${MILESTONE_SOURCE_CHIBA.name}」（${MILESTONE_SOURCE_CHIBA.year}）p.28`
 const AKITA_ROOT = '秋田県「野菜栽培技術指針」根菜類 p.295'
@@ -149,8 +156,8 @@ function isPotato(cropName: string, variety?: string | null): boolean {
 }
 
 /**
- * 窓の数値に出典はない。問いかけを出すかどうかだけに使う。断定には使わない。
- * トマト 25〜50日・さつまいも活着 5〜20日は、以前の日数段階を広げた暫定。
+ * 窓の出典は台帳 C6。さつまいも活着・キュウリ摘心・ジャガイモつぼみは出典なしの暫定。
+ * 問いかけを出すかどうかだけに使い、断定には使わない。
  * 試し掘りは収穫目安の積算温度の 85% 以上（実績ベース）。
  */
 const MILESTONES: MilestoneDef[] = [
@@ -168,7 +175,7 @@ const MILESTONES: MilestoneDef[] = [
     sourceLabel: '宮城県・東京都・熊本県の資料',
     howTo: [],
     window: { kind: 'days', from: 0, to: 21 },
-    windowNote: `植付から0〜21日（${WINDOW_PROVISIONAL}）`,
+    windowNote: `植付から0〜21日（【一般】秋田・宮城・熊本・大分の定植時の苗の状態を参考。${WINDOW_USE}）`,
   },
   {
     key: 'flower-3rd',
@@ -177,15 +184,15 @@ const MILESTONES: MilestoneDef[] = [
     question: '下から3段目の花のかたまりが咲きましたか？（いちばん下の実がピンポン玉くらいのころ）',
     term: '第3花房の開花',
     yesLabel: '咲いた',
-    ifYes: '咲いていれば、追肥（穴肥）を始める時期です。秋田県・宮城県の資料では、灌水もこのころから控えめをやめて積極的にします。',
+    ifYes: '咲いていれば、追肥（穴肥）を始める時期です。ハウスの例では、灌水もこのころから控えめをやめて積極的にします。',
     conditional:
-      '下から3段目の花が咲いていれば、追肥（穴肥）を始めます。秋田県・宮城県の資料では、灌水もこのころから控えめをやめて積極的にします。腋芽は、混みすぎないよう随時かいてください。',
+      '下から3段目の花が咲いていれば、追肥（穴肥）を始めます。ハウスの例では、灌水もこのころから控えめをやめて積極的にします。腋芽は、混みすぎないよう随時かいてください。',
     recordedLine: (days) =>
-      `${days <= 0 ? '第3花房の開花は今日です' : `第3花房の開花から${days}日です`}。追肥（穴肥）を始める時期です。秋田県・宮城県の資料では、灌水もこのころから控えめをやめて積極的にします。`,
+      `${days <= 0 ? '第3花房の開花は今日です' : `第3花房の開花から${days}日です`}。追肥（穴肥）を始める時期です。ハウスの例では、灌水もこのころから控えめをやめて積極的にします。`,
     sourceLabel: TOMATO_SOURCES,
     howTo: [],
-    window: { kind: 'days', from: 25, to: 50 },
-    windowNote: `植付から25〜50日（${WINDOW_PROVISIONAL}）`,
+    window: { kind: 'days', from: 20, to: 45 },
+    windowNote: `植付から20〜45日（【東京都】花房間隔の試験を参考。${WINDOW_USE}）`,
   },
   {
     key: 'silk',
@@ -201,7 +208,7 @@ const MILESTONES: MilestoneDef[] = [
     sourceLabel: '宮城県・秋田県・岩手県・東京都・長野県の資料',
     howTo: [],
     window: { kind: 'days', from: 40, to: 90 },
-    windowNote: `植付から40〜90日（${WINDOW_PROVISIONAL}）`,
+    windowNote: `植付から40〜90日（【一般】岩手・熊本の播種から絹糸までの試験を参考。作型で異なる。${WINDOW_USE}）`,
   },
   {
     key: 'rooting',
@@ -250,7 +257,7 @@ const MILESTONES: MilestoneDef[] = [
     sourceLabel: '秋田県・宮城県・熊本県野菜振興協会の資料',
     howTo: [],
     window: { kind: 'days', from: 20, to: 45 },
-    windowNote: `植付から20〜45日（${WINDOW_PROVISIONAL}）`,
+    windowNote: `植付から20〜45日（【一般】福島・長崎の定植から収穫開始までの資料を参考。${WINDOW_USE}）`,
     skipWhenHarvest: true,
     harvestLine:
       '収穫が始まっています。追肥を続けます。秋田県の資料では収穫500〜700kgごと、宮城県の資料では10日ごとです。',
@@ -286,7 +293,7 @@ const MILESTONES: MilestoneDef[] = [
     sourceLabel: '秋田県・宮城県・熊本県野菜振興協会の資料',
     howTo: [],
     window: { kind: 'days', from: 15, to: 40 },
-    windowNote: `植付から15〜40日（${WINDOW_PROVISIONAL}）`,
+    windowNote: `植付から15〜40日（【秋田県】収穫開始前の整枝の記述を参考。${WINDOW_USE}）`,
     skipWhenHarvest: true,
     harvestLine:
       '収穫が始まっています。追肥を始め、続けます。秋田県の資料では10〜14日おき、宮城県の資料では15〜20日おきです。短い雌しべの花が増えていれば、草勢が落ちているので追肥を早めます。',
@@ -322,8 +329,8 @@ const MILESTONES: MilestoneDef[] = [
       `${days <= 0 ? '芽そろいは今日です' : `芽そろいから${days}日です`}。1株1〜2本を残して芽をかき、1回目の土寄せをします。`,
     sourceLabel: '秋田県・熊本県野菜振興協会・鹿児島県の資料',
     howTo: [],
-    window: { kind: 'days', from: 15, to: 45 },
-    windowNote: `植付から15〜45日（${WINDOW_PROVISIONAL}）`,
+    window: { kind: 'days', from: 15, to: 40 },
+    windowNote: `植付から15〜40日（【一般】十勝・長崎の萌芽の試験を参考。${WINDOW_USE}）`,
     skipWhenHarvest: true,
   },
   {
@@ -350,14 +357,14 @@ const MILESTONES: MilestoneDef[] = [
     question: '茎や葉が黄色く枯れてきましたか？',
     term: '茎葉の黄変',
     yesLabel: '枯れてきた',
-    ifYes: '枯れていれば、晴れが続いて土が乾いた日に掘ります。',
-    conditional: '茎や葉が黄色く枯れていれば、晴れが続いて土が乾いた日に掘ります。',
+    ifYes: '茎葉の黄変を見ながら試し掘りして掘る日を決め、晴れが続いて土が乾いた日に掘ります。',
+    conditional: '茎や葉が黄色くなってきたら、試し掘りして掘る日を決め、晴れが続いて土が乾いた日に掘ります。',
     recordedLine: (days) =>
-      `${days <= 0 ? '黄変は今日です' : `黄変から${days}日です`}。晴れが続いて土が乾いた日に掘ります。`,
-    sourceLabel: '秋田県・熊本県野菜振興協会の資料',
+      `${days <= 0 ? '黄変は今日です' : `黄変から${days}日です`}。茎葉の黄変を見ながら試し掘りして掘る日を決め、晴れが続いて土が乾いた日に掘ります。`,
+    sourceLabel: '秋田県・長崎県・熊本県野菜振興協会の資料',
     howTo: [],
     window: { kind: 'days', from: 70, to: 130 },
-    windowNote: `植付から70〜130日（${WINDOW_PROVISIONAL}）。前の問いが残っているあいだは出さない`,
+    windowNote: `植付から70〜130日（【一般】十勝・長崎の枯凋・黄変の試験を参考。${WINDOW_USE}）。前の問いが残っているあいだは出さない`,
     skipWhenHarvest: true,
   },
 ]

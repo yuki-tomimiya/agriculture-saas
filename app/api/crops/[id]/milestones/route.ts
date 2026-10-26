@@ -59,7 +59,7 @@ export async function POST(
     const saved = await prisma.cropMilestone.upsert({
       where: { cropId_key: { cropId: crop.id, key } },
       create: { cropId: crop.id, key, observedAt, source, notes: notes || null },
-      update: { observedAt, source, notes: notes || null },
+      update: { observedAt, source, ...(typeof body.notes === 'string' ? { notes: notes || null } : {}) },
     })
 
     return NextResponse.json({ ok: true, id: saved.id, observedAt: saved.observedAt.toISOString() })

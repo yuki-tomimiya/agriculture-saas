@@ -15,7 +15,7 @@ export type CropStage = {
   nextHint: string
   /**
    * 日数で当たった段階。作業の抜けを断定しない。
-   * この日数に出典はない。条件つきの文を選ぶためだけに使う。
+   * 出典の有無は台帳 C8 を参照。条件つきの文を選ぶためだけに使う。
    */
   windowOnly?: boolean
 }
@@ -65,7 +65,7 @@ function isSweetPotato(cropName: string, variety?: string | null): boolean {
 
 /**
  * 芽かきは段階にしない（腋芽は随時。摘心は目標段数の1回で、別作業）。
- * 第3花房は milestones.ts。ここにある日数に出典はない。
+ * 第3花房は milestones.ts。誘引の0〜14日は秋田県の「植え付け後直ちに」から決めた運用の値（台帳 C8）。
  */
 const TOMATO_STAGES: CropStage[] = [
   {
@@ -80,7 +80,7 @@ const TOMATO_STAGES: CropStage[] = [
     key: 'rooting',
     label: '定植・誘引',
     fromDays: 0,
-    toDays: 21,
+    toDays: 14,
     windowOnly: true,
     expectedWorkTypes: ['植え付け', '誘引・仕立て'],
     generalLine: 'トマトは、植えていれば風で折れないよう誘引をします',

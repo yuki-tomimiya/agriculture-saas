@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { getCropWhere } from '@/lib/queries'
 import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { getLocationDailyNormals, loadLocationArchive, sumNormalGdd, type DayNormal } from '@/lib/weather-normals'
+import { annualPeriodTotals, tenYearClass } from '@/lib/insights/ten-year-classes'
 import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
 import { formatHarvestWindow, projectHarvestWindow } from '@/lib/insights/harvest-date-window'
 import {
@@ -147,21 +148,23 @@ function daysBetween(start: Date, end: Date): number {
   return Math.max(0, Math.floor((b.getTime() - a.getTime()) / (24 * 60 * 60 * 1000)))
 }
 
-function heatTone(pct: number): string {
-  if (pct >= 103) return `${TEN_YEAR_MEAN}より暑く`
-  if (pct <= 97) return `${TEN_YEAR_MEAN}より涼しく`
-  return `${TEN_YEAR_MEAN}に近く`
+function heatTone(tone: ReturnType<typeof tenYearClass>): string | null {
+  if (tone === 'high') return `${TEN_YEAR_MEAN}より暑く`
+  if (tone === 'low') return `${TEN_YEAR_MEAN}より涼しく`
+  return tone === 'middle' ? `${TEN_YEAR_MEAN}に近く` : null
 }
 
 /** 年ごとの実績を、その年の同期間の平年積算へ引き直してから平均する。 */
 async function adjustHarvestsToNormal(
   samples: HarvestSample[],
-  normalsFor: (latitude: number, longitude: number) => Promise<Map<string, DayNormal> | null>
+  normalsFor: (latitude: number, longitude: number) => Promise<Map<string, DayNormal> | null>,
+  archiveFor: (latitude: number, longitude: number) => ReturnType<typeof loadLocationArchive>
 ): Promise<{ gdd: number; avgDays: number; note: string } | null> {
   const years: {
     label: string
     plantingTime: number
     pct: number
+    tone: string | null
     corrected: number
     days: number
   }[] = []
@@ -171,7 +174,17 @@ async function adjustHarvestsToNormal(
     if (!normals) continue
     const normal = sumNormalGdd(normals, sample.countStart, sample.endDate, sample.count, sample.baseTemp)
     if (normal == null || normal <= 0 || sample.gdd <= 0) continue
+    const archive = await archiveFor(sample.latitude, sample.longitude)
+    const totals = archive
+      ? annualPeriodTotals({
+          archive,
+          start: sample.countStart,
+          end: sample.endDate,
+          measure: { count: sample.count, baseTemp: sample.baseTemp },
+        })
+      : []
     years.push({
+      tone: heatTone(tenYearClass(sample.gdd, totals)),
       label: sample.seasonLabel,
       plantingTime: sample.plantingTime,
       pct: Math.round((sample.gdd / normal) * 100),
@@ -185,7 +198,7 @@ async function adjustHarvestsToNormal(
   const avgDays = Math.round(years.reduce((sum, year) => sum + year.days, 0) / years.length)
   const note =
     years.length === 1
-      ? `${years[0].label}は${heatTone(years[0].pct)}（${TEN_YEAR_MEAN}比${years[0].pct}%）、${TEN_YEAR_MEAN}に引き直すと${gdd}℃日にあたります`
+      ? `${years[0].label}は${years[0].tone ? `${years[0].tone}（` : `積算温度の`}${TEN_YEAR_MEAN}比${years[0].pct}%${years[0].tone ? '）' : ''}、${TEN_YEAR_MEAN}に引き直すと${gdd}℃日にあたります`
       : `${years.map((year) => `${year.label}は${TEN_YEAR_MEAN}比${year.pct}%`).join('、')}。引き直した平均は${gdd}℃日です`
   return { gdd, avgDays, note }
 }
@@ -375,7 +388,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         } else {
           let walkTarget = targetGdd
           if (basis.source === 'variety' || basis.source === 'crop') {
-            const adjusted = await adjustHarvestsToNormal(picked.samples, normalsFor)
+            const adjusted = await adjustHarvestsToNormal(picked.samples, normalsFor, archiveFor)
             if (adjusted) {
               walkTarget = adjusted.gdd
               seasonDayFallback = adjusted.avgDays

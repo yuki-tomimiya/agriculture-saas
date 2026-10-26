@@ -3,7 +3,7 @@ import { normalizeCropNameForMatch } from '@/lib/benchmarks/crops'
 export const NATIONAL_YIELD_SOURCE = {
   name: '令和6年産野菜生産出荷統計',
   publisher: '農林水産省「作物統計調査 作況調査（野菜）確報」',
-  detail: '表3',
+  detail: '表1',
   url: 'https://www.e-stat.go.jp/stat-search/files?page=1&layout=datalist&lid=000001473711',
 } as const
 

@@ -38,8 +38,8 @@ const CONDITIONS: PlantingCondition[] = [
   },
   {
     kindKey: 'tomato',
-    text: '地温15℃（深さ10〜15cm）を確かめて植えてください。秋田県のハウス（雨よけ）の例です。',
-    scopeLabel: '秋田県',
+    text: '地温15℃（深さ10〜15cm）を確かめて植えてください。ハウス・雨よけやマルチの例です。',
+    scopeLabel: '一般',
   },
   {
     kindKey: 'cucumber',
@@ -48,8 +48,8 @@ const CONDITIONS: PlantingCondition[] = [
   },
   {
     kindKey: 'edamame',
-    text: '霜に弱いので、早まきはトンネルなどで保温してください（秋田県）。',
-    scopeLabel: '秋田県',
+    text: '早まきはトンネル・マルチで地温を上げ、保温してください。秋田県の資料では、霜に弱いので保温が必要とされています。',
+    scopeLabel: '一般',
   },
 ]
 

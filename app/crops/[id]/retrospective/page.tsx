@@ -100,6 +100,8 @@ export default async function CropRetrospectivePage({
         {data.status !== 'growing' && (
           <CropOutcomeForm
             cropId={id}
+            cropName={data.cropName}
+            cropKind={data.cropKind}
             initial={
               outcome
                 ? {

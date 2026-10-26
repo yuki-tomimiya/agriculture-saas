@@ -3,7 +3,8 @@ import {
   getHistoricalDailyPrecipitation,
   hasWeatherCoordinates,
 } from '@/lib/weather-forecast'
-import { getLocationDailyNormals, sumNormalPrecip } from '@/lib/weather-normals'
+import { getLocationDailyNormals, sumNormalPrecip, loadLocationArchive } from '@/lib/weather-normals'
+import { annualPeriodTotals, tenYearClass } from '@/lib/insights/ten-year-classes'
 import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
 
 export type RegionalRainSummary = {
@@ -71,6 +72,7 @@ function buildInterpretation(args: {
   dayOfMonth: number
   thisYearMm: number | null
   normalMm: number | null
+  annualRain: number[]
   lastYearMm: number | null
   farmName: string | null
 }): { shortLine: string; interpretation: string; diffPct: number | null; normalRatioPct: number | null } {
@@ -101,12 +103,13 @@ function buildInterpretation(args: {
   const diffPct =
     args.normalMm > 0 ? Math.round(((args.thisYearMm - args.normalMm) / args.normalMm) * 100) : null
   const ratioText = normalRatioPct !== null ? `${TEN_YEAR_MEAN}の${normalRatioPct}%` : ''
+  const rainClass = tenYearClass(args.thisYearMm, args.annualRain)
   let fact = ''
   if (args.normalMm === 0 && args.thisYearMm === 0) {
     fact = `${TEN_YEAR_MEAN}もほぼ降水なしです。`
-  } else if (normalRatioPct !== null && normalRatioPct <= 75) {
+  } else if (rainClass === 'low') {
     fact = `${TEN_YEAR_MEAN}より雨が少ないです。`
-  } else if (normalRatioPct !== null && normalRatioPct >= 125) {
+  } else if (rainClass === 'high') {
     fact = `${TEN_YEAR_MEAN}より雨が多いです。`
   }
   const compare =
@@ -138,12 +141,10 @@ function fallbackLastYear(args: {
     compare = '昨年同時期のデータは取得できませんでした'
   } else if (args.lastYearMm === 0 && args.thisYearMm === 0) {
     compare = '昨年同時期もほぼ降水なし'
-  } else if (diffPct !== null && diffPct >= 25) {
-    compare = `昨年同時期（約${args.lastYearMm}mm）より多め（+${diffPct}%）`
-  } else if (diffPct !== null && diffPct <= -25) {
-    compare = `昨年同時期（約${args.lastYearMm}mm）より少なめ（${diffPct}%）`
+  } else if (diffPct !== null) {
+    compare = `昨年同時期（約${args.lastYearMm}mm）より ${diffPct > 0 ? '+' : ''}${diffPct}%`
   } else {
-    compare = `昨年同時期（約${args.lastYearMm}mm）と同程度`
+    compare = `昨年同時期は約${args.lastYearMm}mm（昨年が0mmのため割合は出せません）`
   }
   const shortLine = `${args.base}。${compare}。`
   return { shortLine, interpretation: shortLine, diffPct, normalRatioPct: null }
@@ -173,10 +174,11 @@ export async function getRegionalRainSummary(args: {
     longitude: Number(args.longitude),
   }
 
-  const [thisRows, lastRows, normals] = await Promise.all([
+  const [thisRows, lastRows, normals, archive] = await Promise.all([
     getHistoricalDailyPrecipitation({ startDate: thisStart, endDate: thisEnd, point }),
     getHistoricalDailyPrecipitation({ startDate: lastStart, endDate: lastEnd, point }),
     getLocationDailyNormals(point),
+    loadLocationArchive(point),
   ])
 
   const thisYearMm = thisRows.length > 0 ? sumMm(thisRows) : null
@@ -188,6 +190,7 @@ export async function getRegionalRainSummary(args: {
     dayOfMonth,
     thisYearMm,
     normalMm,
+    annualRain: archive ? annualPeriodTotals({ archive, start: thisStart, end: thisEnd, measure: 'rain' }) : [],
     lastYearMm,
     farmName: args.farmName ?? null,
   })
