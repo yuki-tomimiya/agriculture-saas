@@ -59,6 +59,10 @@ export type NextYearPlanCard = {
   springLine: string | null
   plantingCondition: string | null
   springEarlyNote: string | null
+  /** トマト・スイートコーンの「あなた」行。無いときは積算温度の従来の文 */
+  historyMeasure: string | null
+  /** 起点が節目の品目の「来年」行。無いときは従来の文 */
+  milestonePlan: string | null
 }
 
 function monthDayKey(month: number, day: number): string {
@@ -118,6 +122,17 @@ export function daysToTargetGdd(args: {
   return { status: 'unreachable' }
 }
 
+function formatYearMonthDay(date: Date): string {
+  return `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`
+}
+
+function formatSpan(early: Date, late: Date): string {
+  const label = (date: Date) => `${date.getMonth() + 1}月${date.getDate()}日`
+  const start = label(early)
+  const end = label(late)
+  return start === end ? start : `${start}〜${end}`
+}
+
 function addDays(date: Date, days: number): Date {
   const next = new Date(date)
   next.setDate(next.getDate() + days)
@@ -154,7 +169,7 @@ async function adjustHarvestsToNormal(
     if (sample.latitude == null || sample.longitude == null || sample.gdd == null) continue
     const normals = await normalsFor(sample.latitude, sample.longitude)
     if (!normals) continue
-    const normal = sumNormalGdd(normals, sample.plantingDate, sample.endDate, sample.count, sample.baseTemp)
+    const normal = sumNormalGdd(normals, sample.countStart, sample.endDate, sample.count, sample.baseTemp)
     if (normal == null || normal <= 0 || sample.gdd <= 0) continue
     years.push({
       label: sample.seasonLabel,
@@ -182,6 +197,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
     harvests: { orderBy: { date: 'asc' as const } },
     sales: true,
     workRecords: { orderBy: { date: 'asc' as const } },
+    milestones: { select: { key: true, observedAt: true } },
   } as const
   const past = { status: { not: 'growing' } }
 
@@ -252,7 +268,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       const heat = displayHeat(basis.view)
       const baseTemp = heat.baseTemp
       const countLabel =
-        basis.view.status === 'active' || basis.view.status === 'pending'
+        basis.view.status === 'active' || basis.view.status === 'pending' || basis.view.status === 'days'
           ? basis.view.countLabel
           : '植え付けから、日平均気温をそのまま足す（参考）'
       const point = {
@@ -272,7 +288,76 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       let windowLate: Date | null = null
       let windowAdjustNote: string | null = null
       let seasonDayFallback: number | null = seasonDays
-      if (basis.view.status !== 'active' || targetGdd == null) {
+      let historyMeasure: string | null = null
+      let milestonePlan: string | null = null
+      const tomatoStart = basis.view.status === 'active' && basis.view.key === 'tomato' && basis.view.startDate
+        ? basis.view.startDate
+        : null
+      const cornSilk = basis.view.status === 'days' && basis.view.key === 'sweet-corn' ? basis.view : null
+      if (basis.view.status === 'pending' && (basis.view.key === 'tomato' || basis.view.key === 'sweet-corn')) {
+        normalNote = basis.view.key === 'tomato'
+          ? '第1花房の日を記録した作付けから、来年の収穫開始の見込みを出せます。'
+          : '絹糸（ひげ）が出た日を記録した作付けから、来年の収穫の見込みを出せます。'
+      } else if (cornSilk) {
+        if (!crop.plantingDate) {
+          normalStatus = 'no-date'
+          normalNote = '植付日がないので、来年の収穫日は出せません。'
+        } else if (!hasWeatherCoordinates(point)) {
+          normalStatus = 'no-place'
+          normalNote = '農場の位置がないので、10年平均の気温から収穫日は出せません。'
+        } else {
+          const silkGdd = await getAccumulatedGDDFromApi({
+            startDate: crop.plantingDate,
+            endDate: cornSilk.startDate,
+            count: 'simple',
+            baseTemp: 0,
+            point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
+          })
+          const plantOn = nextPlantingDate(crop.plantingDate, today)
+          nextPlant = plantOn
+          if (silkGdd == null) {
+            normalStatus = 'missing'
+            normalNote = '植付から絹糸までの積算温度を取れなかったので、来年の日付は出せません。'
+          } else {
+            const archive = await archiveFor(Number(point.latitude), Number(point.longitude))
+            const rounded = Math.round(silkGdd)
+            const silkWindow = archive
+              ? projectHarvestWindow({
+                  today: plantOn,
+                  currentGdd: 0,
+                  targetGdd: rounded,
+                  count: 'simple',
+                  baseTemp: 0,
+                  archive,
+                  includeToday: true,
+                })
+              : null
+            if (!silkWindow) {
+              normalStatus = archive ? 'unreachable' : 'missing'
+              normalNote = archive
+                ? '過去10年の気温は取れましたが、年内に絹糸までの積算温度へ届きません。'
+                : '過去10年の気温を取れなかったので、収穫日は出せません。'
+            } else {
+              const ownDays = basis.source === 'variety' || basis.source === 'crop'
+              const lowDays = ownDays && basis.days != null ? basis.days : cornSilk.lowDays
+              const highDays = ownDays && basis.days != null ? basis.days : cornSilk.highDays
+              const harvestEarly = addDays(silkWindow.early, lowDays)
+              const harvestLate = addDays(silkWindow.late, highDays)
+              normalStatus = 'reached'
+              forecastKind = ownDays ? 'actual' : 'method'
+              windowLabel = formatHarvestWindow(silkWindow)
+              windowEarly = harvestEarly
+              windowLate = harvestLate
+              const dayText = lowDays === highDays ? `${lowDays}日後` : `${lowDays}〜${highDays}日後`
+              milestonePlan = `来年も${formatYearMonthDay(plantOn)}に植えると、${ownDays ? '去年と同じく' : ''}植付から絹糸まで${rounded}℃日として、絹糸が出るのは${formatHarvestWindow(silkWindow)}。収穫の目安はその${dayText}の${formatSpan(harvestEarly, harvestLate)}です。`
+            }
+          }
+        }
+        const firstHarvest = crop.harvests[0]?.date ?? null
+        historyMeasure = firstHarvest
+          ? `絹糸から最初の収穫まで ${daysBetween(cornSilk.startDate, firstHarvest)}日`
+          : '収穫の記録はないので、絹糸からの日数は資料の20〜25日を使います'
+      } else if (basis.view.status !== 'active' || targetGdd == null) {
         normalNote = basis.summary
       } else if (!crop.plantingDate) {
         normalStatus = 'no-date'
@@ -298,6 +383,26 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
               windowAdjustNote = adjusted.note
             }
           }
+          let plantToFlower: number | null = null
+          if (tomatoStart) {
+            const flowerGdd = await getAccumulatedGDDFromApi({
+              startDate: crop.plantingDate,
+              endDate: tomatoStart,
+              count: heat.count,
+              baseTemp,
+              point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
+            })
+            if (flowerGdd == null) {
+              normalStatus = 'missing'
+              normalNote = '植付から第1花房までの積算温度を取れなかったので、来年の日付は出せません。'
+            } else {
+              plantToFlower = Math.round(flowerGdd)
+              walkTarget += plantToFlower
+            }
+          }
+          if (tomatoStart && plantToFlower == null) {
+            // 植付から第1花房が取れないときは、植付日だけで歩かない
+          } else {
           const reach = daysToTargetGdd({
             normals,
             start: nextPlant,
@@ -345,20 +450,42 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
               windowEarly = window.early
               windowLate = window.late
               if (forecastKind === 'season-days' && windowAdjustNote) adjustNote = windowAdjustNote
+              if (plantToFlower != null && forecastKind !== 'season-days') {
+                const harvestPart = walkTarget - plantToFlower
+                const own = basis.source === 'variety' || basis.source === 'crop'
+                const unspecified =
+                  basis.source === 'method' &&
+                  basis.view.status === 'active' &&
+                  basis.view.low === 850 &&
+                  basis.view.high > basis.view.low
+                const mean =
+                  normalHarvest &&
+                  normalHarvest.getTime() >= window.early.getTime() &&
+                  normalHarvest.getTime() <= window.late.getTime()
+                    ? `10年平均の1本の線では${formatYearMonthDay(normalHarvest)}ごろです（植付から${normalDays}日）。`
+                    : ''
+                milestonePlan = `来年も${formatYearMonthDay(plantOn)}に植えると、${own ? '去年と同じく' : ''}植付から第1花房まで${plantToFlower}℃日、そこから収穫開始まで${harvestPart}℃日として、${formatHarvestWindow(window)}。${mean}${unspecified ? '区分が無いので850℃で歩いています。大玉ならこれより遅くなります。' : ''}`
+              }
             }
+          }
           }
         }
       }
 
       let accumulatedGdd: number | null = null
-      if (basis.view.status === 'active' && crop.plantingDate && harvestDate && hasWeatherCoordinates(point)) {
+      const gddEnd = tomatoStart ? crop.harvests[0]?.date ?? null : harvestDate
+      const gddStart = tomatoStart ?? crop.plantingDate
+      if (basis.view.status === 'active' && gddStart && gddEnd && hasWeatherCoordinates(point)) {
         accumulatedGdd = await getAccumulatedGDDFromApi({
-          startDate: crop.plantingDate,
-          endDate: harvestDate,
+          startDate: gddStart,
+          endDate: gddEnd,
           count: heat.count,
           baseTemp,
           point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
         })
+      }
+      if (tomatoStart && accumulatedGdd != null) {
+        historyMeasure = `第1花房から最初の収穫まで ${Math.round(accumulatedGdd)}℃日`
       }
 
       const workHints: PlanWorkHint[] = []
@@ -427,6 +554,8 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         springLine: springOrigin ? springFrostSentence(springOrigin) : null,
         plantingCondition: condition ? `${condition.text}（${condition.scopeLabel}）` : null,
         springEarlyNote,
+        historyMeasure,
+        milestonePlan,
       }
     })
   )

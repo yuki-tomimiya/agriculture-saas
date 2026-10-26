@@ -182,7 +182,7 @@ export default async function GddCropPage({
     0,
     Math.floor((today.getTime() - gddOriginDate.getTime()) / (24 * 60 * 60 * 1000))
   )
-  const allowHarvestDateWindow = Boolean(activeMethod && !activeMethod.startDate)
+  const allowHarvestDateWindow = Boolean(activeMethod)
   const harvestWindow =
     allowHarvestDateWindow && activeMethod && archive && targetGDD > 0
       ? projectHarvestWindow({

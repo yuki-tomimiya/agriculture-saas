@@ -19,6 +19,8 @@ export type HarvestSample = {
   seasonLabel: string
   plantingTime: number
   plantingDate: Date
+  /** 平年換算で足し始める日。トマトは第1花房、スイートコーンは絹糸、ほかは植付 */
+  countStart: Date
   endDate: Date
   count: HeatCount
   baseTemp: number
@@ -122,6 +124,7 @@ export async function loadHarvestSamples(userId: string): Promise<HarvestSample[
         seasonLabel: seasonLabel(crop.name, crop.variety, crop.plantingDate),
         plantingTime: crop.plantingDate.getTime(),
         plantingDate: crop.plantingDate,
+        countStart: start,
         endDate: end,
         count: view.status === 'active' ? view.count : 'simple',
         baseTemp: view.status === 'active' ? view.baseTemp : 0,

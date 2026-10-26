@@ -320,7 +320,7 @@ export function gddAvailability(args: {
     return {
       status: 'pending',
       key: 'tomato',
-      message: '第1花房が咲いた日を記録すると、そこから数えて収穫の見込みを出せます（準備中）。',
+      message: '第1花房が咲いた日を記録すると、そこから数えて収穫の見込みを出せます。',
       countLabel: '第1花房の開花から、日平均気温をそのまま足す',
       scopeLabel: '一般',
       sourceLine: TOMATO_SOURCES.map((row) => row.label).join('／'),
@@ -348,7 +348,7 @@ export function gddAvailability(args: {
     return {
       status: 'pending',
       key: 'sweet-corn',
-      message: '絹糸（ひげ）が出た日を記録すると、そこから20〜25日後の収穫目安を出せます（準備中）。',
+      message: '絹糸（ひげ）が出た日を記録すると、そこから20〜25日後の収穫目安を出せます。',
       countLabel: '絹糸が出てから20〜25日',
       scopeLabel: '一般',
       sourceLine: CORN_SOURCES.map((row) => row.label).join('／'),

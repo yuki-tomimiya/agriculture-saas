@@ -67,7 +67,9 @@ export default async function NextYearPlanPage() {
                 plan.harvestDate
                   ? `収穫 ${formatDateShort(plan.harvestDate)}${plan.seasonDays !== null ? `（${plan.seasonDays}日間）` : ''}`
                   : '収穫日は記録なし',
-                plan.accumulatedGdd !== null
+                plan.historyMeasure
+                  ? plan.historyMeasure
+                  : plan.accumulatedGdd !== null
                   ? `積算温度 ${plan.accumulatedGdd}℃日`
                   : plan.basis.source === 'none'
                     ? '積算温度の収穫目安は出していません'
@@ -77,7 +79,9 @@ export default async function NextYearPlanPage() {
                   : '収量は記録なし',
                 plan.salesRecorded ? `売上 ${formatYen(plan.salesAmount ?? 0)}` : '売上は記録なし',
               ].join('。')
-              const conclusion = plan.nextPlantingDate && plan.windowLabel
+              const conclusion = plan.milestonePlan
+                ? plan.milestonePlan
+                : plan.nextPlantingDate && plan.windowLabel
                 ? `来年も${formatYearMonthDay(plan.nextPlantingDate)}に植えると、${
                     plan.basis.source === 'method'
                       ? `${plan.basis.view.status === 'active' ? plan.basis.view.scopeLabel : ''}の目安の下限までなら`
