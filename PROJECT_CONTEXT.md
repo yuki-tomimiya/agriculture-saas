@@ -13,7 +13,7 @@
 - 直近の合意・未着手 → **Obsidian SESSION_HANDOFF**
 - 方針・優先順 → **議事録**
 - どのファイルを触るか → **このファイル**
-- 日報・調査メモ → **`C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\`**
+- 日報・調査メモ → **`C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\`**
 
 ---
 
@@ -31,7 +31,7 @@
 3. 先の天気は「数値予報モデルの計算結果」と表示する。作付け前に測った EC・硝酸態窒素・リン酸だけ超えたとき言う。栽培中の値には当てない。次は物差しを揃えること
 
 → 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
-→ 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\`**（Obsidian）
+→ 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\`**（Obsidian）
 
 ---
 
@@ -132,7 +132,7 @@ AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ 
 - 起動: `npm run dev` または `アプリを起動.bat`
 - UI 確認は本番アプリのみ（静的 `ui-preview-*.html` は廃止済み）
 - `.env` / `node_modules` はコミットしない
-- 直近チャットの文脈は Obsidian の `obsidian_desktop/Tilltol/SESSION_HANDOFF.md`
+- 直近チャットの文脈は Obsidian の `Obsidian_Local/Tilltol/SESSION_HANDOFF.md`
 - 起動できないとき：`npm install` → `npx prisma generate` → `npx prisma migrate dev`。ポート3000が埋まっていれば `サーバー停止.bat`。`.env` と `prisma/dev.db` があるか確認（旧 SETUP.md の要点。2026-10-07 に統合）
 - 公開前のチェックリストは Obsidian の `調査/RELEASE_CHECKLIST.md`（2026-10-07 にリポジトリから移動）
 - 気象庁の観測所一覧は `npm run jma:stations`（地点が変わったとき。年1回で足りる）。日別の最低気温は `npm run jma:observations`（保存済みの月は取り直さない。年が明けたら、前年の12か月が足される）。画面を開いたときは保存済みだけを読む

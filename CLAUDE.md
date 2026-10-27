@@ -2,23 +2,23 @@
 
 ## 作業開始時に必ず読む（この順）
 
-1. `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\セッション引き継ぎ\引き継ぎ書.md` — **セッションの引き継ぎ書**：仕事の進め方（説明の仕方・依頼の渡し方・レビューの手順・切り替え）。メインのセッション（Claude）用
-2. `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\SESSION_HANDOFF.md` — **業務の引き継ぎ**：いまの状態・判断待ち・次にやること・分かったこと（Obsidian）
+1. `C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\セッション引き継ぎ\引き継ぎ書.md` — **セッションの引き継ぎ書**：仕事の進め方（説明の仕方・依頼の渡し方・レビューの手順・切り替え）。メインのセッション（Claude）用
+2. `C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\SESSION_HANDOFF.md` — **業務の引き継ぎ**：いまの状態・判断待ち・次にやること・分かったこと（Obsidian）
 3. `PROJECT_CONTEXT.md` — コードの地図・ルート・主要 lib（このリポジトリ）
 4. `docs/議事録/minutes-content.json` — 方針・Phase・次にやることの正本（このリポジトリ）
-5. `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\daily\` の当日メモ（あれば）— Obsidian 日報
+5. `C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\daily\` の当日メモ（あれば）— Obsidian 日報
 
 運用のルールと業務の中身は種類が違うので、2つの引き継ぎに混ぜない（2026-10-13 ユーザー）。
 
 ### 作業開始時に必ず作る（日報・Obsidian）
 
-実装・調査の**前に** `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
+実装・調査の**前に** `C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\daily\YYYY-MM-DD.md` を作成する（同日複数なら `-b` 等）。
 
 必須: **日付** / **現在の課題** / **今日やること**
 - **日報を作る前に、同じ名前のファイルが無いか必ず確かめる。既存の日報は上書きしない**（メイン・実装担当・調べ物のセッションが同じ日に `-b` `-c` …を使うため。2026-10-07 に -h が上書きされた）  
-詳細は `obsidian_desktop/Tilltol/daily/README.md` および `Tilltol/README.md`。
+詳細は `Obsidian_Local/Tilltol/daily/README.md` および `Tilltol/README.md`。
 
-**ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `obsidian_desktop/Tilltol/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。
+**ナレッジ**（引き継ぎ・調査・強み整理・日報）はすべて Obsidian `Obsidian_Local/Tilltol/`。リポジトリの `docs/` には議事録以外のナレッジを新規作成しない。
 
 ## サービス概要
 
@@ -62,7 +62,7 @@
 
 ## 数字・基準の根拠（根拠台帳・必ず守る）
 
-利用者に見せる農業上の数字・判断の基準（積算温度の目安、適正pH、霜の気温、節目、しきい値など）は、**すべて `obsidian_desktop/Tilltol/調査/根拠台帳.md` に1行ずつ記録する**。
+利用者に見せる農業上の数字・判断の基準（積算温度の目安、適正pH、霜の気温、節目、しきい値など）は、**すべて `Obsidian_Local/Tilltol/調査/根拠台帳.md` に1行ずつ記録する**。
 
 - 足す・変えるときは、**出典（資料名・発行元・年・ページ・URL）／選んだ理由／状態／決定日／見直す条件**を台帳に書く
 - 出典が無いものは「⚠ 暫定」か「❓ 由来不明」と正直に書く。空欄にしない。由来不明の値は断定に使わない
@@ -73,7 +73,7 @@
 
 ## 実装担当との往復（一方通行にしない）
 
-**実装担当**（実装とコミットをするコーディングの道具）が実装、Claude（メイン）がレビューと指示書、という分担。いまの道具は `obsidian_desktop/Tilltol/セッション引き継ぎ/引き継ぎ書.md` の「A. 役割分担」に書く（ここには書かない。道具を替えても直さずに済むように。2026-10-26 ユーザー）。**実装担当の決まりの正本はリポジトリの `AGENTS.md`**（`.cursor/rules/agents.mdc` はそれを指す案内だけ）。ただし**指示書は確定仕様ではなくたたき台**として扱う。
+**実装担当**（実装とコミットをするコーディングの道具）が実装、Claude（メイン）がレビューと指示書、という分担。いまの道具は `Obsidian_Local/Tilltol/セッション引き継ぎ/引き継ぎ書.md` の「A. 役割分担」に書く（ここには書かない。道具を替えても直さずに済むように。2026-10-26 ユーザー）。**実装担当の決まりの正本はリポジトリの `AGENTS.md`**（`.cursor/rules/agents.mdc` はそれを指す案内だけ）。ただし**指示書は確定仕様ではなくたたき台**として扱う。
 
 **コミット・プッシュも実装担当が行う（指示書で頼む）。Claude は git の状態を読むだけで、コミット・プッシュ・履歴の書き換えはしない**（2026-10-13 ユーザー確認。Claude と実装担当が同時に git を触ると、作業中の変更を混ぜたり崩したりするため。文書だけの変更も同じで、コードとは別の1本としてコミットするよう指示書に書く）。**議事録を直すのは Claude**（実装担当はコミットだけ）。
 

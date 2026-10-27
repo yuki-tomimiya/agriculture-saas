@@ -4,6 +4,10 @@
   "changelog": [
     {
       "date": "2026-10-27",
+      "summary": "Obsidian のボールト（いちばん外のフォルダ）の名前を obsidian_desktop から Obsidian_Local に変えた（ユーザー）。ナレッジの置き場所は C:\\Users\\yukit\\Desktop\\Obsidian_Local\\Tilltol\\。文書のパスとナレッジの控えのスクリプトを直した。"
+    },
+    {
+      "date": "2026-10-27",
       "summary": "名前の付け替えの手順を決め、始めた（ユーザー「このとおり」）。コードのフォルダを cursor_Tillto開発 から tilltol に、Obsidian のフォルダを Tillto から Tilltol に、作業ブランチを cursor/proposal-scoring-and-entry-pages から develop に替える（道具の名前と日本語をフォルダ・ブランチから外す）。文書のパスとブランチ名は先に新しい名前にした。画面と文書の「Tillto」→「Tilltol」はこのあと別に。古いブランチは GitHub に残し、消すかはあとでユーザーが決める。手順は Obsidian の PC移行/名前の付け替えの手順_2026-10-27。"
     },
     {
@@ -687,7 +691,7 @@
             "分析・振り返りの入口化 … /insights＝カード入口、/insights/compare・regional・general",
             "導線強化 … ダッシュボード／今日の提案／分析／生育ナビの相互リンク",
             "AI提案×昨年同日 … getLastYearSameDayWorkSummary",
-            "日報・ナレッジを Obsidian へ … obsidian_desktop/Tilltol/（2026-10-07 にフォルダ名を cursor_obsidian から変更、2026-10-27 に Tillto から Tilltol へ）",
+            "日報・ナレッジを Obsidian へ … Obsidian_Local/Tilltol/（2026-10-07 にフォルダ名を cursor_obsidian から変更、2026-10-27 に Tillto から Tilltol へ、外側のボールトも obsidian_desktop から Obsidian_Local へ）",
             "作付け終了時の振り返り1枚 … /crops/[id]/retrospective",
             "作物一覧の階層 … /crops＝栽培中、/crops/archive＝過去",
             "カレンダーのパンくず … /calendar/history を「カレンダー / 過去の実績」に（2026-09-30）"
@@ -845,18 +849,18 @@
         "lib/ai-proposal-context.ts … 3層生成ヘルパー",
         "app/dashboard/ai-proposal/page.tsx … 今日の提案 UI",
         "PROJECT_CONTEXT.md … 実装索引（コードの地図）",
-        "obsidian_desktop/Tilltol/SESSION_HANDOFF.md … AIエージェント引き継ぎ（直近チャットの文脈）",
+        "Obsidian_Local/Tilltol/SESSION_HANDOFF.md … AIエージェント引き継ぎ（直近チャットの文脈）",
         "AGENTS.md … 実装担当の決まり（ドキュメントの役割分担・コミットの決まりなど。.cursor/rules/agents.mdc はこれを指す案内だけ）",
-        "obsidian_desktop/Tilltol/調査/強み・差別化の整理.md",
-        "obsidian_desktop/Tilltol/調査/農業ツール機能調査_あったほうがいい機能.md",
+        "Obsidian_Local/Tilltol/調査/強み・差別化の整理.md",
+        "Obsidian_Local/Tilltol/調査/農業ツール機能調査_あったほうがいい機能.md",
         "lib/proposals/stages.ts … 生育ステージ定義（新規・予定）",
         "lib/proposals/scoring.ts … 提案の全件採点（新規・予定）",
-        "obsidian_desktop/Tilltol/指示書/済/提案エンジン刷新_実装メモ.md … 実装手順（Cursor 向け）",
-        "obsidian_desktop/Tilltol/daily/2026-10-01.md … 画面レビューの指摘一覧",
-        "obsidian_desktop/Tilltol/調査/生育ナビの標準ライン_調査メモ_2026-10-02.md … 「標準」の正体と直し方の調査",
-        "obsidian_desktop/Tilltol/指示書/済/標準ラインを平年値にする_指示_2026-10-02.md … 平年値化の実装指示",
+        "Obsidian_Local/Tilltol/指示書/済/提案エンジン刷新_実装メモ.md … 実装手順（Cursor 向け）",
+        "Obsidian_Local/Tilltol/daily/2026-10-01.md … 画面レビューの指摘一覧",
+        "Obsidian_Local/Tilltol/調査/生育ナビの標準ライン_調査メモ_2026-10-02.md … 「標準」の正体と直し方の調査",
+        "Obsidian_Local/Tilltol/指示書/済/標準ラインを平年値にする_指示_2026-10-02.md … 平年値化の実装指示",
         "lib/weather-normals.ts … 地点ごとの平年値（過去10年平均）",
-        "obsidian_desktop/Tilltol/指示書/済/地域層を平年比にする_指示_2026-10-02.md … 【地域】層の平年比化の指示"
+        "Obsidian_Local/Tilltol/指示書/済/地域層を平年比にする_指示_2026-10-02.md … 【地域】層の平年比化の指示"
       ]
     }
   ]
