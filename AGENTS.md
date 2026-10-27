@@ -1,13 +1,13 @@
 # Tillto（実装担当の決まり）
 
 Tillto は新規就農者向けの栽培助言 Web アプリ。このファイルは**実装担当**（実装とコミットをするコーディングの道具。いまは Codex）の決まり。設計・指示書・レビュー・記録（Obsidian・根拠台帳・議事録）・出典の照合は**メイン**（Claude Code のメインのセッション）が行う。実装担当は指示書に沿って作り、気づいたことを日報に残す。
-どの道具が実装担当かは `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\セッション引き継ぎ\引き継ぎ書.md` の「A. 役割分担」に書いてある。
+どの道具が実装担当かは `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\セッション引き継ぎ\引き継ぎ書.md` の「A. 役割分担」に書いてある。
 
 ## 作業を始めるとき
 
-1. 指示書を全部読む（置き場所 `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\指示書\`。送る順番は `実装担当に渡す順番.md`）
-2. 業務の引き継ぎ `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\SESSION_HANDOFF.md` と、このリポジトリの `PROJECT_CONTEXT.md`（コードの地図）を見る。方針は `docs/議事録/minutes-content.json` の「次にやること」
-3. 日報 `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\daily\YYYY-MM-DD.md` を作る。**同じ名前のファイルが無いか必ず確かめ、その日に使われていない次の記号（-b, -c …）を使う。既存の日報は上書きしない**（メイン・実装担当・調べ物のセッションが同じ日に書くため。2026-10-07 に上書きが起きた）。先頭に「セッション: 実装担当（使った道具の名前）」と指示書の名前
+1. 指示書を全部読む（置き場所 `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\指示書\`。送る順番は `実装担当に渡す順番.md`）
+2. 業務の引き継ぎ `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\SESSION_HANDOFF.md` と、このリポジトリの `PROJECT_CONTEXT.md`（コードの地図）を見る。方針は `docs/議事録/minutes-content.json` の「次にやること」
+3. 日報 `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\daily\YYYY-MM-DD.md` を作る。**同じ名前のファイルが無いか必ず確かめ、その日に使われていない次の記号（-b, -c …）を使う。既存の日報は上書きしない**（メイン・実装担当・調べ物のセッションが同じ日に書くため。2026-10-07 に上書きが起きた）。先頭に「セッション: 実装担当（使った道具の名前）」と指示書の名前
    - Obsidian のフォルダに書けないときは、日報に書く中身を完了報告に入れる（メインが日報に写す）
 
 ## 指示書を受け取ったとき（言われたとおりに作らない）
@@ -19,7 +19,7 @@ Tillto は新規就農者向けの栽培助言 Web アプリ。このファイ�
 
 ## 数字・基準（根拠台帳）
 
-利用者に見せる農業上の数字・基準は `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\調査\根拠台帳.md` に1行ずつある。
+利用者に見せる農業上の数字・基準は `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\調査\根拠台帳.md` に1行ずつある。
 
 - 実装で数字・基準を足す／変えたら、**台帳の該当行を直す**（出典・理由・状態・決定日・見直す条件）。品目の中身が変わったら「品目ごとの中身」の表も
 - 出典が無い値を足すときは「⚠ 暫定」と書き、コードのコメントにも「出典なし」と残す
@@ -27,7 +27,7 @@ Tillto は新規就農者向けの栽培助言 Web アプリ。このファイ�
 
 ## 文書の役割（同じ説明を何か所にも書かない）
 
-- **ナレッジの正本は Obsidian** `C:\Users\yukit\Desktop\obsidian_desktop\Tillto\`（日報・業務の引き継ぎ・調査・指示書）。リポジトリの `docs/` には議事録以外のナレッジを新しく作らない
+- **ナレッジの正本は Obsidian** `C:\Users\yukit\Desktop\obsidian_desktop\Tilltol\`（日報・業務の引き継ぎ・調査・指示書）。リポジトリの `docs/` には議事録以外のナレッジを新しく作らない
 - **方針・決定の正本は議事録** `docs/議事録/minutes-content.json`（Word は `node docs/議事録/generate-minutes.mjs` で作り直す）。**議事録を直すのはメイン**。実装担当は頼まれたときにコミットするだけ
 - **コードの地図は `PROJECT_CONTEXT.md`**。画面・パス・lib を変えたら、ここだけ直す。「次にやること」は要約3行まで
 
