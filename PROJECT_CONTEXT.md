@@ -1,37 +1,20 @@
 # プロジェクトコンテキスト（実装再開用）
 
 **このファイルの役割**: コードベースの地図と作業再開手順。  
-**方針・決定・ロードマップの正本**: `docs/議事録/minutes-content.json`（→ `Tillto_開発議事録.docx`）
-
-*議事録と同期: 2026-09-16*
+**方針・決定・優先の順番の正本**: `docs/議事録/minutes-content.json`。どこに何を書くかは `CLAUDE.md` の「記録の正本と書き方」
 
 ---
 
-## 作業再開（AIへの依頼例）
+## 作業再開
 
-- Obsidian の `Tilltol/SESSION_HANDOFF.md` と、このリポジトリの **@PROJECT_CONTEXT.md** **@docs/議事録/minutes-content.json** を読んで続きを
-- 直近の合意・未着手 → **Obsidian SESSION_HANDOFF**
-- 方針・優先順 → **議事録**
-- どのファイルを触るか → **このファイル**
-- 日報・調査メモ → **`C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\`**
+読む順はメインが `CLAUDE.md`、実装担当が `AGENTS.md`。このファイルは「どのファイルを触るか」を見るためのもの
 
 ---
 
 ## 一言
 
 **Tillto**（決定済み）— 一般 × 地域 × あなた → **今日の一手**。  
-3層の説明・Phase・完了/未着手の全文は議事録 ›「プロダクト趣旨・ポジション」「次にやること」。
-
----
-
-## 次にやること（要約のみ）
-
-1. 来年の計画（`/plan`）は一覧だけ。日付は収穫時点の実績を平年に引き直した℃日から、過去10年それぞれの幅で出す
-2. 農場名「メイン➁」の文字替えは確認待ち。出典のない必要雨量（520mm）は、使われていなかったので削除した
-3. 先の天気は「数値予報モデルの計算結果」と表示する。作付け前に測った EC・硝酸態窒素・リン酸だけ超えたとき言う。栽培中の値には当てない。次は物差しを揃えること
-
-→ 詳細・完了一覧・やらないことは **議事録 ›「次にやること（最新版）」**  
-→ 日報・引き継ぎ・ナレッジは **`C:\Users\yukit\Desktop\Obsidian_Local\Tilltol\`**（Obsidian）
+3層の説明・優先の順番は議事録 ›「プロダクト趣旨・ポジション」「優先の順番とロードマップ」。
 
 ---
 
@@ -92,7 +75,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 生育の節目 | `lib/proposals/milestones.ts`, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。窓の日数は問いかけにだけ使う。防除間隔は `lib/benchmarks/spray-interval.ts` |
 | 削除 | 作物・農場は詳細、収穫・タスクも詳細、販売は一覧。各 `app/api/.../[id]` の DELETE。作物が残る農場は消せない |
-| 議事録 | `docs/議事録/minutes-content.json`, `generate-minutes.mjs` |
+| 議事録 | `docs/議事録/minutes-content.json`（`generate-minutes.mjs` と Word は 2026-10-30 で使うのをやめた） |
 
 ```
 app/  dashboard/, dashboard/ai-proposal/, plan/, records/, insights/, insights/compare/, insights/regional/,
@@ -118,11 +101,7 @@ AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ 
 
 ## ドキュメントの更新ルール
 
-| 変えたこと | 更新するもの |
-|------------|--------------|
-| 方針・優先順・Phase・決定 | **議事録**（json → `node docs/議事録/generate-minutes.mjs`） |
-| パス・画面・lib・Sidebar | **PROJECT_CONTEXT.md**（このファイル） |
-| 大きなリリース前 | 要約3行が議事録とズレていないか確認 |
+パス・画面・lib・Sidebar を変えたら、このファイルだけ直す。ほかは `CLAUDE.md` の「記録の正本と書き方」
 
 ---
 
@@ -132,11 +111,10 @@ AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ 
 - 起動: `npm run dev` または `アプリを起動.bat`
 - UI 確認は本番アプリのみ（静的 `ui-preview-*.html` は廃止済み）
 - `.env` / `node_modules` はコミットしない
-- 直近チャットの文脈は Obsidian の `Obsidian_Local/Tilltol/SESSION_HANDOFF.md`
 - 起動できないとき：`npm install` → `npx prisma generate` → `npx prisma migrate dev`。ポート3000が埋まっていれば `サーバー停止.bat`。`.env` と `prisma/dev.db` があるか確認（旧 SETUP.md の要点。2026-10-07 に統合）
 - 公開前のチェックリストは Obsidian の `調査/RELEASE_CHECKLIST.md`（2026-10-07 にリポジトリから移動）
 - 気象庁の観測所一覧は `npm run jma:stations`（地点が変わったとき。年1回で足りる）。日別の最低気温は `npm run jma:observations`（保存済みの月は取り直さない。年が明けたら、前年の12か月が足される）。画面を開いたときは保存済みだけを読む
-- 開発用の部品 `docx`（議事録の Word を作る）と `tsx`（気象庁の取り込みを動かす）は、版を固定して `package.json` に入れている。新しいPCでは `npm ci` で同じ版がそろう
+- 開発用の部品 `docx`（議事録の Word を作っていた。2026-10-30 に止めた）と `tsx`（気象庁の取り込みを動かす）は、版を固定して `package.json` に入れている。新しいPCでは `npm ci` で同じ版がそろう
 - 別のPCへ移すときは Obsidian の `PC移行/開発環境の移行手順.md`（`dev.db`・`.env`・ボールト・Claude のメモリは GitHub に無い）
 
 ---
