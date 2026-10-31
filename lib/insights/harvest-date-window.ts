@@ -190,3 +190,49 @@ export function formatHarvestWindow(
   }
   return body
 }
+
+/** 植付日を含めて単純積算で節目へ歩き、その翌日から品目の数え方で収穫へ歩く。
+ * 2段とも同じ過去年の気温を使う。幅の端に日数を足す近似はしない。
+ */
+export function projectTwoStageHarvestWindow(args: {
+  plantingDate: Date
+  milestoneGdd: number
+  harvestGdd: number
+  count: HeatCount
+  baseTemp: number
+  archive: LocationArchive
+}): { milestone: HarvestDateWindow | null; harvest: HarvestDateWindow | null } {
+  const byYear = indexTemps(args.archive)
+  const milestones: Date[] = []
+  const harvests: Date[] = []
+  const start = atNoon(args.plantingDate)
+  if (args.milestoneGdd <= 0 || args.harvestGdd <= 0) return { milestone: null, harvest: null }
+  for (const temps of byYear.values()) {
+    let milestone: Date | null = null
+    let heat = 0
+    for (let offset = 0; ; offset++) {
+      const date = addDays(start, offset)
+      if (date.getFullYear() !== start.getFullYear()) break
+      const month = date.getMonth() + 1
+      const day = month === 2 && date.getDate() === 29 ? 28 : date.getDate()
+      const temp = temps.get(`${month}-${day}`)
+      if (temp == null) continue
+      heat += milestone ? dailyHeat(temp, args.count, args.baseTemp) : temp
+      if (!milestone && heat >= args.milestoneGdd) {
+        milestone = date
+        milestones.push(date)
+        heat = 0
+      } else if (milestone && heat >= args.harvestGdd) {
+        harvests.push(date)
+        break
+      }
+    }
+  }
+  const summarize = (dates: Date[]): HarvestDateWindow | null => {
+    if (!dates.length) return null
+    dates.sort((a, b) => a.getTime() - b.getTime())
+    const kept = dates.length >= 4 ? dates.slice(1, -1) : dates
+    return { years: byYear.size, reached: dates.length, inside: kept.length, early: kept[0], late: kept[kept.length - 1] }
+  }
+  return { milestone: summarize(milestones), harvest: summarize(harvests) }
+}

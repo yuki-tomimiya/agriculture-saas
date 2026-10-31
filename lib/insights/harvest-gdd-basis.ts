@@ -19,7 +19,7 @@ export type HarvestSample = {
   seasonLabel: string
   plantingTime: number
   plantingDate: Date
-  /** 平年換算で足し始める日。トマトは第1花房、スイートコーンは絹糸、ほかは植付 */
+  /** 10年平均への換算の起点。トマト・エダマメ・ブロッコリーは節目、コーンは絹糸、ほかは植付 */
   countStart: Date
   endDate: Date
   count: HeatCount
@@ -88,7 +88,7 @@ export async function loadHarvestSamples(userId: string): Promise<HarvestSample[
       })
       if (view.status !== 'active' && view.status !== 'days') return null
       const end =
-        view.key === 'tomato' || view.key === 'sweet-corn'
+        view.key === 'tomato' || view.key === 'sweet-corn' || view.key === 'edamame' || view.key === 'broccoli'
           ? firstHarvest
           : lastHarvest ?? crop.harvestDate
       if (!end) return null

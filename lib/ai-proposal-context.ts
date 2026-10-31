@@ -160,6 +160,7 @@ export function buildGeneralLayer(
 
   const fromMilestone = formatMilestoneGeneral({
     cropName,
+    plantingMethod: progress.plantingMethod,
     variety,
     daysSincePlanting: progress.daysSincePlanting,
     gddRatio: progress.gddRatio,

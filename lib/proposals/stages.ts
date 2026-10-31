@@ -21,6 +21,7 @@ export type CropStage = {
 }
 
 export type StageProgress = {
+  plantingMethod?: string | null
   daysSincePlanting?: number | null
   gddRatio?: number | null
   hasHarvest?: boolean

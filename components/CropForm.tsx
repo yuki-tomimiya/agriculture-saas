@@ -92,7 +92,7 @@ export default function CropForm({
   const fields = selectedFarm?.fields ?? []
   const spring = form.farmId ? springByFarm[form.farmId] : undefined
   const plantingCondition =
-    form.growingSite === 'open' && kind && !kind.recordOnly ? plantingConditionForKind(kind.key) : null
+    form.growingSite === 'open' && kind && !kind.recordOnly ? plantingConditionForKind(kind.key, form.plantingMethod) : null
   const springEarly =
     plantingCondition && spring?.latest && spring.dateLabel && form.plantingDate && dateIsBeforeLatest(form.plantingDate, spring.latest)
       ? `この日付は、過去10年の${spring.observed ? '観測' : '推計'}でいちばん遅い霜（${spring.dateLabel}）より前です。${

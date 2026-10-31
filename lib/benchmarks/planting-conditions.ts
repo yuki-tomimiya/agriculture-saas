@@ -5,6 +5,8 @@
 
 export type PlantingCondition = {
   kindKey: string
+  /** 未指定なら両方。作付けの植え方が空なら従来どおり表示する。 */
+  plantingMethod?: 'direct' | 'transplant'
   text: string
   /** 画面の【一般】か、県名 */
   scopeLabel: string
@@ -23,6 +25,7 @@ const CONDITIONS: PlantingCondition[] = [
   },
   {
     kindKey: 'sweet-corn',
+    plantingMethod: 'direct',
     text: '直まきは、地温12〜13℃以上を確かめてからにしてください。',
     scopeLabel: '一般',
   },
@@ -43,12 +46,18 @@ const CONDITIONS: PlantingCondition[] = [
   },
   {
     kindKey: 'cucumber',
-    text: '霜の心配がなくなってから植えてください（福島県）。',
-    scopeLabel: '福島県',
+    text: '霜の心配がなくなってから植えてください。それより早く植えるなら、トンネルで保温してください。',
+    scopeLabel: '福島県・宮城県',
   },
   {
     kindKey: 'edamame',
-    text: '早まきはトンネル・マルチで地温を上げ、保温してください。秋田県の資料では、霜に弱いので保温が必要とされています。',
+    text: '早まきはトンネル・マルチで地温を上げ、保温してください。秋田県・新潟県の資料では、霜に弱いので保温が必要とされています。',
+    scopeLabel: '一般',
+  },
+  {
+    kindKey: 'broccoli',
+    plantingMethod: 'transplant',
+    text: '本葉3枚ほどの若い苗のうちに植えてください。暑い時期に植えるときは植え傷みに気をつけ、乾いていれば水をやってください。',
     scopeLabel: '一般',
   },
 ]
@@ -61,9 +70,15 @@ export const LATE_FROST_POTATO = '芽が出ていれば、軽く土寄せをし�
 export const LATE_FROST_SOURCE =
   '農林水産省「農業技術の基本指針（令和6年7月）」'
 
-export function plantingConditionForKind(kindKey: string | null | undefined): PlantingCondition | null {
+export function plantingConditionForKind(
+  kindKey: string | null | undefined,
+  plantingMethod?: string | null
+): PlantingCondition | null {
   if (!kindKey) return null
-  return CONDITIONS.find((row) => row.kindKey === kindKey) ?? null
+  const condition = CONDITIONS.find((row) => row.kindKey === kindKey)
+  if (!condition) return null
+  if (plantingMethod && condition.plantingMethod && plantingMethod !== condition.plantingMethod) return null
+  return condition
 }
 
 /** 今年の1月〜6月に植えたか。遅霜のカードの対象 */

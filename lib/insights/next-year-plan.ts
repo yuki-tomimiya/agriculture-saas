@@ -4,7 +4,7 @@ import { getAccumulatedGDDFromApi, hasWeatherCoordinates } from '@/lib/weather-f
 import { getLocationDailyNormals, loadLocationArchive, sumNormalGdd, type DayNormal } from '@/lib/weather-normals'
 import { annualPeriodTotals, tenYearClass } from '@/lib/insights/ten-year-classes'
 import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
-import { formatHarvestWindow, projectHarvestWindow } from '@/lib/insights/harvest-date-window'
+import { formatHarvestWindow, projectHarvestWindow, projectTwoStageHarvestWindow } from '@/lib/insights/harvest-date-window'
 import {
   chosenHarvestSamples,
   loadHarvestSamples,
@@ -60,7 +60,7 @@ export type NextYearPlanCard = {
   springLine: string | null
   plantingCondition: string | null
   springEarlyNote: string | null
-  /** トマト・スイートコーンの「あなた」行。無いときは積算温度の従来の文 */
+  /** 起点が節目の品目の「あなた」行。無いときは積算温度の従来の文 */
   historyMeasure: string | null
   /** 起点が節目の品目の「来年」行。無いときは従来の文 */
   milestonePlan: string | null
@@ -303,14 +303,18 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       let seasonDayFallback: number | null = seasonDays
       let historyMeasure: string | null = null
       let milestonePlan: string | null = null
-      const tomatoStart = basis.view.status === 'active' && basis.view.key === 'tomato' && basis.view.startDate
+      const milestoneStart = basis.view.status === 'active' && basis.view.startDate
         ? basis.view.startDate
         : null
+      const originTerm = basis.view.status === 'active' && basis.view.key === 'edamame' ? '開花'
+        : basis.view.status === 'active' && basis.view.key === 'broccoli' ? '出蕾' : '第1花房'
       const cornSilk = basis.view.status === 'days' && basis.view.key === 'sweet-corn' ? basis.view : null
-      if (basis.view.status === 'pending' && (basis.view.key === 'tomato' || basis.view.key === 'sweet-corn')) {
+      if (basis.view.status === 'pending') {
         normalNote = basis.view.key === 'tomato'
           ? '第1花房の日を記録した作付けから、来年の収穫開始の見込みを出せます。'
-          : '絹糸（ひげ）が出た日を記録した作付けから、来年の収穫の見込みを出せます。'
+          : basis.view.key === 'sweet-corn'
+            ? '絹糸（ひげ）が出た日を記録した作付けから、来年の収穫の見込みを出せます。'
+            : basis.view.message
       } else if (cornSilk) {
         if (!crop.plantingDate) {
           normalStatus = 'no-date'
@@ -370,6 +374,53 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         historyMeasure = firstHarvest
           ? `絹糸から最初の収穫まで ${daysBetween(cornSilk.startDate, firstHarvest)}日`
           : '収穫の記録はないので、絹糸からの日数は資料の20〜25日を使います'
+      } else if (basis.view.status === 'active' && basis.view.key === 'broccoli' && milestoneStart && targetGdd != null) {
+        if (!crop.plantingDate) {
+          normalStatus = 'no-date'
+          normalNote = '植付日がないので、来年の収穫日は出せません。'
+        } else if (!hasWeatherCoordinates(point)) {
+          normalStatus = 'no-place'
+          normalNote = '農場の位置がないので、来年の収穫日は出せません。'
+        } else {
+          const coordinates = { latitude: Number(point.latitude), longitude: Number(point.longitude) }
+          const before = await getAccumulatedGDDFromApi({ startDate: crop.plantingDate, endDate: milestoneStart, count: 'simple', baseTemp: 0, point: coordinates })
+          const plantOn = nextPlantingDate(crop.plantingDate, today)
+          nextPlant = plantOn
+          const [normals, archive] = await Promise.all([normalsFor(coordinates.latitude, coordinates.longitude), archiveFor(coordinates.latitude, coordinates.longitude)])
+          if (before == null || !archive || !normals || normals.size < 300) {
+            normalStatus = 'missing'
+            normalNote = '植付から出蕾までの実績、または過去10年の気温が足りないので、来年の日付は出せません。'
+          } else {
+            const own = basis.source === 'variety' || basis.source === 'crop'
+            const adjusted = own ? await adjustHarvestsToNormal(picked.samples, normalsFor, archiveFor) : null
+            const harvestPart = adjusted?.gdd ?? targetGdd
+            adjustNote = adjusted?.note ?? null
+            const beforeRounded = Math.round(before)
+            const windows = projectTwoStageHarvestWindow({ plantingDate: plantOn, milestoneGdd: beforeRounded, harvestGdd: harvestPart, count: heat.count, baseTemp, archive })
+            const first = daysToTargetGdd({ normals, start: plantOn, count: 'simple', baseTemp: 0, targetGdd: beforeRounded })
+            if (first.status === 'reached') {
+              const second = daysToTargetGdd({ normals, start: addDays(plantOn, first.days + 1), count: heat.count, baseTemp, targetGdd: harvestPart })
+              if (second.status === 'reached') {
+                const date = addDays(plantOn, first.days + 1 + second.days)
+                if (date.getFullYear() === plantOn.getFullYear()) {
+                  normalHarvest = date
+                  normalDays = first.days + 1 + second.days
+                }
+              }
+            }
+            if (windows.harvest) {
+              normalStatus = 'reached'
+              forecastKind = own ? adjusted ? 'adjusted' : 'actual' : 'method'
+              windowLabel = formatHarvestWindow(windows.harvest)
+              windowEarly = windows.harvest.early
+              windowLate = windows.harvest.late
+              milestonePlan = `来年も${formatYearMonthDay(plantOn)}に植えると、植付から出蕾まで単純積算${beforeRounded}℃日、出蕾の翌日から有効5℃で${harvestPart}℃日として、収穫は${windowLabel}。出蕾は${windows.milestone ? formatHarvestWindow(windows.milestone) : '見込みなし'}。${own ? '収穫までは自分の実績を使います。' : '収穫までは宮城県の資料の下限192℃日を使います。'}`
+            } else {
+              normalStatus = 'unreachable'
+              normalNote = '過去10年の気温では、年内に出蕾後の収穫目安へ届きません。'
+            }
+          }
+        }
       } else if (basis.view.status !== 'active' || targetGdd == null) {
         normalNote = basis.summary
       } else if (!crop.plantingDate) {
@@ -391,30 +442,31 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
             const adjusted = await adjustHarvestsToNormal(picked.samples, normalsFor, archiveFor)
             if (adjusted) {
               walkTarget = adjusted.gdd
-              seasonDayFallback = adjusted.avgDays
+              // 節目→収穫の実績日数を、植付→収穫の計画日数にそろえる。
+              seasonDayFallback = adjusted.avgDays + (milestoneStart ? daysBetween(crop.plantingDate, milestoneStart) : 0)
               adjustNote = adjusted.note
               windowAdjustNote = adjusted.note
             }
           }
           let plantToFlower: number | null = null
-          if (tomatoStart) {
+          if (milestoneStart) {
             const flowerGdd = await getAccumulatedGDDFromApi({
               startDate: crop.plantingDate,
-              endDate: tomatoStart,
+              endDate: milestoneStart,
               count: heat.count,
               baseTemp,
               point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
             })
             if (flowerGdd == null) {
               normalStatus = 'missing'
-              normalNote = '植付から第1花房までの積算温度を取れなかったので、来年の日付は出せません。'
+              normalNote = `植付から${originTerm}までの積算温度を取れなかったので、来年の日付は出せません。`
             } else {
               plantToFlower = Math.round(flowerGdd)
               walkTarget += plantToFlower
             }
           }
-          if (tomatoStart && plantToFlower == null) {
-            // 植付から第1花房が取れないときは、植付日だけで歩かない
+          if (milestoneStart && plantToFlower == null) {
+            // 植付から節目までが取れないときは、植付日だけで歩かない
           } else {
           const reach = daysToTargetGdd({
             normals,
@@ -477,7 +529,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
                   normalHarvest.getTime() <= window.late.getTime()
                     ? `10年平均の1本の線では${formatYearMonthDay(normalHarvest)}ごろです（植付から${normalDays}日）。`
                     : ''
-                milestonePlan = `来年も${formatYearMonthDay(plantOn)}に植えると、${own ? '去年と同じく' : ''}植付から第1花房まで${plantToFlower}℃日、そこから収穫開始まで${harvestPart}℃日として、${formatHarvestWindow(window)}。${mean}${unspecified ? '区分が無いので850℃で歩いています。大玉ならこれより遅くなります。' : ''}`
+                milestonePlan = `来年も${formatYearMonthDay(plantOn)}に植えると、${own ? '去年と同じく' : ''}植付から${originTerm}まで${plantToFlower}℃日、そこから収穫開始まで${harvestPart}℃日として、${formatHarvestWindow(window)}。${mean}${unspecified ? '区分が無いので850℃で歩いています。大玉ならこれより遅くなります。' : ''}`
               }
             }
           }
@@ -486,8 +538,8 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       }
 
       let accumulatedGdd: number | null = null
-      const gddEnd = tomatoStart ? crop.harvests[0]?.date ?? null : harvestDate
-      const gddStart = tomatoStart ?? crop.plantingDate
+      const gddEnd = milestoneStart ? crop.harvests[0]?.date ?? null : harvestDate
+      const gddStart = milestoneStart ?? crop.plantingDate
       if (basis.view.status === 'active' && gddStart && gddEnd && hasWeatherCoordinates(point)) {
         accumulatedGdd = await getAccumulatedGDDFromApi({
           startDate: gddStart,
@@ -497,8 +549,8 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
           point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
         })
       }
-      if (tomatoStart && accumulatedGdd != null) {
-        historyMeasure = `第1花房から最初の収穫まで ${Math.round(accumulatedGdd)}℃日`
+      if (milestoneStart && accumulatedGdd != null) {
+        historyMeasure = `${originTerm}から最初の収穫まで ${Math.round(accumulatedGdd)}℃日`
       }
 
       const workHints: PlanWorkHint[] = []
@@ -527,7 +579,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       const planAdvice = adviceNames(crop)
       const showPlanting =
         crop.growingSite !== 'house' && !planAdvice.recordOnly && Boolean(crop.cropKind)
-      const condition = showPlanting ? plantingConditionForKind(crop.cropKind) : null
+      const condition = showPlanting ? plantingConditionForKind(crop.cropKind, crop.plantingMethod) : null
       const springEarlyNote =
         showPlanting && springOrigin?.summary && nextPlant && dateIsBeforeMonthDay(nextPlant, springOrigin.summary.latest)
           ? `この見込みの日は、過去10年の${springOrigin.source === 'estimate' ? '推計' : '観測'}でいちばん遅い霜（${formatMonthDay(springOrigin.summary.latest)}）より前です。`

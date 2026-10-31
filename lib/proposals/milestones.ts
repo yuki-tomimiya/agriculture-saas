@@ -20,6 +20,8 @@ export const MILESTONE_SOURCE_CHIBA = {
 }
 
 export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
+  { label: '秋田県農業試験場 研究時報48号「あきた香り五葉」の収穫判断基準', url: 'https://www.pref.akita.lg.jp/uploads/public/archive_0000008703_00/z48-12.pdf' },
+  { label: '宮城県「普及に移す技術」第100号 ブロッコリー「ピクセル」', url: 'https://www.pref.miyagi.jp/documents/60672/r06sankou05.pdf' },
   { label: '長崎県 成果情報 S-30-25', url: 'https://www.pref.nagasaki.jp/e-nourin/nougi/theme/result/H30seika-jouhou/shidou/S-30-25.pdf' },
   { label: '長崎県 成果情報 F-30-09', url: 'https://www.pref.nagasaki.jp/e-nourin/nougi/theme/result/H30seika-jouhou/fukyu/F-30-09.pdf' },
   { label: '長崎県 成果情報 S-20-35', url: 'https://www.pref.nagasaki.jp/e-nourin/nougi/theme/result/H20seika-jouhou/shidou/S-20-35.pdf' },
@@ -156,11 +158,33 @@ function isPotato(cropName: string, variety?: string | null): boolean {
 }
 
 /**
- * 窓の出典は台帳 C6。さつまいも活着・キュウリ摘心・ジャガイモつぼみは出典なしの暫定。
+ * 窓の出典は台帳 C6。さつまいも活着・キュウリ摘心は出典なしの暫定。
  * 問いかけを出すかどうかだけに使い、断定には使わない。
  * 試し掘りは収穫目安の積算温度の 85% 以上（実績ベース）。
  */
 const MILESTONES: MilestoneDef[] = [
+  {
+    key: 'edamame-flower', cropLabel: 'エダマメ',
+    match: (name, variety) => nameIncludes(name, variety, ['エダマメ', 'えだまめ', '枝豆']),
+    question: '半分くらいの株で花が咲き始めましたか？', term: '開花（半分ほどの株で咲き始め）', yesLabel: '咲き始めた',
+    ifYes: '咲き始めた日を記録すると、そこから積算温度を数えます（秋田県の資料）。',
+    conditional: '半分くらいの株で花が咲き始めたら、その日を記録してください。秋田県の資料の数え方で収穫の見込みを出せます。',
+    recordedLine: (days) => `開花から${Math.max(0, days)}日です。秋田県の資料では、この日から収穫までの積算温度を数えます。`,
+    sourceLabel: '秋田県農業試験場 研究時報48号（2009）「あきた香り五葉」の収穫判断基準', howTo: [],
+    window: { kind: 'days', from: 30, to: 60 },
+    windowNote: `播種（植付）から30〜60日（【一般】秋田・新潟・熊本県野菜振興協会の試験を参考。${WINDOW_USE}）`,
+  },
+  {
+    key: 'broccoli-bud', cropLabel: 'ブロッコリー',
+    match: (name, variety) => nameIncludes(name, variety, ['ブロッコリー']),
+    question: '半分くらいの株で、真ん中のつぼみが直径2cmくらいに見えてきましたか？', term: '出蕾（直径2cmほどの頂花蕾）', yesLabel: '見えてきた',
+    ifYes: '見えてきた日を記録すると、その日から有効5℃で数えます（宮城県の資料）。',
+    conditional: '半分くらいの株で、真ん中のつぼみが直径2cmくらいに見えたら、その日を記録してください（宮城県の資料）。',
+    recordedLine: (days) => `出蕾から${Math.max(0, days)}日です。宮城県の資料では、この日から有効5℃で収穫までを数えます。`,
+    sourceLabel: '宮城県「普及に移す技術」第100号 参考資料5 p.56・59（夏まきピクセル・マルチなし）', howTo: [],
+    window: { kind: 'days', from: 45, to: 75 },
+    windowNote: `定植から45〜75日（【宮城県】定植から出蕾までの試験を参考。直まきでは聞かない。${WINDOW_USE}）`,
+  },
   {
     key: 'flower-1st',
     cropLabel: 'トマト',
@@ -346,8 +370,8 @@ const MILESTONES: MilestoneDef[] = [
       `${days <= 0 ? 'つぼみは今日です' : `つぼみから${days}日です`}。2回目の土寄せをします。花が咲いてからでは遅いです。`,
     sourceLabel: '秋田県・鹿児島県の資料。北海道立十勝農業試験場は着蕾期の土寄せを標準にしています',
     howTo: [],
-    window: { kind: 'days', from: 30, to: 70 },
-    windowNote: `植付から30〜70日（${WINDOW_PROVISIONAL}）。前の問いが残っているあいだは出さない`,
+    window: { kind: 'days', from: 25, to: 70 },
+    windowNote: `植付から25〜70日（【北海道】和寒・帯広の試験を参考。${WINDOW_USE}）。前の問いが残っているあいだは出さない`,
     skipWhenHarvest: true,
   },
   {
@@ -434,6 +458,7 @@ function recordedOf(records: MilestoneRecord[], key: string): MilestoneRecord | 
 
 export function pickMilestoneAsk(input: {
   cropName: string
+  plantingMethod?: string | null
   variety?: string | null
   daysSincePlanting?: number | null
   gddRatio?: number | null
@@ -444,6 +469,7 @@ export function pickMilestoneAsk(input: {
   const hidden = new Set(input.hiddenKeys ?? [])
   const recorded = new Set(input.records.map((record) => record.key))
   for (const item of catalogFor(input.cropName, input.variety)) {
+    if (item.key === 'broccoli-bud' && input.plantingMethod === 'direct') continue
     if (item.ask === false) continue
     if (recorded.has(item.key) || hidden.has(item.key)) continue
     if (item.skipWhenHarvest && input.hasHarvest) continue
@@ -468,6 +494,7 @@ export function pickMilestoneAsk(input: {
  */
 export function formatMilestoneGeneral(input: {
   cropName: string
+  plantingMethod?: string | null
   variety?: string | null
   daysSincePlanting?: number | null
   gddRatio?: number | null
@@ -491,6 +518,7 @@ export function formatMilestoneGeneral(input: {
       return item.recordedLine(days)
     }
     if (item.skipWhenHarvest && input.hasHarvest) continue
+    if (item.key === 'broccoli-bud' && input.plantingMethod === 'direct') continue
     if (windowPlace(item.window, input) === 'inside') return item.conditional
   }
   return null

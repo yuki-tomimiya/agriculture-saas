@@ -10,7 +10,7 @@ export type GddSource = {
 
 export type ActiveGddMethod = {
   status: 'active'
-  key: 'sweet-potato' | 'daikon' | 'tomato'
+  key: 'sweet-potato' | 'daikon' | 'tomato' | 'edamame' | 'broccoli'
   count: HeatCount
   baseTemp: number
   low: number
@@ -42,7 +42,7 @@ export type ActiveDayMethod = {
 
 export type PendingGddMethod = {
   status: 'pending'
-  key: 'tomato' | 'sweet-corn'
+  key: 'tomato' | 'sweet-corn' | 'edamame' | 'broccoli'
   message: string
   countLabel: string
   scopeLabel: string
@@ -111,6 +111,15 @@ const CORN_SOURCES: GddSource[] = [
   },
 ]
 
+const EDAMAME_SOURCES: GddSource[] = [{
+  label: '秋田県農業試験場 研究時報48号（2009）「エダマメ品種「あきた香り五葉」の収穫判断基準と収穫判定スケール」PDF 1〜2枚目',
+  url: 'https://www.pref.akita.lg.jp/uploads/public/archive_0000008703_00/z48-12.pdf',
+}]
+const BROCCOLI_SOURCES: GddSource[] = [{
+  label: '宮城県「普及に移す技術」第100号 参考資料5「宮城県におけるブロッコリー「ピクセル」の定植晩限」p.56・59',
+  url: 'https://www.pref.miyagi.jp/documents/60672/r06sankou05.pdf',
+}]
+
 export const GDD_FAQ_ROWS: {
   crop: string
   start: string
@@ -144,6 +153,16 @@ export const GDD_FAQ_ROWS: {
     source: TOMATO_SOURCES.map((row) => row.label).join('／'),
   },
   {
+    crop: 'エダマメ', start: '半分ほどの株で開花始め', how: '単純（日平均気温をそのまま足す）',
+    value: '約1,150℃（適期1,125〜1,236℃）。1,125℃から、分枝の2粒のさやの厚さを確かめる',
+    scope: '県名つき（秋田・あきた香り五葉の試験）', source: EDAMAME_SOURCES[0].label,
+  },
+  {
+    crop: 'ブロッコリー', start: '半分ほどの株で直径2cmほどの頂花蕾を確認', how: '有効（日平均気温から5℃を引き、0未満は0）',
+    value: '192〜262℃日。192℃日から花蕾の直径が12cmになったか確かめる',
+    scope: '県名つき（宮城・夏まきピクセル、マルチなし）', source: BROCCOLI_SOURCES[0].label,
+  },
+  {
     crop: 'スイートコーン',
     start: '絹糸抽出',
     how: '日数',
@@ -160,8 +179,6 @@ export const GDD_NONE_CROPS = [
   'タマネギ',
   'キャベツ',
   'レタス',
-  'ブロッコリー',
-  'エダマメ',
   'ホウレンソウ',
   'コマツナ',
   'ネギ',
@@ -326,6 +343,32 @@ export function gddAvailability(args: {
       sourceLine: TOMATO_SOURCES.map((row) => row.label).join('／'),
       sources: TOMATO_SOURCES,
       valueLabel: '約1,000℃（大玉）・中玉950・ミニ850',
+    }
+  }
+  const edamame = key === 'edamame' || matchesWords(args.name, args.variety, ['エダマメ', 'えだまめ', '枝豆'])
+  const broccoli = key === 'broccoli' || matchesWords(args.name, args.variety, ['ブロッコリー'])
+  if (edamame || broccoli) {
+    const originLabel = edamame ? '開花' : '出蕾'
+    const startDate = milestoneDate(args.milestones, edamame ? 'edamame-flower' : 'broccoli-bud')
+    const sources = edamame ? EDAMAME_SOURCES : BROCCOLI_SOURCES
+    const common = {
+      key: edamame ? 'edamame' as const : 'broccoli' as const,
+      countLabel: `${originLabel}${startDate ? `（${formatMonthDay(startDate)}）` : ''}から、${edamame ? '日平均気温をそのまま足す' : '日平均気温から5℃を引き、0未満は0として足す'}`,
+      scopeLabel: edamame ? '秋田県' : '宮城県',
+      sourceLine: sources.map((row) => row.label).join('／'), sources,
+    }
+    if (!startDate) return {
+      ...common, status: 'pending',
+      message: edamame ? '半分くらいの株で花が咲き始めた日を記録すると、そこから収穫の見込みを出せます。' : '半分くらいの株で真ん中のつぼみが直径2cmほどに見えてきた日を記録すると、そこから収穫の見込みを出せます。',
+      valueLabel: edamame ? '約1,150℃（適期1,125〜1,236℃）' : '192〜262℃日（有効5℃）',
+    }
+    return {
+      ...common, status: 'active', count: edamame ? 'simple' : 'effective', baseTemp: edamame ? 0 : 5,
+      low: edamame ? 1125 : 192, high: edamame ? 1236 : 262,
+      rangeLabel: edamame ? '約1,150℃（適期1,125〜1,236℃）' : '192〜262℃日',
+      reachTitle: edamame ? 'さやのふくらみを確かめましょう' : 'つぼみの大きさを確かめましょう',
+      reachBody: edamame ? '秋田県の「あきた香り五葉」の資料では、開花から1,125℃が収穫を考える下限です。下の方の枝の2粒のさやで厚さ8mmくらいのものが多ければ収穫の時期です。' : '宮城県の夏まき「ピクセル」（マルチなし）の資料では、出蕾から有効5℃で192〜262℃日が目安です。花蕾の直径が12cmになっているか確かめましょう。',
+      startDate, originLabel,
     }
   }
   const corn = key === 'sweet-corn' || matchesWords(args.name, args.variety, ['スイートコーン', 'とうもろこし', 'トウモロコシ'])

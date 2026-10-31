@@ -753,6 +753,7 @@ export async function scoreGrowingCrops(
       .map((row) => row.trigger.slice('milestone:'.length))
     const ask = pickMilestoneAsk({
       cropName: matchName,
+      plantingMethod: crop.plantingMethod,
       variety: matchVariety,
       daysSincePlanting: days,
       gddRatio,
@@ -804,7 +805,7 @@ export async function scoreGrowingCrops(
       })
     }
     const cropKind = cropKindByKey(crop.cropKind)
-    const plantingCondition = cropKind && !cropKind.recordOnly ? plantingConditionForKind(cropKind.key) : null
+    const plantingCondition = cropKind && !cropKind.recordOnly ? plantingConditionForKind(cropKind.key, crop.plantingMethod) : null
     const openGround = crop.growingSite !== 'house'
     const springFrost =
       climate &&
@@ -898,6 +899,7 @@ export async function scoreGrowingCrops(
       }),
       Promise.resolve(
         buildGeneralLayer(matchName, matchVariety, {
+          plantingMethod: crop.plantingMethod,
           daysSincePlanting: days,
           gddRatio,
           hasHarvest,
