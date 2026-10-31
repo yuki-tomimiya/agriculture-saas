@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import WeatherDataSource, { JmaDataSource } from '@/components/WeatherDataSource'
 import Sidebar from '@/components/Sidebar'
 import { getNextYearPlans } from '@/lib/insights/next-year-plan'
 import { formatPlantingLabel } from '@/lib/insights/crop-season-compare'
@@ -123,6 +124,7 @@ export default async function NextYearPlanPage() {
                     <span className="insights-layer-tag">あなた</span>
                     {you}。
                   </p>
+                  <WeatherDataSource />
                   <p className="insights-regional-text">
                     <span className="insights-layer-tag">地域</span>
                     {plan.basis.source === 'none'
@@ -161,12 +163,12 @@ export default async function NextYearPlanPage() {
                     </p>
                   )}
                   {plan.springLine && (
-                    <p className="insights-regional-text">
+                    <><p className="insights-regional-text">
                       <span className="insights-layer-tag">地域</span>
                       {plan.springLine}
                       {plan.plantingCondition ? ` ${plan.plantingCondition}` : ''}
                       {plan.springEarlyNote ? ` ${plan.springEarlyNote}` : ''}
-                    </p>
+                    </p>{plan.springSource === 'station' ? <JmaDataSource /> : <WeatherDataSource />}</>
                   )}
                   {plan.workHints.length > 0 && (
                     <ul className="insights-hint-list">

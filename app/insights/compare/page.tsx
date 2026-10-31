@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import Sidebar from '@/components/Sidebar'
 import { getCropSeasonComparisons } from '@/lib/insights/crop-season-compare'
 import { getRegionalContextForUser } from '@/lib/insights/regional-context'
@@ -209,10 +210,13 @@ function CompareCard({
           {row.summaryLine}
         </p>
         {farmRegional && (
+          <>
           <p>
             <span className="insights-layer-tag">地域</span>
             {farmRegional.shortLine}
           </p>
+          <WeatherDataSource />
+          </>
         )}
       </div>
 

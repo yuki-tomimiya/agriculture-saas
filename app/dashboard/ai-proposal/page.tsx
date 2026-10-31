@@ -3,6 +3,7 @@ import { getTodayProposals, type Proposal, type ProposalType } from '@/lib/ai-pr
 import { recordHref, taskHref } from '@/lib/proposals/links'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import Sidebar from '@/components/Sidebar'
 import ProposalDismissButton from './ProposalDismissButton'
 import ProposalSeasonActions from './ProposalSeasonActions'
@@ -257,10 +258,13 @@ function ProposalLayersBlock({ layers }: { layers: Proposal['layers'] }) {
         </p>
       )}
       {layers.regional && (
+        <>
         <p>
           <span className="insights-layer-tag">地域</span>
           {layers.regional}
         </p>
+        <WeatherDataSource kind="mixed" />
+        </>
       )}
       {layers.general && (
         <p>

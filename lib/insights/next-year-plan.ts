@@ -58,6 +58,7 @@ export type NextYearPlanCard = {
   workHints: PlanWorkHint[]
   workCount: number
   springLine: string | null
+  springSource: 'station' | 'estimate' | 'none' | null
   plantingCondition: string | null
   springEarlyNote: string | null
   /** 起点が節目の品目の「あなた」行。無いときは積算温度の従来の文 */
@@ -617,6 +618,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         workHints,
         workCount: crop.workRecords.length,
         springLine: springOrigin ? springFrostSentence(springOrigin) : null,
+        springSource: springOrigin?.source ?? null,
         plantingCondition: condition ? `${condition.text}（${condition.scopeLabel}）` : null,
         springEarlyNote,
         historyMeasure,

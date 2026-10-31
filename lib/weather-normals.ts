@@ -1,3 +1,4 @@
+import { loadDailyWeather } from '@/lib/open-meteo/archive'
 import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import { hasWeatherCoordinates, type WeatherPoint } from '@/lib/weather-forecast'
 
@@ -58,47 +59,16 @@ async function fetchLocationArchive(
   startYear: number,
   endYear: number
 ): Promise<LocationArchive | null> {
-  const params = new URLSearchParams({
-    latitude: String(latitude),
-    longitude: String(longitude),
-    start_date: `${startYear}-01-01`,
-    end_date: `${endYear}-12-31`,
-    daily: 'precipitation_sum,shortwave_radiation_sum,temperature_2m_mean,temperature_2m_min,temperature_2m_max',
-    timezone: 'Asia/Tokyo',
-  })
   try {
-    const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?${params.toString()}`, {
-      next: { revalidate: 86400 },
-    })
-    if (!res.ok) return null
-    const json = (await res.json()) as {
-      daily?: {
-        time?: string[]
-        precipitation_sum?: Array<number | null>
-        shortwave_radiation_sum?: Array<number | null>
-        temperature_2m_mean?: Array<number | null>
-        temperature_2m_min?: Array<number | null>
-        temperature_2m_max?: Array<number | null>
-      }
+    const rows = await loadDailyWeather({ latitude, longitude }, `${startYear}-01-01`, `${endYear}-12-31`)
+    if (!rows) return null
+    return {
+      times: rows.map(row => row.date), precip: rows.map(row => row.precip),
+      radiation: rows.map(row => row.radiation), tempMean: rows.map(row => row.tempMean),
+      tempMin: rows.map(row => row.tempMin), tempMax: rows.map(row => row.tempMax),
     }
-    const times = json.daily?.time
-    const precip = json.daily?.precipitation_sum
-    const radiation = json.daily?.shortwave_radiation_sum
-    const temps = json.daily?.temperature_2m_mean
-    const mins = json.daily?.temperature_2m_min
-    const maxes = json.daily?.temperature_2m_max
-    if (!times || !precip || !radiation || !temps) return null
-    if (times.length !== precip.length || times.length !== radiation.length || times.length !== temps.length) {
-      return null
-    }
-    const tempMin = mins && mins.length === times.length ? mins : null
-    const tempMax = maxes && maxes.length === times.length ? maxes : null
-    return { times, precip, radiation, tempMean: temps, tempMin, tempMax }
-  } catch {
-    return null
-  }
+  } catch { return null }
 }
-
 /**
  * 地点の過去10年（昨年まで）を1回で取り、月日ごとの平均にする。
  * 失敗したときは null。直線の目安には戻さない。

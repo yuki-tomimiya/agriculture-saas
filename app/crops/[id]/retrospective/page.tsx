@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import { getCurrentUser } from '@/lib/auth'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import Sidebar from '@/components/Sidebar'
 import { getCropSeasonRetrospective, getRetrospectiveGdd } from '@/lib/insights/crop-season-retrospective'
 import { formatDateShort } from '@/lib/utils'
@@ -334,12 +335,12 @@ export default async function CropRetrospectivePage({
             )}
           </div>
           {data.gddBasis && (
-            <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
+            <><WeatherDataSource /><p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>
               {data.gddBasis.source === 'none' ? '参考：植え付けから日平均気温をそのまま足したもの。' : ''}
               {data.gddBasis.summary}
               {data.gddBasis.detail ? `。${data.gddBasis.detail}` : ''}
               {data.gddBasis.spreadNote ? `。${data.gddBasis.spreadNote}` : '。'}
-            </p>
+            </p></>
           )}
           {data.gddAsOf === null && (
             <p className="insights-regional-meta" style={{ marginTop: '0.5rem' }}>

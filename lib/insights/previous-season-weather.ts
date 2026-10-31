@@ -20,7 +20,7 @@ function addDays(date: Date, days: number): Date {
   return d
 }
 
-/** 決定論的な仮データ（Open-Meteo が空のとき用） */
+/** 決定論的な仮データ（地点の座標が無いとき用） */
 export function buildDemoSeasonSeries(args: {
   days: number
   dailyGddMean: number
@@ -138,30 +138,30 @@ export async function getPreviousSeasonWeather(args: {
       if (temps.length > 10) {
         let gdd = 0
         const gddPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-        temps.forEach((t, i) => {
+        temps.forEach((t) => {
           gdd += dailyHeat(t.avgTemp, args.count, args.baseTemp)
           gddPts.push({
-            dayFromPlanting: i + 1,
+            dayFromPlanting: Math.floor((t.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
             value: Math.round(gdd * 10) / 10,
           })
         })
 
         let rain = 0
         const rainPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-        rains.forEach((r, i) => {
+        rains.forEach((r) => {
           rain += r.precipitationMm
           rainPts.push({
-            dayFromPlanting: i + 1,
+            dayFromPlanting: Math.floor((r.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
             value: Math.round(rain * 10) / 10,
           })
         })
 
         let rad = 0
         const radPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-        rads.forEach((r, i) => {
+        rads.forEach((r) => {
           rad += r.radiationMj
           radPts.push({
-            dayFromPlanting: i + 1,
+            dayFromPlanting: Math.floor((r.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
             value: Math.round(rad * 10) / 10,
           })
         })
@@ -174,13 +174,14 @@ export async function getPreviousSeasonWeather(args: {
           plantingGapNote: gapNote,
           source: 'open-meteo',
           gdd: gddPts,
-          rain: rainPts.length > 1 ? rainPts : buildDemoSeasonSeries({ days: daySpan, dailyGddMean: 8, dailyRainMean: 3, dailyRadiationMean: 14, seed: 1 }).rain,
-          radiation: radPts.length > 1 ? radPts : buildDemoSeasonSeries({ days: daySpan, dailyGddMean: 8, dailyRainMean: 3, dailyRadiationMean: 14, seed: 2 }).radiation,
+          rain: rainPts.length > 1 ? rainPts : [],
+          radiation: radPts.length > 1 ? radPts : [],
         }
       }
     } catch {
-      // fall through to demo
+      // 地点の気象を取得できなければ、仮の気象で埋めない。
     }
+    return null
   }
 
   const demo = buildDemoSeasonSeries({

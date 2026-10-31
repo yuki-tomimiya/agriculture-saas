@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { FORECAST_RAIN_HIGHLIGHT_PCT, FORECAST_WIND_HIGHLIGHT_MS } from '@/lib/weather-thresholds'
 
@@ -67,6 +68,8 @@ export default async function WeatherForecast({
           </p>
         </div>
       ) : (
+        <>
+        <WeatherDataSource kind="forecast" />
         <ul className="dashboard-forecast-list dashboard-forecast-list--flow">
           {forecastData.slice(0, 14).map((item, idx) => (
             <li key={`${item.dayLabel}-${idx}`} className="dashboard-forecast-item">
@@ -86,6 +89,7 @@ export default async function WeatherForecast({
             </li>
           ))}
         </ul>
+        </>
       )}
     </section>
   )

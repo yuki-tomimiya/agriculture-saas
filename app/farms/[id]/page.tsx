@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
+import WeatherDataSource, { JmaDataSource } from '@/components/WeatherDataSource'
 import Sidebar from '@/components/Sidebar'
 import FarmDeleteButton from '@/components/FarmDeleteButton'
 import { formatDateShort } from '@/lib/utils'
@@ -65,6 +66,9 @@ export default async function FarmDetailPage({
   let frostLine: string | null = null
   let springLine: string | null = null
   let autumnLine: string | null = null
+  let usesStation = false
+  let usesEstimate = false
+  let usesElevation = false
   if (farm.latitude != null && farm.longitude != null) {
     const point = { latitude: farm.latitude, longitude: farm.longitude }
     try {
@@ -73,6 +77,8 @@ export default async function FarmDetailPage({
         ? await prisma.jmaDailyTemp.count({ where: { blockNo: pick.station.blockNo } })
         : 0
       frostLine = frostStationLine(pick, count > 0)
+      usesStation = Boolean(pick?.usable && count > 0)
+      usesElevation = pick?.elevationDiffM != null
     } catch {
       frostLine = frostStationLine(null, false)
     }
@@ -81,6 +87,8 @@ export default async function FarmDetailPage({
       springLine = spring ? springFrostSentence(spring) : null
       const autumn = await readFarmFrost(point)
       autumnLine = autumn ? autumnFirstFrostSentence(autumn) : null
+      usesStation ||= spring?.source === 'station' || autumn?.source === 'station'
+      usesEstimate = spring?.source === 'estimate' || autumn?.source === 'estimate'
     } catch {
       springLine = null
       autumnLine = null
@@ -162,6 +170,7 @@ export default async function FarmDetailPage({
               <>
                 <h2 className="text-xl font-semibold mb-2">地域区分</h2>
                 <p className="text-gray-800">{regionSentence}</p>
+                <WeatherDataSource />
                 <p className="text-sm text-gray-500 mt-2">
                   出典：{CLIMATE_REGION_SOURCE.publisher}『{CLIMATE_REGION_SOURCE.name}』{CLIMATE_REGION_SOURCE.detail}
                   {' '}
@@ -176,6 +185,9 @@ export default async function FarmDetailPage({
             )}
             {springLine && <p className="text-gray-800 mt-2">{springLine}</p>}
             {autumnLine && <p className="text-gray-800 mt-2">{autumnLine}</p>}
+            {usesStation && <JmaDataSource />}
+            {usesEstimate && <WeatherDataSource />}
+            {usesElevation && <WeatherDataSource kind="elevation" />}
           </div>
         )}
 

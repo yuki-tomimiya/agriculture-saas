@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import { GDD_FAQ_ROWS, GDD_NONE_CROPS } from '@/lib/benchmarks/gdd-methods'
 import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
 import { SOIL_NUTRIENT_SOURCE_MAFF, SOIL_PH_SOURCE_MIYAZAKI } from '@/lib/benchmarks/soil-nutrients'
@@ -54,6 +55,7 @@ export default function FaqAnswer({
           出どころは Open-Meteo です。中身は ERA5 などの再解析で、観測所・衛星・レーダーを数値モデルで統合した推計です。実測そのものではありません。
           先の天気も同じ出どころで、表示しているのは気象庁の予報ではなく、海外の数値予報モデル（Open-Meteo）の計算結果です。大きくずれることがあります。
         </p>
+        <WeatherDataSource kind="mixed" />
         <p className="faq-section-text">
           格子の大きさはおおよそ 9〜25km です。近い農場同士では、同じ値になることがあります。
           館山のアメダスと照らしたところ、気温はだいたい ±1.5℃以内でした。降水量は 0.7〜2.1 倍までばらつき、方向も一定ではありません。そのため雨は、ミリメートルより 10年平均との割合を主に見せています。

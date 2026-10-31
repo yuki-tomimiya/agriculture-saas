@@ -1,3 +1,5 @@
+import { loadDailyWeather } from '@/lib/open-meteo/archive'
+import { openMeteoUrl } from '@/lib/open-meteo/url'
 /**
  * 気象予報データ（気象ナビ・生育ナビで共通利用）
  * Open-Meteo APIから取得。失敗時はフォールバックを返す。
@@ -99,7 +101,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
   })
 
   try {
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, {
+    const res = await fetch(openMeteoUrl('forecast', params), {
       next: { revalidate: 3600 },
     })
     if (!res.ok) throw new Error(`Open-Meteo failed: ${res.status}`)
@@ -135,9 +137,9 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
       precipitation: Math.round(d.precipitation_probability_max![i] ?? 0),
       wind: Math.round((d.windspeed_10m_max![i] ?? 0) * 10) / 10,
     }))
-  } catch (error) {
+  } catch {
     // 誤った日付のダミー予報を出さない（空配列 → UIで取得失敗を表示）
-    console.error('getForecastDays failed:', error)
+    console.error('getForecastDays failed')
     return []
   }
 }
@@ -157,213 +159,42 @@ export async function getForecastDailyTemps(
   })
 }
 
-export async function getHistoricalDailyTemps(args: {
-  startDate: Date
-  endDate: Date
-  point?: Partial<WeatherPoint>
-}): Promise<{ date: Date; avgTemp: number; maxTemp: number; minTemp: number }[]> {
-  if (!hasWeatherCoordinates(args.point)) return []
-  const p = {
-    latitude: Number(args.point!.latitude),
-    longitude: Number(args.point!.longitude),
-  }
-  const start = new Date(args.startDate)
-  const end = new Date(args.endDate)
-  start.setHours(0, 0, 0, 0)
-  end.setHours(0, 0, 0, 0)
-  if (start > end) return []
-
-  const params = new URLSearchParams({
-    latitude: String(p.latitude),
-    longitude: String(p.longitude),
-    start_date: toYmd(start),
-    end_date: toYmd(end),
-    daily: 'temperature_2m_max,temperature_2m_min',
-    timezone: 'Asia/Tokyo',
-  })
-
+/** 保存済みの日別値を使う。作付け実績は従来どおり最高・最低から平均を計算する。 */
+async function historicalRows(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }) {
+  // 起点の節目は正午、終点は午前0時の場合もある。同じ暦日は従来どおり含める。
+  if (!hasWeatherCoordinates(args.point) || toYmd(args.startDate) > toYmd(args.endDate)) return null
   try {
-    const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?${params.toString()}`, {
-      next: { revalidate: 86400 },
-    })
-    if (!res.ok) throw new Error(`Open-Meteo archive failed: ${res.status}`)
-    const json = await res.json() as {
-      daily?: {
-        time?: string[]
-        temperature_2m_max?: number[]
-        temperature_2m_min?: number[]
-      }
-    }
-    const times = json.daily?.time
-    const maxes = json.daily?.temperature_2m_max
-    const mins = json.daily?.temperature_2m_min
-    if (!times || !maxes || !mins || times.length !== maxes.length || maxes.length !== mins.length) return []
-
-    return times.map((day, i) => {
-      const date = new Date(`${day}T00:00:00`)
-      const maxTemp = Math.round(maxes[i] * 10) / 10
-      const minTemp = Math.round(mins[i] * 10) / 10
-      const avgTemp = Math.round(((maxes[i] + mins[i]) / 2) * 10) / 10
-      return { date, avgTemp, maxTemp, minTemp }
-    })
-  } catch (error) {
-    console.error('getHistoricalDailyTemps fallback:', error)
-    return []
+    return await loadDailyWeather({ latitude: Number(args.point!.latitude), longitude: Number(args.point!.longitude) }, toYmd(args.startDate), toYmd(args.endDate))
+  } catch {
+    console.warn('Historical weather storage unavailable')
+    return null
   }
 }
 
-export async function getHistoricalDailySunshine(args: {
-  startDate: Date
-  endDate: Date
-  point?: Partial<WeatherPoint>
-}): Promise<{ date: Date; sunshineHours: number }[]> {
-  if (!hasWeatherCoordinates(args.point)) return []
-  const p = {
-    latitude: Number(args.point!.latitude),
-    longitude: Number(args.point!.longitude),
-  }
-  const start = new Date(args.startDate)
-  const end = new Date(args.endDate)
-  start.setHours(0, 0, 0, 0)
-  end.setHours(0, 0, 0, 0)
-  if (start > end) return []
-
-  const params = new URLSearchParams({
-    latitude: String(p.latitude),
-    longitude: String(p.longitude),
-    start_date: toYmd(start),
-    end_date: toYmd(end),
-    daily: 'sunshine_duration',
-    timezone: 'Asia/Tokyo',
-  })
-
-  try {
-    const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?${params.toString()}`, {
-      next: { revalidate: 86400 },
-    })
-    if (!res.ok) throw new Error(`Open-Meteo archive failed: ${res.status}`)
-    const json = await res.json() as {
-      daily?: {
-        time?: string[]
-        sunshine_duration?: number[]
-      }
-    }
-    const times = json.daily?.time
-    const sunshineSeconds = json.daily?.sunshine_duration
-    if (!times || !sunshineSeconds || times.length !== sunshineSeconds.length) return []
-
-    return times.map((day, i) => {
-      const date = new Date(`${day}T00:00:00`)
-      const sunshineHours = Math.round(((sunshineSeconds[i] ?? 0) / 3600) * 10) / 10
-      return { date, sunshineHours }
-    })
-  } catch (error) {
-    console.error('getHistoricalDailySunshine fallback:', error)
-    return []
-  }
+export async function getHistoricalDailyTemps(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; avgTemp: number; maxTemp: number; minTemp: number }[]> {
+  const rows = await historicalRows(args)
+  return rows?.flatMap(row => row.tempMax == null || row.tempMin == null ? [] : [{
+    date: new Date(`${row.date}T00:00:00`),
+    maxTemp: Math.round(row.tempMax * 10) / 10,
+    minTemp: Math.round(row.tempMin * 10) / 10,
+    avgTemp: Math.round(((row.tempMax + row.tempMin) / 2) * 10) / 10,
+  }]) ?? []
 }
 
-export async function getHistoricalDailyRadiation(args: {
-  startDate: Date
-  endDate: Date
-  point?: Partial<WeatherPoint>
-}): Promise<{ date: Date; radiationMj: number }[]> {
-  if (!hasWeatherCoordinates(args.point)) return []
-  const p = {
-    latitude: Number(args.point!.latitude),
-    longitude: Number(args.point!.longitude),
-  }
-  const start = new Date(args.startDate)
-  const end = new Date(args.endDate)
-  start.setHours(0, 0, 0, 0)
-  end.setHours(0, 0, 0, 0)
-  if (start > end) return []
-
-  const params = new URLSearchParams({
-    latitude: String(p.latitude),
-    longitude: String(p.longitude),
-    start_date: toYmd(start),
-    end_date: toYmd(end),
-    daily: 'shortwave_radiation_sum',
-    timezone: 'Asia/Tokyo',
-  })
-
-  try {
-    const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?${params.toString()}`, {
-      next: { revalidate: 86400 },
-    })
-    if (!res.ok) throw new Error(`Open-Meteo archive failed: ${res.status}`)
-    const json = await res.json() as {
-      daily?: {
-        time?: string[]
-        shortwave_radiation_sum?: number[]
-      }
-    }
-    const times = json.daily?.time
-    const radiation = json.daily?.shortwave_radiation_sum
-    if (!times || !radiation || times.length !== radiation.length) return []
-
-    return times.map((day, i) => {
-      const date = new Date(`${day}T00:00:00`)
-      const radiationMj = Math.round((radiation[i] ?? 0) * 10) / 10
-      return { date, radiationMj }
-    })
-  } catch (error) {
-    console.error('getHistoricalDailyRadiation fallback:', error)
-    return []
-  }
+export async function getHistoricalDailySunshine(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; sunshineHours: number }[]> {
+  const rows = await historicalRows(args)
+  return rows?.flatMap(row => row.sunshine == null ? [] : [{ date: new Date(`${row.date}T00:00:00`), sunshineHours: Math.round((row.sunshine / 3600) * 10) / 10 }]) ?? []
 }
 
-export async function getHistoricalDailyPrecipitation(args: {
-  startDate: Date
-  endDate: Date
-  point?: Partial<WeatherPoint>
-}): Promise<{ date: Date; precipitationMm: number }[]> {
-  if (!hasWeatherCoordinates(args.point)) return []
-  const p = {
-    latitude: Number(args.point!.latitude),
-    longitude: Number(args.point!.longitude),
-  }
-  const start = new Date(args.startDate)
-  const end = new Date(args.endDate)
-  start.setHours(0, 0, 0, 0)
-  end.setHours(0, 0, 0, 0)
-  if (start > end) return []
-
-  const params = new URLSearchParams({
-    latitude: String(p.latitude),
-    longitude: String(p.longitude),
-    start_date: toYmd(start),
-    end_date: toYmd(end),
-    daily: 'precipitation_sum',
-    timezone: 'Asia/Tokyo',
-  })
-
-  try {
-    const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?${params.toString()}`, {
-      next: { revalidate: 86400 },
-    })
-    if (!res.ok) throw new Error(`Open-Meteo archive failed: ${res.status}`)
-    const json = await res.json() as {
-      daily?: {
-        time?: string[]
-        precipitation_sum?: number[]
-      }
-    }
-    const times = json.daily?.time
-    const rain = json.daily?.precipitation_sum
-    if (!times || !rain || times.length !== rain.length) return []
-
-    return times.map((day, i) => ({
-      date: new Date(`${day}T00:00:00`),
-      precipitationMm: Math.round((rain[i] ?? 0) * 10) / 10,
-    }))
-  } catch (error) {
-    console.error('getHistoricalDailyPrecipitation fallback:', error)
-    return []
-  }
+export async function getHistoricalDailyRadiation(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; radiationMj: number }[]> {
+  const rows = await historicalRows(args)
+  return rows?.flatMap(row => row.radiation == null ? [] : [{ date: new Date(`${row.date}T00:00:00`), radiationMj: Math.round(row.radiation * 10) / 10 }]) ?? []
 }
 
+export async function getHistoricalDailyPrecipitation(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; precipitationMm: number }[]> {
+  const rows = await historicalRows(args)
+  return rows?.flatMap(row => row.precip == null ? [] : [{ date: new Date(`${row.date}T00:00:00`), precipitationMm: Math.round(row.precip * 10) / 10 }]) ?? []
+}
 export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint>): Promise<{
   date: Date
   dayLabel: string
@@ -385,7 +216,7 @@ export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint
   })
 
   try {
-    const res = await fetch(`https://api.open-meteo.com/v1/forecast?${params.toString()}`, {
+    const res = await fetch(openMeteoUrl('forecast', params), {
       next: { revalidate: 3600 },
     })
     if (!res.ok) throw new Error(`Open-Meteo failed: ${res.status}`)
@@ -409,8 +240,8 @@ export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint
         precipitationMm: Math.round((rain[i] ?? 0) * 10) / 10,
       }
     })
-  } catch (error) {
-    console.error('getForecastDailyPrecipitation failed:', error)
+  } catch {
+    console.error('getForecastDailyPrecipitation failed')
     return []
   }
 }

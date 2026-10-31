@@ -295,6 +295,27 @@ model JmaMonthFetch {
   @@unique([blockNo, year, month])
 }
 
+/// Open-Meteo再解析。地点は小数4桁。欠測はnullのまま保存する。
+model OpenMeteoDaily {
+  location  String
+  date      String
+  tempMean  Float?
+  tempMax   Float?
+  tempMin   Float?
+  precip    Float?
+  radiation Float?
+  sunshine  Float? // seconds
+  fetchedAt DateTime @default(now())
+
+  @@id([location, date])
+}
+
+/// 標高は取得成功時だけ地点ごとに永続化。農場の座標を変更すれば別の地点になる。
+model OpenMeteoElevation {
+  location String @id
+  metres   Float
+}
+
 model ProposalDismissal {
   id          String   @id @default(cuid())
   userId      String

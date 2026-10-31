@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 
 type CropForGDD = {
   id: string
@@ -228,6 +229,7 @@ export default function GDDChart({
         {cropLabel}の積算温度（GDD）の推移
         <Link href="/faq/gdd" className="chart-help" aria-label="積算温度とは">？</Link>
       </h2>
+      <WeatherDataSource kind="mixed" />
       <p className="dashboard-section-sub">
         上段は実績（緑）と数値予報モデルの計算（青破線）
         {hasLastYear ? '、前回作付け（灰）' : ''}

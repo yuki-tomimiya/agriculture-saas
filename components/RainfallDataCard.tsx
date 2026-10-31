@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import { FORECAST_HEAVY_RAIN_MM } from '@/lib/weather-thresholds'
 
 type RainPoint = {
@@ -13,6 +14,7 @@ type CumPoint = {
 
 export default function RainfallDataCard({
   cropName,
+  plantingDate,
   daysFromPlanting,
   currentCumulativeMm,
   normalCumulativeMm = null,
@@ -22,6 +24,7 @@ export default function RainfallDataCard({
   lastYearLabel = null,
 }: {
   cropName: string
+  plantingDate?: Date | null
   daysFromPlanting: number
   currentCumulativeMm: number
   /** null は取得失敗。空配列は線を出さない */
@@ -41,8 +44,9 @@ export default function RainfallDataCard({
   const PLOT_H = CHART_HEIGHT - PAD_TOP - PAD_BOTTOM
   const MAX_DAYS = 180
 
-  const historyStart = historicalPoints[0]?.date
-    ? new Date(new Date(historicalPoints[0].date).setHours(0, 0, 0, 0))
+  const originDate = plantingDate ?? historicalPoints[0]?.date
+  const historyStart = originDate
+    ? new Date(new Date(originDate).setHours(0, 0, 0, 0))
     : null
   const historyMaxDay =
     historyStart == null
@@ -156,6 +160,7 @@ export default function RainfallDataCard({
         {cropName}の積算雨量の推移
         <Link href="/faq/normals" className="chart-help" aria-label="10年平均とは">？</Link>
       </h2>
+      <WeatherDataSource kind="mixed" />
       <p className="dashboard-section-sub">
         {cropName}の圃場地点に基づき、植え付け日から今日までの実績雨量を表示しています。
         {lastYearPath ? ' 灰色は前回作付けの積算雨量です。' : ''}

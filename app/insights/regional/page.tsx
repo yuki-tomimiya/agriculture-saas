@@ -1,6 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import Sidebar from '@/components/Sidebar'
 import { getRegionalContextForUser } from '@/lib/insights/regional-context'
 
@@ -52,6 +53,7 @@ export default async function InsightsRegionalPage() {
           {regional.primary ? (
             <div className="insights-regional">
               <p className="insights-regional-text">{regional.primary.interpretation}</p>
+              <WeatherDataSource />
               <div className="insights-regional-stats">
                 <div>
                   <span className="insights-regional-stat-label">10年平均比</span>

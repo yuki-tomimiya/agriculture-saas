@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import WeatherDataSource from '@/components/WeatherDataSource'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { getLocationDailyNormals, meanNormalMaxTemp } from '@/lib/weather-normals'
 import {
@@ -131,6 +132,7 @@ export default async function WeatherNav({
           </span>
         </div>
       </div>
+      <WeatherDataSource kind="mixed" />
       <div className="dashboard-weather-nav">
         <div className="dashboard-weather-col dashboard-weather-col--green">
           <h3>今週の見通し</h3>

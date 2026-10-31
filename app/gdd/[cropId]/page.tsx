@@ -357,6 +357,7 @@ export default async function GddCropPage({
           {canFetchWeather && (
             <RainfallDataCard
               cropName={title}
+              plantingDate={selectedCrop.plantingDate}
               daysFromPlanting={daysFromPlanting}
               currentCumulativeMm={rainfallCumulative[rainfallCumulative.length - 1]?.cumulativeMm ?? 0}
               normalCumulativeMm={normalSeries?.precipMm ?? null}
