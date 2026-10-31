@@ -75,7 +75,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 生育の節目 | `lib/proposals/milestones.ts`, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。窓の日数は問いかけにだけ使う。防除間隔は `lib/benchmarks/spray-interval.ts` |
 | 削除 | 作物・農場は詳細、収穫・タスクも詳細、販売は一覧。各 `app/api/.../[id]` の DELETE。作物が残る農場は消せない |
-| 議事録 | `docs/議事録/minutes-content.json`（`generate-minutes.mjs` と Word は 2026-10-30 で使うのをやめた） |
+| 議事録 | 正本は `docs/議事録/minutes-content.json`。Word は 2026-10-30 の版のファイルだけを残し、生成する道具は 2026-10-31 に外した |
 
 ```
 app/  dashboard/, dashboard/ai-proposal/, plan/, records/, insights/, insights/compare/, insights/regional/,
@@ -114,7 +114,7 @@ AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ 
 - 起動できないとき：`npm install` → `npx prisma generate` → `npx prisma migrate dev`。ポート3000が埋まっていれば `サーバー停止.bat`。`.env` と `prisma/dev.db` があるか確認（旧 SETUP.md の要点。2026-10-07 に統合）
 - 公開前のチェックリストは Obsidian の `調査/RELEASE_CHECKLIST.md`（2026-10-07 にリポジトリから移動）
 - 気象庁の観測所一覧は `npm run jma:stations`（地点が変わったとき。年1回で足りる）。日別の最低気温は `npm run jma:observations`（保存済みの月は取り直さない。年が明けたら、前年の12か月が足される）。画面を開いたときは保存済みだけを読む
-- 開発用の部品 `docx`（議事録の Word を作っていた。2026-10-30 に止めた）と `tsx`（気象庁の取り込みを動かす）は、版を固定して `package.json` に入れている。新しいPCでは `npm ci` で同じ版がそろう
+- 開発用の部品 `tsx`（気象庁の取り込みを動かす）は、版を固定して `package.json` に入れている。新しいPCでは `npm ci` で同じ版がそろう
 - 別のPCへ移すときは Obsidian の `PC移行/開発環境の移行手順.md`（`dev.db`・`.env`・ボールト・Claude のメモリは GitHub に無い）
 
 ---
