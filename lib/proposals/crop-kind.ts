@@ -2,7 +2,7 @@ import { findCropBenchmark } from '@/lib/benchmarks/crops'
 
 /**
  * 秋田県「野菜栽培技術指針・果菜類」p.111。
- * 花粉の発育には最低13〜15℃。花粉ができない側の下限 13℃ を使う。
+ * ハウス栽培の章。花粉の発育には最低13〜15℃。カードの表示には下限13℃を使う。
  * https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-5.pdf
  */
 export const TOMATO_POLLEN_MIN_C = 13
@@ -12,7 +12,7 @@ export const NIGHT_COOL_FROM_MONTH = 8
 export const NIGHT_COOL_FROM_DAY = 15
 
 export const TOMATO_NIGHT_SOURCE =
-  '秋田県「野菜栽培技術指針・果菜類」p.111（花粉の発育には最低気温13〜15℃。下限の13℃で判断しています）'
+  '秋田県「野菜栽培技術指針・果菜類」p.111（ハウス栽培の章。花粉の発育に必要な最低気温13〜15℃の記述を参考に、カードは下限13℃で表示しています。露地では実や株の様子も見て判断してください）'
 
 const ONCE = new Set([
   'さつまいも',

@@ -637,7 +637,7 @@ export async function scoreGrowingCrops(
         score: 112,
         title: `夜の気温が${TOMATO_POLLEN_MIN_C}℃を下回る時期に入りました`,
         conclusion:
-          '新しい花は実になりにくくなります。いまついている実の収穫が終わったら、作付けを終了してください。',
+          '秋田県の資料では、夜が13℃を下回ると花粉が育ちにくいとされています。いまついている実や株の様子を見て、収穫を続けるか、作付けを終えるか判断してください。',
         action: { kind: 'finish', title: `${crop.name}の作付けを終える` },
       })
     }
