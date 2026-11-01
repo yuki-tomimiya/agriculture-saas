@@ -1,7 +1,7 @@
 import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import type { LocationArchive } from '@/lib/weather-normals'
 
-/** 明日からこの日数までは、過去のその年の気温ではなく予報の平均気温を足す */
+/** 明日からこの日数までは、有効な予報の日平均があれば優先する（根拠台帳B7） */
 export const HARVEST_FORECAST_LEAD_DAYS = 14
 
 export type HarvestDateWindow = {
@@ -44,12 +44,12 @@ function formatMonthDay(date: Date): string {
 
 /** 予報の日（YYYY-MM-DD）と、その日の平均気温 */
 export function forecastAvgByYmd(
-  days: { date: string; maxTemp: number; minTemp: number }[]
+  days: { date: string; avgTemp: number | null }[]
 ): Map<string, number> {
   const map = new Map<string, number>()
   for (const day of days) {
-    if (!day.date) continue
-    map.set(day.date.slice(0, 10), (day.maxTemp + day.minTemp) / 2)
+    if (!day.date || day.avgTemp == null || !Number.isFinite(day.avgTemp)) continue
+    map.set(day.date.slice(0, 10), day.avgTemp)
   }
   return map
 }
@@ -101,6 +101,7 @@ function tempOn(
   ) {
     return forecast
   }
+  // 予報の取得失敗・日平均の欠測時は、14日より先と同じく各年の過去の気温で歩く。
   let month = cursor.getMonth() + 1
   let day = cursor.getDate()
   if (month === 2 && day === 29) day = 28

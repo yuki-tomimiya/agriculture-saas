@@ -13,6 +13,8 @@ export type ForecastDay = {
   weatherCode: number
   maxTemp: number
   minTemp: number
+  /** Open-Meteoの日平均。欠測時はnullで、最高・最低から補わない。 */
+  avgTemp: number | null
   precipitation: number
   wind: number
 }
@@ -93,7 +95,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
   const params = new URLSearchParams({
     latitude: String(p.latitude),
     longitude: String(p.longitude),
-    daily: 'weathercode,temperature_2m_max,temperature_2m_min,precipitation_probability_max,windspeed_10m_max',
+    daily: 'weathercode,temperature_2m_max,temperature_2m_min,temperature_2m_mean,precipitation_probability_max,windspeed_10m_max',
     wind_speed_unit: 'ms',
     timezone: 'Asia/Tokyo',
     start_date: todayYmd,
@@ -111,6 +113,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
         weathercode?: number[]
         temperature_2m_max?: number[]
         temperature_2m_min?: number[]
+        temperature_2m_mean?: Array<number | null>
         precipitation_probability_max?: number[]
         windspeed_10m_max?: number[]
       }
@@ -134,6 +137,9 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
       weatherCode: code,
       maxTemp: Math.round(d.temperature_2m_max![i] * 10) / 10,
       minTemp: Math.round(d.temperature_2m_min![i] * 10) / 10,
+      avgTemp: d.temperature_2m_mean?.[i] != null && Number.isFinite(d.temperature_2m_mean[i])
+        ? Math.round(d.temperature_2m_mean[i]! * 10) / 10
+        : null,
       precipitation: Math.round(d.precipitation_probability_max![i] ?? 0),
       wind: Math.round((d.windspeed_10m_max![i] ?? 0) * 10) / 10,
     }))
@@ -144,22 +150,22 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
   }
 }
 
-/** 日付付きの予報（本日から14日分）。GDD計算用に平均気温を付与 */
+/** 日付付きの予報（本日から14日分）。日平均の欠測日はGDD計算に使わない。 */
 export async function getForecastDailyTemps(
-  baseDate: Date = new Date(),
+  // 呼び出し側の引数の形は維持。日付は常にAPIのAsia/Tokyoの日付を使う。
+  _baseDate: Date = new Date(),
   point?: Partial<WeatherPoint>
 ): Promise<{ date: Date; avgTemp: number; maxTemp: number; minTemp: number }[]> {
   const days = await getForecastDays(point)
-  return days.map((d, i) => {
-    const date = new Date(baseDate)
-    date.setDate(date.getDate() + i)
-    date.setHours(0, 0, 0, 0)
-    const avgTemp = (d.maxTemp + d.minTemp) / 2
-    return { date, avgTemp, maxTemp: d.maxTemp, minTemp: d.minTemp }
+  return days.flatMap((d) => {
+    if (d.avgTemp == null) return []
+    // 欠測日を省いても後の日付を詰めない。APIのAsia/Tokyoの日付を使う。
+    const date = new Date(`${d.date}T00:00:00`)
+    return [{ date, avgTemp: d.avgTemp, maxTemp: d.maxTemp, minTemp: d.minTemp }]
   })
 }
 
-/** 保存済みの日別値を使う。作付け実績は従来どおり最高・最低から平均を計算する。 */
+/** 保存済みの日別値を使う。日平均はAPIの24時間平均（根拠台帳A1）。 */
 async function historicalRows(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }) {
   // 起点の節目は正午、終点は午前0時の場合もある。同じ暦日は従来どおり含める。
   if (!hasWeatherCoordinates(args.point) || toYmd(args.startDate) > toYmd(args.endDate)) return null
@@ -173,11 +179,11 @@ async function historicalRows(args: { startDate: Date; endDate: Date; point?: Pa
 
 export async function getHistoricalDailyTemps(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; avgTemp: number; maxTemp: number; minTemp: number }[]> {
   const rows = await historicalRows(args)
-  return rows?.flatMap(row => row.tempMax == null || row.tempMin == null ? [] : [{
+  return rows?.flatMap(row => row.tempMean == null || row.tempMax == null || row.tempMin == null ? [] : [{
     date: new Date(`${row.date}T00:00:00`),
     maxTemp: Math.round(row.tempMax * 10) / 10,
     minTemp: Math.round(row.tempMin * 10) / 10,
-    avgTemp: Math.round(((row.tempMax + row.tempMin) / 2) * 10) / 10,
+    avgTemp: Math.round(row.tempMean * 10) / 10,
   }]) ?? []
 }
 
