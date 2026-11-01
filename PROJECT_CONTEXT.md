@@ -60,14 +60,14 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 |------|------|
 | 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
 | 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切。春の霜の終わりは1〜6月の最後の4℃以下） |
-| 天気の保存・出典 | `lib/open-meteo/archive.ts` が過去の全項目を地点（小数4桁）・日付ごとに `OpenMeteoDaily` へ保存。直近7日は24時間ごとに更新、昨年以前は再取得しない。`lib/weather-forecast.ts` は実績・予報の日平均を `temperature_2m_mean` に統一し、項目ごとに欠測日を除外。予報はAPIの日付を保持し、`lib/insights/harvest-date-window.ts` も同じ日平均を使う（予報の日平均が欠測・取得失敗のときは、14日より先と同じくその年の過去の気温を使う）。前回作付けの比較線・雨量グラフは日付から日数を求める。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。`lib/open-meteo/url.ts` で住所を共通化し、`OPEN_METEO_API_KEY` があれば契約者用ホストへ切り替える。表示は `components/WeatherDataSource.tsx`（気象庁用も共通）。ERA5・DEMの指定の帰属・免責原文は値のそばの折りたたみ内。予報の1時間の取り置きは従来どおり |
+| 天気の保存・出典 | `lib/open-meteo/archive.ts` が過去の全項目を地点（小数4桁）・日付ごとに `OpenMeteoDaily` へ保存。直近7日は24時間ごとに更新、昨年以前は再取得しない。`lib/weather-forecast.ts` は実績・予報の日平均（台帳 A1）を返し、項目ごとに欠測日を除外。予報はAPIの日付を保持し、`lib/insights/harvest-date-window.ts` も同じ日平均を使う（欠けた日の扱いは台帳 B7）。前回作付けの比較線・雨量グラフは日付から日数を求める。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。`lib/open-meteo/url.ts` で住所を共通化し、`OPEN_METEO_API_KEY` があれば契約者用ホストへ切り替える。表示は `components/WeatherDataSource.tsx`（気象庁用も共通）。ERA5・DEMの指定の帰属・免責原文は値のそばの折りたたみ内。予報の1時間の取り置きは従来どおり |
 | 植える条件 | `lib/benchmarks/planting-conditions.ts`。登録画面・来年の計画・農場の詳細・植えた後の遅霜のカード。ブロッコリーは苗、スイートコーンは直まきの条件。植え方が空なら表示し、不一致なら出さない。推計の地温は出さない |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準）。トマト・エダマメは植付→節目（単純）と節目→最初の収穫を合わせて歩く。ブロッコリーは `projectTwoStageHarvestWindow`（`lib/insights/harvest-date-window.ts`）で、同じ過去年ごとに植付→出蕾（単純）、その翌日→収穫（有効5℃）を歩く。スイートコーンは絹糸の幅に日数を足す。節目なしは日付を出さない |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
 | 地域（降水量） | `lib/insights/regional-context.ts`。気温・雨の同期間10年の3階級（3・4・3）は `lib/insights/ten-year-classes.ts`。欠測・同値で境界が分けられない場合は言い分けない |
 | 一般目安 | `lib/benchmarks/crops.ts`。積算温度の数え方は `lib/benchmarks/gdd-methods.ts`（品目ごと。基準温度の入力欄は外した）。トマトは第1花房、スイートコーンは絹糸、エダマメは開花（秋田）、ブロッコリーは出蕾（宮城・有効5℃）から数える |
-| 品目のポイント・トマトの夜の冷え | 作付け詳細は `lib/benchmarks/crop-points.ts` の出典つきポイント（1品目最大3個）。病害虫は見回り、県名・施設などの条件を文に残す。今日の提案には流用しない。夜13℃のカードは `lib/proposals/scoring.ts`、秋田県のハウスの章の出典文は `lib/proposals/crop-kind.ts`。露地だけの既存の表示条件で、実や株の様子から終了を本人に判断してもらう |
+| 品目のポイント・トマトの夜の冷え | 作付け詳細は `lib/benchmarks/crop-points.ts`（中身と数は台帳 G3。今日の提案には使わない）。夜13℃のカードは `lib/proposals/scoring.ts`、値と出典の文は `lib/proposals/crop-kind.ts`（台帳 D5） |
 | 作付けの条件 | `lib/crops/conditions.ts`（選べる品目と `adviceNames`）。Crop の品目・場所・覆い・暖房・植え方・株数・面積・圃場を分けていない。呼び名は `name` のまま |
 | 作付けの結果 | 振り返り先頭の結果（`CropOutcome`、`lib/crops/outcome.ts`。イチゴの呼び方は正品、ほかはA品）。収穫の重さは kg（`lib/crops/harvest.ts`）。自分の記録のまとまりは `personalGroupKey`。前回の作付けは `previousPlanting`（`lib/crops/conditions.ts`） |
 | 農場の場所 | 都道府県・市区町村は `Farm.prefectureCode` / `municipalityCode`（`data/municipalities.json`、`lib/places/`）。県の候補は近い観測所の番号（`data/jma-prec-no.json`） |
