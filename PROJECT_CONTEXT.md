@@ -58,21 +58,21 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | 領域 | パス |
 |------|------|
-| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
-| 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切。春の霜の終わりは1〜6月の最後の4℃以下） |
-| 天気の保存・出典 | `lib/open-meteo/archive.ts` が過去の全項目を地点（小数4桁）・日付ごとに `OpenMeteoDaily` へ保存。直近7日は24時間ごとに更新、昨年以前は再取得しない。`lib/weather-forecast.ts` は実績・予報の日平均（台帳 A1）を返し、項目ごとに欠測日を除外。予報はAPIの日付を保持し、`lib/insights/harvest-date-window.ts` も同じ日平均を使う（欠けた日の扱いは台帳 B7）。前回作付けの比較線・雨量グラフは日付から日数を求める。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。`lib/open-meteo/url.ts` で住所を共通化し、`OPEN_METEO_API_KEY` があれば契約者用ホストへ切り替える。表示は `components/WeatherDataSource.tsx`（気象庁用も共通）。ERA5・DEMの指定の帰属・免責原文は値のそばの折りたたみ内。予報の1時間の取り置きは従来どおり |
+| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。終了確認の日数は台帳 I2）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
+| 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`（台帳 B7）, `lib/proposals/frost.ts`（さつまいもの霜の締切・春の霜の終わり。台帳 D9） |
+| 天気の保存・出典 | 過去の天気の保存は `lib/open-meteo/archive.ts` → `OpenMeteoDaily`（取り直しは台帳 I14）。実績・予報の日平均は `lib/weather-forecast.ts`（台帳 A1・B7）。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。取り先の住所は `lib/open-meteo/url.ts`（`OPEN_METEO_API_KEY` で契約者用へ）。出典の表示は `components/WeatherDataSource.tsx`（気象庁用も共通。出典の扱いは台帳 A3） |
 | 植える条件 | `lib/benchmarks/planting-conditions.ts`（台帳 D10。霜の注意の対象は同じ表の `lateFrostAdvice`、台帳 D11）。登録画面は `components/CropForm.tsx`、来年の計画は `lib/insights/next-year-plan.ts`、農場詳細は `components/FarmPlantingConditions.tsx`。遅霜のカードは `lib/proposals/scoring.ts` |
-| 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準）。トマト・エダマメは植付→節目（単純）と節目→最初の収穫を合わせて歩く。ブロッコリーは `projectTwoStageHarvestWindow`（`lib/insights/harvest-date-window.ts`）で、同じ過去年ごとに植付→出蕾（単純）、その翌日→収穫（有効5℃）を歩く。スイートコーンは絹糸の幅に日数を足す。節目なしは日付を出さない |
+| 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準）。ブロッコリーの2段の歩き方は `projectTwoStageHarvestWindow`（`lib/insights/harvest-date-window.ts`）。数え方・幅・暑い年／涼しい年は台帳 B1c〜B1f・B7・B8 |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
-| 地域（降水量） | `lib/insights/regional-context.ts`。気温・雨の同期間10年の3階級（3・4・3）は `lib/insights/ten-year-classes.ts`。欠測・同値で境界が分けられない場合は言い分けない |
-| 一般目安 | `lib/benchmarks/crops.ts`。積算温度の数え方は `lib/benchmarks/gdd-methods.ts`（品目ごと。基準温度の入力欄は外した）。トマトは第1花房、スイートコーンは絹糸、エダマメは開花（秋田）、ブロッコリーは出蕾（宮城・有効5℃）から数える |
+| 地域（降水量） | `lib/insights/regional-context.ts`。気温・雨の10年の3階級は `lib/insights/ten-year-classes.ts`（台帳 B8・H1） |
+| 一般目安 | `lib/benchmarks/crops.ts`。積算温度の数え方は `lib/benchmarks/gdd-methods.ts`（品目ごと。台帳 B1 の各行） |
 | 品目のポイント・トマトの夜の冷え | 作付け詳細は `lib/benchmarks/crop-points.ts`（中身と数は台帳 G3。今日の提案には使わない）。夜13℃のカードは `lib/proposals/scoring.ts`、値と出典の文は `lib/proposals/crop-kind.ts`（台帳 D5） |
 | 作付けの条件 | `lib/crops/conditions.ts`（選べる品目と `adviceNames`）。Crop の品目・場所・覆い・暖房・植え方・株数・面積・圃場を分けていない。呼び名は `name` のまま |
 | 作付けの結果 | 振り返り先頭の結果（`CropOutcome`、`lib/crops/outcome.ts`。イチゴの呼び方は正品、ほかはA品）。収穫の重さは kg（`lib/crops/harvest.ts`）。自分の記録のまとまりは `personalGroupKey`。前回の作付けは `previousPlanting`（`lib/crops/conditions.ts`） |
 | 農場の場所 | 都道府県・市区町村は `Farm.prefectureCode` / `municipalityCode`（`data/municipalities.json`、`lib/places/`）。県の候補は近い観測所の番号（`data/jma-prec-no.json`） |
 | 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」と農薬の記録。今日の提案には出さない |
-| 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`, `lib/gdd.ts`。目安は `lib/benchmarks/gdd-methods.ts` の数え方。トマト・スイートコーンは起点の節目が記録されたときだけ、その日から数える。トマトは開花のあと、収穫開始の日付の幅も出す |
+| 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`, `lib/gdd.ts`。目安は `lib/benchmarks/gdd-methods.ts`（起点と数え方は台帳 B1c〜B1f） |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 生育の節目 | `lib/proposals/milestones.ts`（窓は台帳 C6。葉菜は C23〜C28）, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。防除間隔は `lib/benchmarks/spray-interval.ts` |
