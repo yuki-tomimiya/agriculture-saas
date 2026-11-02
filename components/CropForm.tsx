@@ -94,7 +94,7 @@ export default function CropForm({
   const plantingCondition =
     form.growingSite === 'open' && kind && !kind.recordOnly ? plantingConditionForKind(kind.key, form.plantingMethod) : null
   const springEarly =
-    plantingCondition && spring?.latest && spring.dateLabel && form.plantingDate && dateIsBeforeLatest(form.plantingDate, spring.latest)
+    plantingCondition?.lateFrostAdvice && spring?.latest && spring.dateLabel && form.plantingDate && dateIsBeforeLatest(form.plantingDate, spring.latest)
       ? `この日付は、過去10年の${spring.observed ? '観測' : '推計'}でいちばん遅い霜（${spring.dateLabel}）より前です。${
           spring.observed ? '' : '近くの観測所の記録が使えないため、推計の気温から出しています。'
         }`
@@ -325,8 +325,8 @@ export default function CropForm({
                   value={form.plantingDate}
                   onChange={(e) => patch({ plantingDate: e.target.value })}
                 />
-                {springEarly && (
-                  <p className="text-sm text-amber-800 mt-1">
+                {(springEarly || plantingCondition) && (
+                  <p className={`text-sm mt-1 ${springEarly ? 'text-amber-800' : 'text-gray-600'}`}>
                     {springEarly}
                     {plantingCondition ? plantingCondition.text : ''}
                   </p>

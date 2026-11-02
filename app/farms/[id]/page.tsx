@@ -5,6 +5,7 @@ import Link from 'next/link'
 import WeatherDataSource, { JmaDataSource } from '@/components/WeatherDataSource'
 import Sidebar from '@/components/Sidebar'
 import FarmDeleteButton from '@/components/FarmDeleteButton'
+import FarmPlantingConditions from '@/components/FarmPlantingConditions'
 import { formatDateShort } from '@/lib/utils'
 import { climateRegionSentence, CLIMATE_REGION_SOURCE, meanAnnualTemp } from '@/lib/benchmarks/climate-region'
 import { getLocationDailyNormals } from '@/lib/weather-normals'
@@ -52,6 +53,11 @@ export default async function FarmDetailPage({
   })
 
   if (!farm) notFound()
+
+  const plantingCrops = await prisma.crop.findMany({
+    where: { farmId: farm.id },
+    select: { cropKind: true, growingSite: true, plantingMethod: true },
+  })
 
   let regionSentence: string | null = null
   if (farm.latitude != null && farm.longitude != null) {
@@ -190,6 +196,8 @@ export default async function FarmDetailPage({
             {usesElevation && <WeatherDataSource kind="elevation" />}
           </div>
         )}
+
+        <FarmPlantingConditions crops={plantingCrops} />
 
         {/* 圃場一覧 */}
         {farm.fields.length > 0 && (

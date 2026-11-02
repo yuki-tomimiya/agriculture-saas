@@ -20,6 +20,16 @@ export const MILESTONE_SOURCE_CHIBA = {
 }
 
 export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
+  { label: '農林水産省「キャベツ栽培のポイント」', url: 'https://www.maff.go.jp/j/seisan/pdf/001_cabbege.pdf' },
+  { label: '秋田県「野菜栽培技術指針」葉茎菜類（平成19年3月）', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-12.pdf' },
+  { label: '秋田県「野菜栽培技術指針」ネギ（平成19年3月）', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-23.pdf' },
+  { label: '宮城県「みやぎの野菜指導指針」キャベツ（平成18年3月）', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_13.pdf' },
+  { label: '宮城県「みやぎの野菜指導指針」ほうれんそう（平成18年3月）', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_08.pdf' },
+  { label: '宮城県「みやぎの野菜指導指針」ねぎ（平成18年3月）', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_09.pdf' },
+  { label: '鹿児島県「有機百培」葉茎菜類（平成31年3月）', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143851-1.pdf' },
+  { label: '鹿児島県「有機百培」軟弱野菜類（平成31年3月）', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143913-1.pdf' },
+  { label: 'JA福岡京築・京築普及指導センター「白ネギ栽培の手引き」（令和6年3月）', url: 'https://www.ja-kei.or.jp/wp/wp-content/themes/ja-kei/pdf/r6-white_onion1-h.pdf' },
+  { label: '熊本県 農業研究成果情報No.824（平成30年5月）', url: 'https://www.pref.kumamoto.jp/uploaded/attachment/102320.pdf' },
   { label: '秋田県農業試験場 研究時報48号「あきた香り五葉」の収穫判断基準', url: 'https://www.pref.akita.lg.jp/uploads/public/archive_0000008703_00/z48-12.pdf' },
   { label: '宮城県「普及に移す技術」第100号 ブロッコリー「ピクセル」', url: 'https://www.pref.miyagi.jp/documents/60672/r06sankou05.pdf' },
   { label: '長崎県 成果情報 S-30-25', url: 'https://www.pref.nagasaki.jp/e-nourin/nougi/theme/result/H30seika-jouhou/shidou/S-30-25.pdf' },
@@ -157,12 +167,91 @@ function isPotato(cropName: string, variety?: string | null): boolean {
   return nameIncludes(cropName, variety, ['ジャガイモ', 'じゃがいも', '馬鈴薯', 'ばれいしょ'])
 }
 
+function isHeadLettuce(cropName: string, variety?: string | null): boolean {
+  return !nameIncludes(cropName, variety, ['リーフレタス', 'サニーレタス']) &&
+    nameIncludes(cropName, variety, ['レタス', 'れたす'])
+}
+
+function isLongNegi(cropName: string, variety?: string | null): boolean {
+  if (nameIncludes(cropName, variety, ['玉ねぎ', '玉ネギ', '玉葱', 'タマネギ', 'たまねぎ', '葉ネギ', '葉ねぎ', '葉葱', 'はねぎ', '小ねぎ', '小ネギ', '万能ねぎ'])) return false
+  return nameIncludes(cropName, variety, ['ネギ', 'ねぎ', '葱'])
+}
+
+const LETTUCE_HARVEST = '外葉が外へ開き、球の重さが400〜500g前後になったら収穫の目安です。鹿児島県の資料では、とり遅れると裂球や腐れが出やすいとされています。'
+const NEGI_DIG = '暖かい時期は20〜30日、寒い時期は30〜40日を目安に試し掘りし、白い部分が25〜30cm以上になったか確かめてから収穫します。'
+/** 葉菜の窓と出典の区分は台帳C6（葉菜5品目の行）。表示文は他品目と同じ形。 */
+const LEAF_WINDOW = `作型・季節によって日数が異なる。${WINDOW_USE}`
+
 /**
  * 窓の出典は台帳 C6。さつまいも活着・キュウリ摘心は出典なしの暫定。
  * 問いかけを出すかどうかだけに使い、断定には使わない。
  * 試し掘りは収穫目安の積算温度の 85% 以上（実績ベース）。
  */
 const MILESTONES: MilestoneDef[] = [
+  {
+    key: 'cabbage-heading', cropLabel: 'キャベツ',
+    match: (name, variety) => nameIncludes(name, variety, ['キャベツ', 'きゃべつ']),
+    question: '中の葉が内側に巻いて、球ができ始めましたか？', term: '結球始め', yesLabel: '巻き始めた',
+    ifYes: '球ができ始めたら、2回目の追肥の時期です。追肥が遅くならないようにします。',
+    conditional: '中の葉が巻いて球ができ始めていれば、2回目の追肥の時期です。遅い追肥は避けます。',
+    recordedLine: (days) => `結球始めから${Math.max(0, days)}日です。2回目の追肥の時期です。遅い追肥は避けます。`,
+    sourceLabel: '農林水産省「キャベツ栽培のポイント」p.2・4／秋田県「野菜栽培技術指針」p.176・179／宮城県「みやぎの野菜指導指針」p.200／熊本県 農業研究成果情報No.824',
+    howTo: ['中の葉が内側へ巻き、球をつくり始めたかを見ます。'],
+    window: { kind: 'days', from: 20, to: 50 }, windowNote: `定植から20〜50日（宮城・熊本の資料から設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
+  {
+    key: 'cabbage-firm', cropLabel: 'キャベツ',
+    match: (name, variety) => nameIncludes(name, variety, ['キャベツ', 'きゃべつ']),
+    question: '球を軽く押すと、しまってきましたか？', term: '球のしまり', yesLabel: 'しまってきた',
+    ifYes: '球がしまってきたら、硬くなりすぎないうちに収穫します。適期を過ぎると裂球しやすくなります。',
+    conditional: '球がしまってきたら、硬くなりすぎないうちに収穫します。とり遅れの裂球に注意します。',
+    recordedLine: (days) => `球のしまりを確かめてから${Math.max(0, days)}日です。硬くなりすぎないうちに収穫し、裂球に注意します。`,
+    sourceLabel: '農林水産省「キャベツ栽培のポイント」p.4／秋田県「野菜栽培技術指針」p.176・179・181／宮城県「みやぎの野菜指導指針」p.209／鹿児島県「有機百培」p.92（収穫の見分け方）',
+    howTo: ['球を軽く押して、しまり具合を確かめます。'],
+    window: { kind: 'days', from: 45, to: 100 }, windowNote: `定植から45〜100日（秋田・熊本の資料から設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
+  {
+    key: 'lettuce-outer-leaves', cropLabel: '玉レタス', match: isHeadLettuce,
+    question: '外の葉が外へ開いて、反ってきましたか？', term: '外葉の反り', yesLabel: '開いてきた',
+    ifYes: LETTUCE_HARVEST,
+    conditional: LETTUCE_HARVEST,
+    recordedLine: (days) => `外葉の反りを確かめてから${Math.max(0, days)}日です。${LETTUCE_HARVEST}`,
+    sourceLabel: '秋田県「野菜栽培技術指針」p.192／鹿児島県「有機百培」p.100（収穫の見分け方。裂球・腐れは鹿児島県の記述）',
+    howTo: ['外側の葉が外へ反ってきたかを見ます。'],
+    window: { kind: 'days', from: 40, to: 120 }, windowNote: `定植から40〜120日（秋田・鹿児島の栽培暦の図から読んだ値を参考に設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
+  {
+    key: 'spinach-height', cropLabel: 'ホウレンソウ',
+    match: (name, variety) => nameIncludes(name, variety, ['ホウレンソウ', 'ほうれんそう', 'ほうれん草']),
+    question: '草丈が25cmくらいになりましたか？', term: '草丈25cmほど', yesLabel: 'なった',
+    ifYes: '草丈25cmくらいが収穫の目安です。適期が短いので、早めに収穫します。',
+    conditional: '草丈25cmくらいになっていれば収穫の目安です。適期が短いので、とり遅れに注意します。',
+    recordedLine: (days) => `草丈を確かめてから${Math.max(0, days)}日です。25cmくらいが収穫の目安で、適期が短いので早めに収穫します。`,
+    sourceLabel: '秋田県「野菜栽培技術指針」p.200〜201／宮城県「みやぎの野菜指導指針」p.137／鹿児島県「有機百培」p.122（収穫の見分け方）',
+    howTo: ['土の表面から葉の先までの高さを確かめます。'],
+    window: { kind: 'days', from: 25, to: 80 }, windowNote: `播種から25〜80日（秋田・宮城・鹿児島・富山のJAの資料から設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
+  {
+    key: 'komatsuna-height', cropLabel: 'コマツナ',
+    match: (name, variety) => nameIncludes(name, variety, ['コマツナ', 'こまつな', '小松菜']),
+    question: '草丈が25cmくらいになりましたか？', term: '草丈25cmほど', yesLabel: 'なった',
+    ifYes: '草丈25cmくらいが収穫の目安です。適期が短いので、早めに収穫します。',
+    conditional: '草丈25cmくらいになっていれば収穫の目安です。適期が短いので、とり遅れに注意します。',
+    recordedLine: (days) => `草丈を確かめてから${Math.max(0, days)}日です。25cmくらいが収穫の目安で、適期が短いので早めに収穫します。`,
+    sourceLabel: '秋田県「野菜栽培技術指針」p.212〜213／鹿児島県「有機百培」p.120（収穫の見分け方）',
+    howTo: ['土の表面から葉の先までの高さを確かめます。'],
+    window: { kind: 'days', from: 20, to: 90 }, windowNote: `播種から20〜90日（秋田・富山のJA・山口の資料から設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
+  {
+    key: 'negi-final-hilling', cropLabel: '根深ネギ', match: isLongNegi,
+    question: '最後の土寄せをしましたか？', term: '最後の土寄せ', yesLabel: 'した',
+    ifYes: `最後の土寄せの日を記録してください。${NEGI_DIG}`,
+    conditional: '最後以外の土寄せは葉が分かれる所を越えず、最後は分岐点まで寄せます。30℃以上の暑い時期の土寄せは避けます。',
+    recordedLine: (days) => `最後の土寄せから${Math.max(0, days)}日です。${NEGI_DIG}`,
+    sourceLabel: '秋田県「野菜栽培技術指針」p.240〜244／宮城県「みやぎの野菜指導指針」p.145〜146／JA福岡京築・京築普及指導センター「白ネギ栽培の手引き」p.1・20〜22・27／鹿児島県「有機百培」p.101〜102（収穫の見分け方）',
+    howTo: ['土寄せは生育に合わせて数回行います。', '最後以外は葉が分かれる所（分岐点）を越えず、最後は分岐点まで土を寄せます。', '30℃以上の暑い時期の土寄せは避けます。', NEGI_DIG],
+    window: { kind: 'days', from: 80, to: 170 }, windowNote: `定植から80〜170日（宮城・福岡の手順の日数を足して設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
   {
     key: 'edamame-flower', cropLabel: 'エダマメ',
     match: (name, variety) => nameIncludes(name, variety, ['エダマメ', 'えだまめ', '枝豆']),

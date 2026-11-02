@@ -810,7 +810,7 @@ export async function scoreGrowingCrops(
     const springFrost =
       climate &&
       openGround &&
-      plantingCondition &&
+      plantingCondition?.lateFrostAdvice &&
       crop.plantingDate &&
       plantedThisSpring(crop.plantingDate, today)
         ? assessSpringLateFrost({

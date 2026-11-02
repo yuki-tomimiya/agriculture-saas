@@ -61,7 +61,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認は3日）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
 | 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`, `lib/proposals/frost.ts`（さつまいもの霜の締切。春の霜の終わりは1〜6月の最後の4℃以下） |
 | 天気の保存・出典 | `lib/open-meteo/archive.ts` が過去の全項目を地点（小数4桁）・日付ごとに `OpenMeteoDaily` へ保存。直近7日は24時間ごとに更新、昨年以前は再取得しない。`lib/weather-forecast.ts` は実績・予報の日平均（台帳 A1）を返し、項目ごとに欠測日を除外。予報はAPIの日付を保持し、`lib/insights/harvest-date-window.ts` も同じ日平均を使う（欠けた日の扱いは台帳 B7）。前回作付けの比較線・雨量グラフは日付から日数を求める。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。`lib/open-meteo/url.ts` で住所を共通化し、`OPEN_METEO_API_KEY` があれば契約者用ホストへ切り替える。表示は `components/WeatherDataSource.tsx`（気象庁用も共通）。ERA5・DEMの指定の帰属・免責原文は値のそばの折りたたみ内。予報の1時間の取り置きは従来どおり |
-| 植える条件 | `lib/benchmarks/planting-conditions.ts`。登録画面・来年の計画・農場の詳細・植えた後の遅霜のカード。ブロッコリーは苗、スイートコーンは直まきの条件。植え方が空なら表示し、不一致なら出さない。推計の地温は出さない |
+| 植える条件 | `lib/benchmarks/planting-conditions.ts`（台帳 D10。霜の注意の対象は同じ表の `lateFrostAdvice`、台帳 D11）。登録画面は `components/CropForm.tsx`、来年の計画は `lib/insights/next-year-plan.ts`、農場詳細は `components/FarmPlantingConditions.tsx`。遅霜のカードは `lib/proposals/scoring.ts` |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準）。トマト・エダマメは植付→節目（単純）と節目→最初の収穫を合わせて歩く。ブロッコリーは `projectTwoStageHarvestWindow`（`lib/insights/harvest-date-window.ts`）で、同じ過去年ごとに植付→出蕾（単純）、その翌日→収穫（有効5℃）を歩く。スイートコーンは絹糸の幅に日数を足す。節目なしは日付を出さない |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
 | 作付け振り返り | `lib/insights/crop-season-retrospective.ts`, `app/crops/[id]/retrospective/` |
@@ -75,7 +75,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`, `lib/gdd.ts`。目安は `lib/benchmarks/gdd-methods.ts` の数え方。トマト・スイートコーンは起点の節目が記録されたときだけ、その日から数える。トマトは開花のあと、収穫開始の日付の幅も出す |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
-| 生育の節目 | `lib/proposals/milestones.ts`, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。窓の日数は問いかけにだけ使う。防除間隔は `lib/benchmarks/spray-interval.ts` |
+| 生育の節目 | `lib/proposals/milestones.ts`（窓は台帳 C6。葉菜は C23〜C28）, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。防除間隔は `lib/benchmarks/spray-interval.ts` |
 | 削除 | 作物・農場は詳細、収穫・タスクも詳細、販売は一覧。各 `app/api/.../[id]` の DELETE。作物が残る農場は消せない |
 | 議事録 | 正本は `docs/議事録/minutes-content.json`。Word は 2026-10-30 の版のファイルだけを残し、生成する道具は 2026-10-31 に外した |
 

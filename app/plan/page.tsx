@@ -170,6 +170,12 @@ export default async function NextYearPlanPage() {
                       {plan.springEarlyNote ? ` ${plan.springEarlyNote}` : ''}
                     </p>{plan.springSource === 'station' ? <JmaDataSource /> : <WeatherDataSource />}</>
                   )}
+                  {plan.plantingCondition && !plan.springLine && (
+                    <p className="insights-regional-text">
+                      <span className="insights-layer-tag">一般</span>
+                      {plan.plantingCondition}
+                    </p>
+                  )}
                   {plan.workHints.length > 0 && (
                     <ul className="insights-hint-list">
                       {plan.workHints.map((work) => (
