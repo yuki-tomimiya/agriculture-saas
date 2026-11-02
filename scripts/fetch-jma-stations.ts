@@ -11,7 +11,7 @@ function sleep(ms: number) {
 }
 
 async function fetchText(url: string): Promise<string> {
-  const res = await fetch(url, { headers: { 'User-Agent': 'Tillto/station-list' } })
+  const res = await fetch(url, { headers: { 'User-Agent': 'Tilltol/station-list' } })
   if (!res.ok) throw new Error(`${res.status} ${url}`)
   return res.text()
 }

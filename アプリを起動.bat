@@ -7,7 +7,7 @@ if not exist "package.json" (
   exit /b 1
 )
 
-echo ===== Tillto app launcher =====
+echo ===== Tilltol app launcher =====
 echo.
 
 if not exist "node_modules" (

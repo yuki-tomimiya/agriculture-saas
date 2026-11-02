@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import TilltoLogo from '@/components/TilltoLogo'
+import TilltolLogo from '@/components/TilltolLogo'
 
 export default function SignInPage() {
   const router = useRouter()
@@ -45,9 +45,9 @@ export default function SignInPage() {
       <div className="auth-card">
         <div className="auth-card-header">
           <div className="auth-logo-wrap">
-            <TilltoLogo size={52} title="Tillto" />
+            <TilltolLogo size={52} title="Tilltol" />
           </div>
-          <div className="auth-brand">Tillto</div>
+          <div className="auth-brand">Tilltol</div>
           <div className="auth-subtitle">
             見て、聞いて、
             <br />

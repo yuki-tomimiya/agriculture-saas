@@ -2,7 +2,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 cd /d "%~dp0"
 
-echo ===== Stop Tillto dev server (port 3000) =====
+echo ===== Stop Tilltol dev server (port 3000) =====
 echo.
 
 set "FOUND=0"

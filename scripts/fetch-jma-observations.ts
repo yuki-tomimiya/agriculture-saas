@@ -20,7 +20,7 @@ function monthsThroughPrevious(today = new Date()): { year: number; month: numbe
 }
 
 async function fetchText(url: string): Promise<string> {
-  const res = await fetch(url, { headers: { 'User-Agent': 'Tillto/daily-temps' } })
+  const res = await fetch(url, { headers: { 'User-Agent': 'Tilltol/daily-temps' } })
   if (!res.ok) throw new Error(`${res.status} ${url}`)
   return res.text()
 }

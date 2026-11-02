@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import TilltoLogo from '@/components/TilltoLogo'
+import TilltolLogo from '@/components/TilltolLogo'
 
 export default function Home() {
   return (
@@ -8,8 +8,8 @@ export default function Home() {
         {/* 上：キャッチコピー・説明・CTA */}
         <div className="home-section home-text-center">
           <div className="home-brand-row">
-            <TilltoLogo size={44} />
-            <p className="home-brand">Tillto</p>
+            <TilltolLogo size={44} />
+            <p className="home-brand">Tilltol</p>
           </div>
           <p className="home-tagline">
             見て、聞いて、

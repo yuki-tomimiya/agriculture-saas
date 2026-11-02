@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import TilltoLogo from '@/components/TilltoLogo'
+import TilltolLogo from '@/components/TilltolLogo'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -18,8 +18,8 @@ export default function Navbar() {
     <header className="app-header">
       <div className="app-header-inner">
         <Link href="/dashboard" className="app-header-brand">
-          <TilltoLogo size={28} />
-          <span>Tillto</span>
+          <TilltolLogo size={28} />
+          <span>Tilltol</span>
         </Link>
         <Link href="/auth/signin" className="app-header-logout">
           ログアウト

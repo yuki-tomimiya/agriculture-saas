@@ -11,7 +11,7 @@ export default function WeatherDataSource({ kind = 'archive' }: { kind?: Kind })
         <a href="https://open-meteo.com/" className="underline">Weather data by Open-Meteo.com</a>
         {' · '}<a href="https://creativecommons.org/licenses/by/4.0/" className="underline">CC BY 4.0</a>。
         {kind === 'elevation' ? <>農場の標高は<a href="https://doi.org/10.5270/ESA-c5d3d65" className="underline">Copernicus DEM</a>に基づきます。</> : <>
-          Tilltoで平均・積算・日付の幅などに加工しています。
+          Tilltolで平均・積算・日付の幅などに加工しています。
           {kind !== 'forecast' && <>過去の値は<a href="https://climate.copernicus.eu/" className="underline">Copernicus Climate Change Service</a>のERA5などに基づく再解析です。</>}
           {kind !== 'archive' && <>先の値は数値予報モデルの計算結果です。</>}
         </>}

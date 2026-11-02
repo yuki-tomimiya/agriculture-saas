@@ -1,4 +1,4 @@
-type TilltoLogoProps = {
+type TilltolLogoProps = {
   /** 表示サイズ（正方形の辺の長さ px） */
   size?: number
   className?: string
@@ -7,10 +7,10 @@ type TilltoLogoProps = {
 }
 
 /**
- * Tillto ブランドマーク（耕起のライン＋双葉）
+ * Tilltol ブランドマーク（耕起のライン＋双葉）
  * テキストロゴと併用することを想定。
  */
-export default function TilltoLogo({ size = 32, className = '', title }: TilltoLogoProps) {
+export default function TilltolLogo({ size = 32, className = '', title }: TilltolLogoProps) {
   return (
     <svg
       width={size}
