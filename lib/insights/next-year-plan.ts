@@ -580,9 +580,11 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
       const planAdvice = adviceNames(crop)
       const showPlanting =
         crop.growingSite !== 'house' && !planAdvice.recordOnly && Boolean(crop.cropKind)
-      const condition = showPlanting ? plantingConditionForKind(crop.cropKind, crop.plantingMethod) : null
+      const condition = !planAdvice.recordOnly
+        ? plantingConditionForKind(crop.cropKind, crop.plantingMethod, crop.growingSite)
+        : null
       const springEarlyNote =
-        showPlanting && springOrigin?.summary && nextPlant && dateIsBeforeMonthDay(nextPlant, springOrigin.summary.latest)
+        showPlanting && condition?.lateFrostAdvice && springOrigin?.summary && nextPlant && dateIsBeforeMonthDay(nextPlant, springOrigin.summary.latest)
           ? `この見込みの日は、過去10年の${springOrigin.source === 'estimate' ? '推計' : '観測'}でいちばん遅い霜（${formatMonthDay(springOrigin.summary.latest)}）より前です。`
           : null
 
@@ -617,7 +619,7 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         windowLate,
         workHints,
         workCount: crop.workRecords.length,
-        springLine: springOrigin ? springFrostSentence(springOrigin) : null,
+        springLine: showPlanting && condition?.lateFrostAdvice && springOrigin ? springFrostSentence(springOrigin) : null,
         springSource: springOrigin?.source ?? null,
         plantingCondition: condition ? `${condition.text}（${condition.scopeLabel}）` : null,
         springEarlyNote,

@@ -1,5 +1,5 @@
 /**
- * 品目ごとの植える条件。出典は根拠台帳 D10。記録だけの品目とハウスには使わない。
+ * 品目ごとの植える条件。出典と栽培場所の扱いは根拠台帳 D10。
  * 平均気温18℃は出さない（資料で値が一致しない）。
  */
 
@@ -9,12 +9,26 @@ export type PlantingCondition = {
   plantingMethod?: 'direct' | 'transplant'
   /** 登録画面の霜の注意と遅霜カードの対象（台帳 D11）。 */
   lateFrostAdvice?: boolean
+  /** ハウスにも表示する条件（台帳 D10）。 */
+  showInHouse?: boolean
   text: string
   /** 画面の【一般】か、県名 */
   scopeLabel: string
 }
 
 const CONDITIONS: PlantingCondition[] = [
+  {
+    kindKey: 'onion', plantingMethod: 'transplant',
+    text: '大きすぎる苗や早すぎる植え付けは、とう立ちしやすくなります。宮城県の資料では、草丈25〜30cmの苗が目安です。', scopeLabel: '一般',
+  },
+  {
+    kindKey: 'daikon', plantingMethod: 'direct',
+    text: '春の早まきは、寒さでとう立ちしやすくなります。トンネルやマルチで守ります。岩手県の資料では、まいてから20日間の平均気温が13℃（マルチ・べたがけをするときは9〜11℃）を上回る時期からが安全とされています。', scopeLabel: '一般',
+  },
+  {
+    kindKey: 'strawberry-june', plantingMethod: 'transplant', showInHouse: true,
+    text: '花芽ができたことを検鏡（顕微鏡で見ること）で確かめてから植えます。苗はクラウン（株元）の太さ1cm前後が目安です。', scopeLabel: '一般',
+  },
   {
     kindKey: 'cabbage', plantingMethod: 'transplant',
     text: '育った苗が寒さにあうと、とう立ちすることがあります。秋田県・宮城県の資料では、セル苗は本葉3枚前後で根鉢ができたら植えます。', scopeLabel: '一般',
@@ -103,11 +117,13 @@ export const LATE_FROST_SOURCE =
 
 export function plantingConditionForKind(
   kindKey: string | null | undefined,
-  plantingMethod?: string | null
+  plantingMethod?: string | null,
+  growingSite?: string | null
 ): PlantingCondition | null {
   if (!kindKey) return null
   const condition = CONDITIONS.find((row) => row.kindKey === kindKey)
   if (!condition) return null
+  if (growingSite === 'house' && !condition.showInHouse) return null
   if (plantingMethod && condition.plantingMethod && plantingMethod !== condition.plantingMethod) return null
   return condition
 }

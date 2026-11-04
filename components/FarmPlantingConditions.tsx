@@ -7,8 +7,8 @@ export default function FarmPlantingConditions({ crops }: {
   const conditions = new Map<string, { label: string; text: string; scope: string }>()
   for (const crop of crops) {
     const kind = cropKindByKey(crop.cropKind)
-    if (crop.growingSite === 'house' || !kind || kind.recordOnly) continue
-    const condition = plantingConditionForKind(kind.key, crop.plantingMethod)
+    if (!kind || kind.recordOnly) continue
+    const condition = plantingConditionForKind(kind.key, crop.plantingMethod, crop.growingSite)
     if (condition) conditions.set(kind.key, { label: kind.label, text: condition.text, scope: condition.scopeLabel })
   }
   if (!conditions.size) return null

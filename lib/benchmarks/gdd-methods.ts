@@ -76,6 +76,14 @@ const SWEET_POTATO_SOURCES: GddSource[] = [
 
 const DAIKON_SOURCES: GddSource[] = [
   {
+    label: '秋田県「野菜栽培技術指針」根菜類 p.281（根重ととり遅れ）',
+    url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-7.pdf',
+  },
+  {
+    label: '鹿児島県「有機百培」根菜類 p.60（収穫の見分け方）',
+    url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143757-1.pdf',
+  },
+  {
     label: '千葉県「気象データを活用した秋まき冬どりダイコンの根重の予測モデルの開発」（2019〜2023年度）',
     url: 'https://www.pref.chiba.lg.jp/ninaite/shikenkenkyuu/documents/r5n0312.pdf',
   },
@@ -308,7 +316,7 @@ export function gddAvailability(args: {
       sourceLine: DAIKON_SOURCES.map((row) => row.label).join('／'),
       sources: DAIKON_SOURCES,
       reachTitle: '根の太さを見て収穫を考える時期です',
-      reachBody: '岩手・千葉・長崎の資料では、種まきからの積算温度が850℃を超えると、根の太さを見て収穫を考える目安です。品種によって1,200℃まで幅があります。',
+      reachBody: '岩手・千葉・長崎の資料では、種まきからの積算温度が850℃を超えると、根の太さを見て収穫を考える目安です。品種によって1,200℃まで幅があります。1本抜いてみて、根が1kgほどなら収穫の目安です。秋田県の資料では、収穫が遅れると肌が荒れ、すが入りやすくなります。',
     }
   }
   const tomato = key === 'tomato' || matchesWords(args.name, args.variety, ['トマト', 'とまと'])

@@ -20,6 +20,10 @@ export const MILESTONE_SOURCE_CHIBA = {
 }
 
 export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
+  { label: '宮城県「みやぎの野菜指導指針」たまねぎ（平成18年3月）p.271', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_19.pdf' },
+  { label: '農研機構「タマネギ栽培マニュアル」p.4', url: 'https://www.naro.go.jp/publicity_report/publication/files/Onion_Manual.pdf' },
+  { label: '鹿児島県「有機百培」葉茎菜類 p.104', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143851-1.pdf' },
+  { label: '長崎県 成果情報S-27-14（2015年度）p.1', url: 'https://www.pref.nagasaki.lg.jp/e-nourin/nougi/theme/result/H27seika-jouhou/shidou/S-27-14.pdf' },
   { label: '農林水産省「キャベツ栽培のポイント」', url: 'https://www.maff.go.jp/j/seisan/pdf/001_cabbege.pdf' },
   { label: '秋田県「野菜栽培技術指針」葉茎菜類（平成19年3月）', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-12.pdf' },
   { label: '秋田県「野菜栽培技術指針」ネギ（平成19年3月）', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-23.pdf' },
@@ -177,6 +181,12 @@ function isLongNegi(cropName: string, variety?: string | null): boolean {
   return nameIncludes(cropName, variety, ['ネギ', 'ねぎ', '葱'])
 }
 
+function isOnion(cropName: string, variety?: string | null): boolean {
+  return nameIncludes(cropName, variety, ['玉ねぎ', '玉ネギ', '玉葱', 'タマネギ', 'たまねぎ'])
+}
+
+const ONION_HARVEST = '葉が倒れてきたら、収穫が近いしるしです。宮城県の資料では、6〜7割の株が倒れ、晴れが2〜3日続いたあとに収穫します。鹿児島県・長崎県の資料では、倒れてから1週間後が目安です。'
+
 const LETTUCE_HARVEST = '外葉が外へ開き、球の重さが400〜500g前後になったら収穫の目安です。鹿児島県の資料では、とり遅れると裂球や腐れが出やすいとされています。'
 const NEGI_DIG = '暖かい時期は20〜30日、寒い時期は30〜40日を目安に試し掘りし、白い部分が25〜30cm以上になったか確かめてから収穫します。'
 /** 葉菜の窓と出典の区分は台帳C6（葉菜5品目の行）。表示文は他品目と同じ形。 */
@@ -188,6 +198,18 @@ const LEAF_WINDOW = `作型・季節によって日数が異なる。${WINDOW_US
  * 試し掘りは収穫目安の積算温度の 85% 以上（実績ベース）。
  */
 const MILESTONES: MilestoneDef[] = [
+  {
+    key: 'onion-lodging', cropLabel: '玉ねぎ', match: isOnion,
+    question: '葉が倒れてきましたか？', term: '葉の倒伏', yesLabel: '倒れてきた',
+    ifYes: ONION_HARVEST,
+    conditional: `葉が倒れてきたか確かめましょう。${ONION_HARVEST}`,
+    recordedLine: (days) => `葉の倒伏を確かめてから${Math.max(0, days)}日です。${ONION_HARVEST}`,
+    sourceLabel: '宮城県「みやぎの野菜指導指針」たまねぎ（平成18年3月）p.271／農研機構「タマネギ栽培マニュアル」p.4／鹿児島県「有機百培」葉茎菜類 p.104（収穫の見分け方）／長崎県 成果情報S-27-14（2015年度）p.1',
+    howTo: ['葉が自然に倒れてきたかを見ます。', ONION_HARVEST],
+    window: { kind: 'days', from: 150, to: 290 },
+    windowNote: `定植から150〜290日（宮城・秋田・鹿児島・長崎の資料から設定。地域・作型によって日数が異なる。${WINDOW_USE}）`,
+    skipWhenHarvest: true,
+  },
   {
     key: 'cabbage-heading', cropLabel: 'キャベツ',
     match: (name, variety) => nameIncludes(name, variety, ['キャベツ', 'きゃべつ']),
