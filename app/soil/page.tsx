@@ -6,7 +6,8 @@ import Sidebar from '@/components/Sidebar'
 import { formatDateShort } from '@/lib/utils'
 import SoilDiagnosisActions from './SoilDiagnosisActions'
 import { SOIL_TIMING_DURING, soilNutrientHits, soilTimingSuffix } from '@/lib/benchmarks/soil-nutrients'
-import { soilClassificationForFarm, soilNutrientBasis } from '@/lib/farm-soil/classification'
+import { soilClassificationForFarm } from '@/lib/farm-soil/classification'
+import { SoilDiagnosisBasis } from '@/components/FarmSoil'
 
 function measure(label: string, value: number | null, unit: string, note?: string): string | null {
   if (value == null) return null
@@ -35,7 +36,7 @@ export default async function SoilDiagnosisPage({
   const selectedFarm = farms.find((farm) => farm.id === farmId)
 
   return (
-    <div className="dashboard-page min-h-screen flex">
+    <div className="soil-diagnosis-page dashboard-page min-h-screen flex">
       <Sidebar />
       <main className="dashboard-main farms-page">
         <div className="farms-header">
@@ -118,13 +119,13 @@ export default async function SoilDiagnosisPage({
                       </span>
                     </h2>
                     {lines.length > 0 && <p className="insights-regional-text">{lines.join('。')}。</p>}
+                    <SoilDiagnosisBasis farm={latest.farm} />
                     {latest.timing === SOIL_TIMING_DURING && (
                       <p className="insights-regional-text">栽培中に測った値には、作付け前の目安を当てはめていません。</p>
                     )}
                     {hits.length > 0 && (
                       <p className="insights-regional-text">
                         これは作付け前に測った値の目安です。
-                        {soilNutrientBasis(soil)}
                         {soil.group === 'fallback' && hits.some((hit) => hit.key === 'ec') ? '砂地（砂丘未熟土など）では 0.1 が目安です。' : ''}
                       </p>
                     )}

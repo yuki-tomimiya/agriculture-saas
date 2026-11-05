@@ -1854,6 +1854,14 @@
   flex-direction: column;
   gap: 0.25rem;
 }
+
+/* 土の確認・訂正の画面では、狭い幅でも本文を覆わない。 */
+@media (max-width: 767px) {
+  .farm-detail-page > .app-sidebar,
+  .soil-diagnosis-page > .app-sidebar { display: none; }
+  .soil-diagnosis-page > .dashboard-main { margin-left: 0; width: 100%; min-width: 0; padding: 1rem; }
+  .soil-diagnosis-page .farms-header { flex-wrap: wrap; gap: 1rem; }
+}
 .app-sidebar-divider {
   height: 1px;
   background: #e5e7eb;

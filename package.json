@@ -9,6 +9,7 @@
     "soil:refresh": "tsx scripts/soil-refresh.ts",
     "soil:farm-test": "tsx --test tests/farm-soil.test.ts",
     "soil:nutrient-test": "tsx --test tests/soil-nutrients.test.tsx",
+    "soil:ui-test": "tsx --test tests/soil-ui.test.tsx",
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",
