@@ -4,8 +4,8 @@ import assert from 'node:assert/strict'
 import React from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { FarmSoil } from '@prisma/client'
-import { classifyEffectiveSoil, soilClassificationForFarm, soilNutrientTrigger, type SoilGroup } from '../lib/farm-soil/classification'
-import { soilNutrientHits } from '../lib/benchmarks/soil-nutrients'
+import { classifyEffectiveSoil, soilClassificationForFarm, soilNutrientTrigger, soilNutrientBasis, type SoilGroup } from '../lib/farm-soil/classification'
+import { soilNutrientHits, soilNutrientAdvice } from '../lib/benchmarks/soil-nutrients'
 import { MANUAL_SOIL_OPTIONS } from '../lib/farm-soil/options'
 import { isProposalDismissed } from '../lib/proposals/dismissal'
 import { prisma } from '../lib/prisma'
@@ -52,9 +52,9 @@ test('ECの境界値、普通畑と判断の出どころ、不明の従来文', 
   for (const group of ['black', 'ordinary', 'fallback'] as const) {
     assert.equal(hit(.3, 'ec', group), undefined); assert.ok(hit(.31, 'ec', group))
   }
-  for (const group of ['black', 'ordinary', 'sandy'] as const) assert.match(hit(.31, 'ec', group)!.sentence, /普通畑の目安.*地図の目安/)
+  for (const group of ['black', 'ordinary', 'sandy'] as const) assert.match(soilNutrientAdvice([hit(.31, 'ec', group)!], context(group)), /普通畑の目安.*地図の目安/)
   assert.match(hit(.31, 'ec', 'fallback')!.sentence, /砂地（砂丘未熟土など）では 0.1 が目安/)
-  assert.match(hit(.31, 'ec', 'fallback')!.sentence, /これまでの目安/)
+  assert.match(soilNutrientAdvice([hit(.31, 'ec', 'fallback')!], context('fallback')), /これまでの目安/)
   assert.doesNotMatch(hit(.11, 'ec', 'sandy')!.sentence, /砂地（砂丘未熟土など）では/)
 })
 test('リン酸の改善目標と100以上の目安を混同しない', () => {
@@ -90,6 +90,19 @@ test('閉じたカードのキーは区分に連動し、今の基準は旧キ�
   assert.equal(isProposalDismissed(rows, soilNutrientTrigger('farm', context('sandy'))), false)
   assert.equal(soilNutrientTrigger('farm', context('fallback')), 'soil-nutrient:farm')
 })
+test('ECとリン酸の両方を超えてもカードの断り書きは1回だけ', () => {
+  for (const soil of [context('black'), context('ordinary'), context('sandy'), context('fallback'),
+    classifyEffectiveSoil({ source: 'manual', key: 'gley', label: 'グライ土' })]) {
+    const hits = soilNutrientHits({ ec: .4, phosphorus: 101, nitrogen: 11 }, soil)
+    assert.equal(hits.length, 3)
+    const text = soilNutrientAdvice(hits, soil)
+    assert.equal(text.split(soilNutrientBasis(soil)).length - 1, 1)
+    assert.match(text, /EC/); assert.match(text, /有効態リン酸/)
+    assert.equal(soilNutrientAdvice([], soil), '')
+    const nitrogen = hits.filter(hit => hit.key === 'nitrogen')
+    assert.equal(soilNutrientAdvice(nitrogen, soil), nitrogen[0].sentence)
+  }
+})
 
 function farmFixture() {
   const soil: FarmSoil = { farmId: 'farm', lookupStatus: 'matched', lookupToken: null, locationVersion: 0,
@@ -119,9 +132,13 @@ test('土壌画面と今日の提案が同じ現在の土を使い、区分変�
   })
   try {
     let html = await page(); assert.match(html, /上限 75/); assert.match(html, /地図の目安/)
+    diagnosis.ec = .31
     const cards = await scoreGrowingCrops('user', new Date(2026, 10, 5))
     const original = cards.find(c => c.trigger?.startsWith('soil-nutrient:'))!
     assert.ok(original); assert.match(original.layers!.general!, /上限 75/)
+    assert.match(original.layers!.general!, /EC/)
+    assert.equal(original.layers!.general!.split(soilNutrientBasis(soilClassificationForFarm(farm))).length - 1, 1)
+    diagnosis.ec = .2
     const dismissed = [{ trigger: original.trigger!, cropId: null }]
     assert.equal((await scoreGrowingCrops('user', new Date(), dismissed)).some(c => c.trigger?.startsWith('soil-nutrient:')), false)
     farm.soil.manualStatus = 'active'; farm.soil.manualSoilKey = 'gley'

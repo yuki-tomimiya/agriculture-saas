@@ -30,7 +30,7 @@ import { PLACE_PROMPT } from '@/lib/places/catalog'
 import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
-import { SOIL_TIMING_DURING, soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
+import { SOIL_TIMING_DURING, soilNutrientHits, soilNutrientAdvice } from '@/lib/benchmarks/soil-nutrients'
 import { soilClassificationForFarm, soilNutrientTrigger } from '@/lib/farm-soil/classification'
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
@@ -1107,7 +1107,7 @@ export async function scoreGrowingCrops(
       },
       layers: mergeLayers({
         personal: `${farmName}の${dateLabel}の診断です。`,
-        general: hits.map((hit) => hit.sentence).join(''),
+        general: soilNutrientAdvice(hits, soil),
         conclusion,
       }),
     })

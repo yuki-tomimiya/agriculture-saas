@@ -57,12 +57,11 @@ export function soilNutrientHits(row: {
   const hits: SoilNutrientHit[] = []
   const ecLimit = soil.group === 'sandy' ? SOIL_EC_SAND_MS : SOIL_EC_OVER_MS
   const phosphorusLimit = soil.group === 'fallback' ? null : soil.group === 'black' ? 100 : 75
-  const basis = soilNutrientBasis(soil)
   if (row.ec != null && row.ec > ecLimit) {
     hits.push({
       key: 'ec',
       pageNote: `${ecLimit} を超えています`,
-      sentence: `作付け前の EC が ${ecLimit} mS/cm を超えています。肥料が土に残っている目安です。硝酸態窒素も測って、次の作付けの元肥の窒素を減らすことを考えます。${BEFORE_PLANTING}${soil.group === 'fallback' ? '砂地（砂丘未熟土など）では 0.1 が目安です。' : ''}${basis}`,
+      sentence: `作付け前の EC が ${ecLimit} mS/cm を超えています。肥料が土に残っている目安です。硝酸態窒素も測って、次の作付けの元肥の窒素を減らすことを考えます。${BEFORE_PLANTING}${soil.group === 'fallback' ? '砂地（砂丘未熟土など）では 0.1 が目安です。' : ''}`,
     })
   }
   if (row.nitrogen != null && row.nitrogen > SOIL_NITRATE_OVER_MG) {
@@ -80,9 +79,15 @@ export function soilNutrientHits(row: {
       key: 'phosphorus',
       pageNote: overTarget ? `改善目標の上限 ${phosphorusLimit} を超えています${skip ? '（施肥を控える目安）' : ''}` : '100 以上です',
       sentence: skip
-        ? `有効態リン酸が 100 mg/100g 以上あります。${overTarget ? `普通畑の改善目標の上限 ${phosphorusLimit} mg/100g も超えています。` : ''}リン酸の肥料は施さなくてよい目安です。${BEFORE_PLANTING}${basis}`
-        : `有効態リン酸が普通畑の改善目標の上限 ${phosphorusLimit} mg/100g を超えています。次の元肥は、診断結果と地域の基準に合わせて確認してください。${BEFORE_PLANTING}${basis}`,
+        ? `有効態リン酸が 100 mg/100g 以上あります。${overTarget ? `普通畑の改善目標の上限 ${phosphorusLimit} mg/100g も超えています。` : ''}リン酸の肥料は施さなくてよい目安です。${BEFORE_PLANTING}`
+        : `有効態リン酸が普通畑の改善目標の上限 ${phosphorusLimit} mg/100g を超えています。次の元肥は、診断結果と地域の基準に合わせて確認してください。${BEFORE_PLANTING}`,
     })
   }
   return hits
+}
+
+/** カード全体の断り書きは、ECとリン酸のどちらかがあるときに1回だけ添える。 */
+export function soilNutrientAdvice(hits: SoilNutrientHit[], soil: SoilClassification = FALLBACK_SOIL): string {
+  return hits.map(hit => hit.sentence).join('') +
+    (hits.some(hit => hit.key === 'ec' || hit.key === 'phosphorus') ? soilNutrientBasis(soil) : '')
 }
