@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { farmDeleteBlockMessage } from '@/lib/farms/delete-guard'
-import { parseFarmPlace } from '@/lib/places/catalog'
+import { parseFarmInput } from '@/lib/farms/input'
+import { farmSoilService } from '@/lib/farm-soil'
+import { FarmSoilError } from '@/lib/farm-soil/service'
 
 export async function PATCH(
   request: NextRequest,
@@ -22,7 +24,6 @@ export async function PATCH(
     const { id } = await params
     const existing = await prisma.farm.findFirst({
       where: { id, userId },
-      select: { id: true },
     })
 
     if (!existing) {
@@ -33,44 +34,17 @@ export async function PATCH(
     }
 
     const body = await request.json()
-    const name = typeof body.name === 'string' ? body.name.trim() : ''
-    const description =
-      body.description == null
-        ? null
-        : typeof body.description === 'string'
-          ? body.description.trim() || null
-          : null
-    const latitude = body.latitude != null && body.latitude !== '' ? Number(body.latitude) : null
-    const longitude = body.longitude != null && body.longitude !== '' ? Number(body.longitude) : null
-
-    if (!name) {
-      return NextResponse.json(
-        { error: '農場名は必須です' },
-        { status: 400 }
-      )
-    }
-    const place = parseFarmPlace(body)
-    if ('error' in place) {
-      return NextResponse.json({ error: place.error }, { status: 400 })
-    }
-
-    const farm = await prisma.farm.update({
-      where: { id },
-      data: {
-        name,
-        description,
-        latitude: latitude != null && !Number.isNaN(latitude) ? latitude : null,
-        longitude: longitude != null && !Number.isNaN(longitude) ? longitude : null,
-        prefectureCode: place.prefectureCode,
-        municipalityCode: place.municipalityCode,
-      },
-    })
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: '入力が不正です' }, { status: 400 })
+    const data = parseFarmInput(body, existing)
+    if ('error' in data) return NextResponse.json({ error: data.error }, { status: 400 })
+    const farm = await farmSoilService.update(userId, id, data)
 
     return NextResponse.json({
       success: true,
       farm: { id: farm.id, name: farm.name },
     })
   } catch (error) {
+    if (error instanceof FarmSoilError) return NextResponse.json({ error: error.message }, { status: error.status })
     console.error('Farm update error:', error)
     return NextResponse.json(
       { error: '農場の更新に失敗しました' },

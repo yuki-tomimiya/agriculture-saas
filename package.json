@@ -6,6 +6,8 @@
     "soil:import": "tsx scripts/soil-import.ts",
     "soil:verify": "tsx scripts/soil-verify.ts",
     "soil:test": "tsx --test tests/soil-map.test.ts",
+    "soil:refresh": "tsx scripts/soil-refresh.ts",
+    "soil:farm-test": "tsx --test tests/farm-soil.test.ts",
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
-import { prisma } from '@/lib/prisma'
-import { parseFarmPlace } from '@/lib/places/catalog'
+import type { Farm } from '@prisma/client'
+import { parseFarmInput } from '@/lib/farms/input'
+import { farmSoilService } from '@/lib/farm-soil'
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,33 +17,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const name = typeof body.name === 'string' ? body.name.trim() : ''
-    const description = typeof body.description === 'string' ? body.description.trim() || null : null
-    const latitude = body.latitude != null && body.latitude !== '' ? Number(body.latitude) : null
-    const longitude = body.longitude != null && body.longitude !== '' ? Number(body.longitude) : null
-
-    if (!name) {
-      return NextResponse.json(
-        { error: '農場名は必須です' },
-        { status: 400 }
-      )
-    }
-    const place = parseFarmPlace(body)
-    if ('error' in place) {
-      return NextResponse.json({ error: place.error }, { status: 400 })
-    }
-
-    const farm = await prisma.farm.create({
-      data: {
-        name,
-        description,
-        latitude: latitude != null && !Number.isNaN(latitude) ? latitude : null,
-        longitude: longitude != null && !Number.isNaN(longitude) ? longitude : null,
-        prefectureCode: place.prefectureCode,
-        municipalityCode: place.municipalityCode,
-        userId,
-      },
-    })
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return NextResponse.json({ error: '入力が不正です' }, { status: 400 })
+    const data = parseFarmInput(body)
+    if ('error' in data) return NextResponse.json({ error: data.error }, { status: 400 })
+    const farm = await farmSoilService.create(userId, data as Pick<Farm, 'name' | 'description' | 'latitude' | 'longitude' | 'prefectureCode' | 'municipalityCode'>)
 
     return NextResponse.json({ success: true, farm: { id: farm.id, name: farm.name } })
   } catch (error) {

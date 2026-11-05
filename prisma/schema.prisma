@@ -32,6 +32,7 @@ model Farm {
   description String?
   latitude    Float?
   longitude   Float?
+  locationVersion Int @default(0) // 座標が変わるたびに増やし、古い土壌図の照合結果を棄却する
   prefectureCode   String? // 総務省の都道府県コード（2桁）。候補は近い観測所から。本人が保存する
   municipalityCode String? // 全国地方公共団体コード（6桁）。名前は合併で変わるのでコードを持つ
   userId      String
@@ -46,6 +47,39 @@ model Farm {
   fertilizerRecords FertilizerRecord[]
   sales             Sale[]
   soilDiagnoses     SoilDiagnosis[]
+  soil              FarmSoil?
+}
+
+model FarmSoil {
+  farmId           String @id
+  farm             Farm   @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  lookupStatus     String @default("pending")
+  lookupToken      String?
+  locationVersion  Int @default(0)
+  mapScale         String?
+  datasetId        String?
+  catalogVersion   String?
+  featureId        String?
+  latitude         Float?
+  longitude        Float?
+  lookedUpAt       DateTime?
+  rawGroupCode     String?
+  rawSubgroupCode  String?
+  rawSeriesCode    String?
+  rawSoilName      String?
+  rawLandUse       String?
+  rawPropertiesJson String?
+  candidatesJson   String?
+  codeConflict     Boolean @default(false)
+  lookupError      String?
+  mappingVersion   String? // 基準の当てはめを追加する段階まで未設定
+  coordinatePolicy String?
+  manualSoilKey    String?
+  manualUpdatedAt  DateTime?
+  manualNote       String?
+  manualStatus     String @default("none") // none / active / needs_review
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 }
 
 model Field {

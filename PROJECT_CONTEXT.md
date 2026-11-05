@@ -76,6 +76,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 土壌図の取り込み・検索 | `scripts/soil-import.ts`（`npm run soil:import`）、`scripts/soil-verify.ts`（`npm run soil:verify`）、`lib/soil-map/lookup.ts`。設計は Obsidian の `調査/B-5_土の種類の設計のたたき台_2026-11-01.md` |
+| 農場ごとの土 | `prisma/schema.prisma` の `FarmSoil`、`lib/farm-soil/`（保存・訂正・有効な土の解決）、農場の登録・更新API、`app/api/farms/[id]/soil/route.ts`、`scripts/soil-refresh.ts`（`npm run soil:refresh`） |
 | 生育の節目 | `lib/proposals/milestones.ts`（窓は台帳 C6。葉菜は C23〜C28）, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。防除間隔は `lib/benchmarks/spray-interval.ts` |
 | 削除 | 作物・農場は詳細、収穫・タスクも詳細、販売は一覧。各 `app/api/.../[id]` の DELETE。作物が残る農場は消せない |
 | 議事録 | 正本は `docs/議事録/minutes-content.json`。Word は 2026-10-30 の版のファイルだけを残し、生成する道具は 2026-10-31 に外した |

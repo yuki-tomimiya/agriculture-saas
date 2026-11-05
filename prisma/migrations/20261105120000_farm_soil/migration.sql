@@ -1,0 +1,33 @@
+ALTER TABLE "Farm" ADD COLUMN "locationVersion" INTEGER NOT NULL DEFAULT 0;
+
+CREATE TABLE "FarmSoil" (
+    "farmId" TEXT NOT NULL PRIMARY KEY,
+    "lookupStatus" TEXT NOT NULL DEFAULT 'pending',
+    "lookupToken" TEXT,
+    "locationVersion" INTEGER NOT NULL DEFAULT 0,
+    "mapScale" TEXT,
+    "datasetId" TEXT,
+    "catalogVersion" TEXT,
+    "featureId" TEXT,
+    "latitude" REAL,
+    "longitude" REAL,
+    "lookedUpAt" DATETIME,
+    "rawGroupCode" TEXT,
+    "rawSubgroupCode" TEXT,
+    "rawSeriesCode" TEXT,
+    "rawSoilName" TEXT,
+    "rawLandUse" TEXT,
+    "rawPropertiesJson" TEXT,
+    "candidatesJson" TEXT,
+    "codeConflict" BOOLEAN NOT NULL DEFAULT false,
+    "lookupError" TEXT,
+    "mappingVersion" TEXT,
+    "coordinatePolicy" TEXT,
+    "manualSoilKey" TEXT,
+    "manualUpdatedAt" DATETIME,
+    "manualNote" TEXT,
+    "manualStatus" TEXT NOT NULL DEFAULT 'none',
+    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "FarmSoil_farmId_fkey" FOREIGN KEY ("farmId") REFERENCES "Farm" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
