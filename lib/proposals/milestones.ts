@@ -205,7 +205,7 @@ const MILESTONES: MilestoneDef[] = [
     conditional: `葉が倒れてきたか確かめましょう。${ONION_HARVEST}`,
     recordedLine: (days) => `葉の倒伏を確かめてから${Math.max(0, days)}日です。${ONION_HARVEST}`,
     sourceLabel: '宮城県「みやぎの野菜指導指針」たまねぎ（平成18年3月）p.271／農研機構「タマネギ栽培マニュアル」p.4／鹿児島県「有機百培」葉茎菜類 p.104（収穫の見分け方）／長崎県 成果情報S-27-14（2015年度）p.1',
-    howTo: ['葉が自然に倒れてきたかを見ます。', ONION_HARVEST],
+    howTo: ['葉が自然に倒れてきたかを見ます。'],
     window: { kind: 'days', from: 150, to: 290 },
     windowNote: `定植から150〜290日（宮城・秋田・鹿児島・長崎の資料から設定。地域・作型によって日数が異なる。${WINDOW_USE}）`,
     skipWhenHarvest: true,
