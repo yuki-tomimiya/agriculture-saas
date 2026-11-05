@@ -36,7 +36,7 @@ export default async function SoilDiagnosisPage({
   const selectedFarm = farms.find((farm) => farm.id === farmId)
 
   return (
-    <div className="soil-diagnosis-page dashboard-page min-h-screen flex">
+    <div className="dashboard-page min-h-screen flex">
       <Sidebar />
       <main className="dashboard-main farms-page">
         <div className="farms-header">
