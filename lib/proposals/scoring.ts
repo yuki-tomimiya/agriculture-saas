@@ -31,6 +31,7 @@ import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
 import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { SOIL_TIMING_DURING, soilNutrientHits } from '@/lib/benchmarks/soil-nutrients'
+import { soilClassificationForFarm, soilNutrientTrigger } from '@/lib/farm-soil/classification'
 import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
 import { readCoolNight, readFarmFrost, type FrostOrigin } from '@/lib/jma/frost-record'
@@ -969,7 +970,7 @@ export async function scoreGrowingCrops(
   const diagnoses = await prisma.soilDiagnosis.findMany({
     where: { userId },
     orderBy: { diagnosedAt: 'desc' },
-    include: { farm: { select: { name: true } } },
+    include: { farm: { include: { soil: true } } },
   })
   const latestByFarm = new Map<string, (typeof diagnoses)[number]>()
   for (const row of diagnoses) {
@@ -1080,10 +1081,11 @@ export async function scoreGrowingCrops(
   }
 
   for (const [farmId, diagnosis] of latestByFarm) {
-    const trigger = `soil-nutrient:${farmId}`
+    const soil = soilClassificationForFarm(diagnosis.farm)
+    const trigger = soilNutrientTrigger(farmId, soil)
     if (isProposalDismissed(dismissed, trigger)) continue
     if (diagnosis.timing === SOIL_TIMING_DURING) continue
-    const hits = soilNutrientHits(diagnosis)
+    const hits = soilNutrientHits(diagnosis, soil)
     if (hits.length === 0) continue
     const diagnosed = new Date(diagnosis.diagnosedAt)
     const dateLabel = `${diagnosed.getFullYear()}/${diagnosed.getMonth() + 1}/${diagnosed.getDate()}`

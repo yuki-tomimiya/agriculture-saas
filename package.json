@@ -8,6 +8,7 @@
     "soil:test": "tsx --test tests/soil-map.test.ts",
     "soil:refresh": "tsx scripts/soil-refresh.ts",
     "soil:farm-test": "tsx --test tests/farm-soil.test.ts",
+    "soil:nutrient-test": "tsx --test tests/soil-nutrients.test.tsx",
     "dev": "next dev -p 3000",
     "build": "next build",
     "start": "next start -p 3000",

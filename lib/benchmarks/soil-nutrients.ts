@@ -18,9 +18,11 @@ export const SOIL_PH_SOURCE_MIYAZAKI = {
   url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/08450305sakumotu1.pdf',
 } as const
 
-/** 普通畑。これを超えたら一言出す。ちょうど 0.3 は出さない */
+import { FALLBACK_SOIL, soilNutrientBasis, type SoilClassification } from '../farm-soil/classification'
+
+/** 黒ボク・普通・今の基準のEC上限（台帳E5）。 */
 export const SOIL_EC_OVER_MS = 0.3
-/** 岩屑土・砂丘未熟土。土の種類は記録していないので、文で添えるだけ */
+/** 砂のEC上限（台帳E5）。 */
 export const SOIL_EC_SAND_MS = 0.1
 /** これを超えたら一言出す。ちょうど 10 は出さない */
 export const SOIL_NITRATE_OVER_MG = 10
@@ -50,14 +52,17 @@ export function soilNutrientHits(row: {
   nitrogen?: number | null
   phosphorus?: number | null
   timing?: string | null
-}): SoilNutrientHit[] {
+}, soil: SoilClassification = FALLBACK_SOIL): SoilNutrientHit[] {
   if (row.timing === SOIL_TIMING_DURING) return []
   const hits: SoilNutrientHit[] = []
-  if (row.ec != null && row.ec > SOIL_EC_OVER_MS) {
+  const ecLimit = soil.group === 'sandy' ? SOIL_EC_SAND_MS : SOIL_EC_OVER_MS
+  const phosphorusLimit = soil.group === 'fallback' ? null : soil.group === 'black' ? 100 : 75
+  const basis = soilNutrientBasis(soil)
+  if (row.ec != null && row.ec > ecLimit) {
     hits.push({
       key: 'ec',
-      pageNote: '0.3 を超えています',
-      sentence: `作付け前の EC が 0.3 mS/cm を超えています。肥料が土に残っている目安です。硝酸態窒素も測って、次の作付けの元肥の窒素を減らすことを考えます。${BEFORE_PLANTING}砂地（砂丘未熟土など）では 0.1 が目安です。`,
+      pageNote: `${ecLimit} を超えています`,
+      sentence: `作付け前の EC が ${ecLimit} mS/cm を超えています。肥料が土に残っている目安です。硝酸態窒素も測って、次の作付けの元肥の窒素を減らすことを考えます。${BEFORE_PLANTING}${soil.group === 'fallback' ? '砂地（砂丘未熟土など）では 0.1 が目安です。' : ''}${basis}`,
     })
   }
   if (row.nitrogen != null && row.nitrogen > SOIL_NITRATE_OVER_MG) {
@@ -67,11 +72,16 @@ export function soilNutrientHits(row: {
       sentence: `硝酸態窒素が 10 mg/100g を超えています。そのぶん、次の作付けの元肥の窒素を減らせます。${BEFORE_PLANTING}`,
     })
   }
-  if (row.phosphorus != null && row.phosphorus >= SOIL_PHOSPHORUS_SKIP_MG) {
+  const phosphorus = row.phosphorus
+  const overTarget = phosphorus != null && phosphorusLimit != null && phosphorus > phosphorusLimit
+  const skip = phosphorus != null && phosphorus >= SOIL_PHOSPHORUS_SKIP_MG
+  if (overTarget || skip) {
     hits.push({
       key: 'phosphorus',
-      pageNote: '100 以上です',
-      sentence: `有効態リン酸が 100 mg/100g 以上あります。リン酸の肥料は施さなくてよい目安です。${BEFORE_PLANTING}`,
+      pageNote: overTarget ? `改善目標の上限 ${phosphorusLimit} を超えています${skip ? '（施肥を控える目安）' : ''}` : '100 以上です',
+      sentence: skip
+        ? `有効態リン酸が 100 mg/100g 以上あります。${overTarget ? `普通畑の改善目標の上限 ${phosphorusLimit} mg/100g も超えています。` : ''}リン酸の肥料は施さなくてよい目安です。${BEFORE_PLANTING}${basis}`
+        : `有効態リン酸が普通畑の改善目標の上限 ${phosphorusLimit} mg/100g を超えています。次の元肥は、診断結果と地域の基準に合わせて確認してください。${BEFORE_PLANTING}${basis}`,
     })
   }
   return hits

@@ -6,6 +6,7 @@ import Sidebar from '@/components/Sidebar'
 import { formatDateShort } from '@/lib/utils'
 import SoilDiagnosisActions from './SoilDiagnosisActions'
 import { SOIL_TIMING_DURING, soilNutrientHits, soilTimingSuffix } from '@/lib/benchmarks/soil-nutrients'
+import { soilClassificationForFarm, soilNutrientBasis } from '@/lib/farm-soil/classification'
 
 function measure(label: string, value: number | null, unit: string, note?: string): string | null {
   if (value == null) return null
@@ -28,7 +29,7 @@ export default async function SoilDiagnosisPage({
   })
   const records = await prisma.soilDiagnosis.findMany({
     where: { userId: user.id, ...(farmId ? { farmId } : {}) },
-    include: { farm: true, field: true },
+    include: { farm: { include: { soil: true } }, field: true },
     orderBy: { diagnosedAt: 'desc' },
   })
   const selectedFarm = farms.find((farm) => farm.id === farmId)
@@ -96,7 +97,8 @@ export default async function SoilDiagnosisPage({
                 const group = records.filter((record) => record.farmId === groupFarmId)
                 const latest = group[0]
                 const older = group.slice(1)
-                const hits = soilNutrientHits(latest)
+                const soil = soilClassificationForFarm(latest.farm)
+                const hits = soilNutrientHits(latest, soil)
                 const noteOf = (key: 'ec' | 'nitrogen' | 'phosphorus') => hits.find((hit) => hit.key === key)?.pageNote
                 const lines = [
                   measure('pH', latest.ph, ''),
@@ -122,7 +124,8 @@ export default async function SoilDiagnosisPage({
                     {hits.length > 0 && (
                       <p className="insights-regional-text">
                         これは作付け前に測った値の目安です。
-                        {hits.some((hit) => hit.key === 'ec') ? '砂地（砂丘未熟土など）では 0.1 が目安です。' : ''}
+                        {soilNutrientBasis(soil)}
+                        {soil.group === 'fallback' && hits.some((hit) => hit.key === 'ec') ? '砂地（砂丘未熟土など）では 0.1 が目安です。' : ''}
                       </p>
                     )}
                     {latest.field && <p className="insights-regional-text">圃場 {latest.field.name}</p>}
