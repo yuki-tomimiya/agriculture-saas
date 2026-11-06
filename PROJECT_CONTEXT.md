@@ -78,6 +78,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 土壌図の取り込み・検索 | `scripts/soil-import.ts`（`npm run soil:import`）、`scripts/soil-verify.ts`（`npm run soil:verify`）、`lib/soil-map/lookup.ts`。設計は Obsidian の `調査/B-5_土の種類の設計のたたき台_2026-11-01.md` |
 | 農場ごとの土 | `prisma/schema.prisma` の `FarmSoil`、`lib/farm-soil/`（保存・訂正・有効な土の解決）、農場の登録・更新API、`app/api/farms/[id]/soil/route.ts`、`scripts/soil-refresh.ts`（`npm run soil:refresh`） |
 | 土の種類の表示・訂正 | `app/farms/[id]/page.tsx` の `#soil-type`、`components/FarmSoil.tsx`（詳細・診断・出典）、`components/FarmSoilEditor.tsx`（訂正フォーム）、`lib/farm-soil/presentation.ts`（表示の組立）。診断からの導線は `app/soil/page.tsx`（台帳E11・A6） |
+| 土の説明 | `lib/farm-soil/descriptions.ts`、表示は `components/FarmSoil.tsx`（台帳E12） |
 | 土の区分・養分の目安 | `lib/farm-soil/classification.ts`（区分の表・農場から区分を決める関数）、`lib/benchmarks/soil-nutrients.ts`（台帳E5・E7・E11） |
 | 生育の節目 | `lib/proposals/milestones.ts`（窓は台帳 C6。葉菜は C23〜C28）, `lib/proposals/stages.ts`, `CropMilestone`（作付け詳細で手入力もできる）。防除間隔は `lib/benchmarks/spray-interval.ts` |
 | 削除 | 作物・農場は詳細、収穫・タスクも詳細、販売は一覧。各 `app/api/.../[id]` の DELETE。作物が残る農場は消せない |
