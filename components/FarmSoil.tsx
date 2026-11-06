@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { farmSoilPresentation, type SoilFarm } from '@/lib/farm-soil/presentation'
 import { soilNutrientBasis } from '@/lib/farm-soil/classification'
+import { manualSoilDescription, mapSoilDescription } from '@/lib/farm-soil/descriptions'
+import { manualSoilOption } from '@/lib/farm-soil/options'
 import { SOIL_EC_OVER_MS, SOIL_PHOSPHORUS_SKIP_MG } from '@/lib/benchmarks/soil-nutrients'
 import FarmSoilEditor from './FarmSoilEditor'
 
@@ -39,12 +41,22 @@ export function SoilDiagnosisBasis({ farm }: { farm: SoilFarm }) {
 
 export default function FarmSoil({ farm }: { farm: SoilFarm }) {
   const view = farmSoilPresentation(farm)
+  const manual = view.soil.source === 'manual' ? manualSoilOption(farm.soil?.manualSoilKey) : null
+  const mapCanBeDescribed = view.mapName && farm.latitude != null && farm.longitude != null &&
+    farm.soil?.manualStatus !== 'needs_review' && !/^[ACZ]/.test(farm.soil?.rawGroupCode?.trim() ?? '')
+  const description = manual ? manualSoilDescription(manual.key)
+    : mapCanBeDescribed ? mapSoilDescription(farm.soil?.rawSubgroupCode) : null
   return <section id="soil-type" className="bg-white p-4 sm:p-6 rounded-lg shadow mb-8 min-w-0 break-words scroll-mt-4">
     <h2 className="text-xl font-semibold mb-2">土の種類</h2>
     {view.soil.source === 'manual' ? <>
       <p>本人が選択：{view.soil.label}</p>
       {view.mapName && <p className="text-sm text-gray-500 mt-2">地図の推定：{view.mapName}（土壌図による目安）</p>}
     </> : view.mapName && <p>この場所の土は「{view.mapName}」（土壌図による目安）です。実際の畑と違う場合は直してください。</p>}
+    {description && <p className="mt-2 text-sm text-gray-700">
+      {description.broad && <>土の大きな分類についての説明{' '}</>}
+      「{description.quote}」{' '}
+      （<a className="text-green-700 underline" href={description.url}>農研機構 日本土壌インベントリー「土壌分類」</a>）
+    </p>}
     <p className="mt-2 text-sm text-gray-700">{view.column
       ? `土の診断では、普通畑の「${view.column}」の列の目安を使います。`
       : view.status}</p>

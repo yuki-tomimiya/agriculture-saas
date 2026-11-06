@@ -95,3 +95,36 @@ test('千葉県外ではデータ未配備でも訂正の選択肢を使える',
   assert.match(html, /土の種類を直す/); assert.equal((html.match(/<option /g) ?? []).length, 14)
   assert.equal(farmSoilPresentation(farm).soil.group, 'fallback')
 })
+
+test('農場詳細は細かい土の説明を優先し、代わりに大きな分類を示す場合は明記する', () => {
+  const tateyama = render(fixture())
+  assert.match(tateyama, /explain\/F2\.html/)
+  assert.match(tateyama, /グライ層が50cm以内に出てくる土壌。/)
+  assert.doesNotMatch(tateyama, /土の大きな分類についての説明/)
+  for (const group of ['F1', 'J4', 'D5']) {
+    const html = render(fixture({ rawGroupCode: group, rawSubgroupCode: group, rawSeriesCode: group }))
+    assert.ok(html.includes(`/explain/${group[0]}.html`))
+    assert.match(html, /土の大きな分類についての説明/)
+  }
+})
+
+test('本人の選択を優先し、説明できない状態と土壌診断には引用を出さない', () => {
+  for (const [key, page] of [['andosol', 'D'], ['gray-upland', 'H']]) {
+    const html = render(fixture({ manualStatus: 'active', manualSoilKey: key }))
+    assert.ok(html.includes(`/explain/${page}.html`))
+    assert.equal((html.match(/\/explain\//g) ?? []).length, 1)
+  }
+  for (const group of ['A1', 'C1', 'Z3']) {
+    assert.doesNotMatch(render(fixture({ rawGroupCode: group, rawSubgroupCode: group, rawSeriesCode: group })), /\/explain\//)
+  }
+  for (const farm of [
+    fixture({ manualStatus: 'active', manualSoilKey: 'unknown' }),
+    fixture({ lookupStatus: 'data_unavailable' }),
+    fixture({ manualStatus: 'needs_review', manualSoilKey: 'andosol' }),
+    { ...fixture(), latitude: null, longitude: null },
+    { ...fixture(), locationVersion: 1 },
+  ]) {
+    assert.doesNotMatch(render(farm), /\/explain\//)
+  }
+  assert.doesNotMatch(render(fixture(), true), /\/explain\//)
+})
