@@ -5,6 +5,9 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { daysSincePlanting, formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
+import { cookies } from 'next/headers'
+import ManagementList from '@/components/ManagementList'
+import { cropListRow, archiveStatusLabel } from '@/lib/crops/management-list'
 
 type CropListItem = {
   id: string
@@ -16,11 +19,6 @@ type CropListItem = {
   farm: { id: string; name: string } | null
   field: { id: string; name: string } | null
   _count: { harvests: number; tasks: number; workRecords: number }
-}
-
-function statusLabel(status: string): string {
-  if (status === 'harvested') return '収穫済み'
-  return '完了'
 }
 
 export default async function CropsArchivePage({
@@ -70,6 +68,9 @@ export default async function CropsArchivePage({
     where: { userId: user.id },
     orderBy: { name: 'asc' },
   })
+
+  const cookieName = 'tilltol-view-archived-crops'
+  const initialView = (await cookies()).get(cookieName)?.value
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -122,84 +123,91 @@ export default async function CropsArchivePage({
           </div>
         )}
 
-        {crops.length === 0 ? (
-          <div className="card farms-empty-card">
-            <div className="farms-empty-icon">📦</div>
-            <h3 className="farms-empty-title">過去の作付けはまだありません</h3>
-            <p className="farms-empty-text">
-              作物を「収穫済み」や「完了」にすると、ここに表示されます
-            </p>
-            <Link href="/crops" className="btn btn-outline farms-add-button">
-              栽培中へ
-            </Link>
-          </div>
-        ) : (
-          <div className="farms-grid">
-            {crops.map((crop) => (
-              <article key={crop.id} className="card farms-card">
-                <div className="farms-card-meta" style={{ marginBottom: '0.35rem' }}>
-                  <span className="insights-past-status">{statusLabel(crop.status)}</span>
-                </div>
-                <h3 className="farms-card-title">
-                  <Link href={`/crops/${crop.id}`} className="farms-card-title-link">
-                    {crop.name}
-                  </Link>
-                </h3>
-
-                {crop.variety && <p className="farms-card-desc">{crop.variety}</p>}
-
-                <div className="farms-card-meta">
-                  <span>🌾 {crop._count.harvests} 収穫</span>
-                  <span>📝 {crop._count.workRecords} 作業</span>
-                </div>
-
-                {(crop.farm || crop.field || crop.plantingDate || crop.harvestDate) && (
-                  <div className="farms-card-location">
-                    {crop.farm && (
-                      <>
-                        🏠{' '}
-                        <Link href={`/farms/${crop.farm.id}`} className="farms-card-title-link">
-                          {crop.farm.name}
-                        </Link>
-                      </>
-                    )}
-                    {crop.field && <> · 📍 {crop.field.name}</>}
-                    {crop.plantingDate && (
-                      <>
-                        {' '}
-                        · 🌱 {formatDateShort(crop.plantingDate)}
-                        {daysSincePlanting(crop.plantingDate) != null
-                          ? `（植付から${daysSincePlanting(crop.plantingDate)}日）`
-                          : ''}
-                      </>
-                    )}
-                    {crop.harvestDate && <> · 📅 {formatDateShort(crop.harvestDate)}</>}
+        <ManagementList
+          cookieName={cookieName}
+          initialView={initialView}
+          columns={["状態", "名前", "品種", "農場", "圃場", "植付日", "収穫日", "収穫", "作業"]}
+          rows={crops.map(crop => cropListRow(crop, true))}
+          empty={
+            <div className="card farms-empty-card">
+              <div className="farms-empty-icon">📦</div>
+              <h3 className="farms-empty-title">過去の作付けはまだありません</h3>
+              <p className="farms-empty-text">
+                作物を「収穫済み」や「完了」にすると、ここに表示されます
+              </p>
+              <Link href="/crops" className="btn btn-outline farms-add-button">
+                栽培中へ
+              </Link>
+            </div>
+          }
+          tiles={
+            <div className="farms-grid">
+              {crops.map((crop) => (
+                <article key={crop.id} className="card farms-card">
+                  <div className="farms-card-meta" style={{ marginBottom: '0.35rem' }}>
+                    <span className="insights-past-status">{archiveStatusLabel(crop.status)}</span>
                   </div>
-                )}
-
-                <div className="farms-card-actions">
-                  <Link
-                    href={`/crops/${crop.id}/retrospective`}
-                    className="btn btn-primary farms-card-button"
-                  >
-                    振り返り
-                  </Link>
-                  <Link href={`/crops/${crop.id}`} className="btn btn-outline farms-card-button">
-                    詳細
-                  </Link>
-                  {crop.plantingDate && (
-                    <Link
-                      href={`/gdd/${crop.id}`}
-                      className="btn btn-outline farms-card-button"
-                    >
-                      生育データ
+                  <h3 className="farms-card-title">
+                    <Link href={`/crops/${crop.id}`} className="farms-card-title-link">
+                      {crop.name}
                     </Link>
+                  </h3>
+
+                  {crop.variety && <p className="farms-card-desc">{crop.variety}</p>}
+
+                  <div className="farms-card-meta">
+                    <span>🌾 {crop._count.harvests} 収穫</span>
+                    <span>📝 {crop._count.workRecords} 作業</span>
+                  </div>
+
+                  {(crop.farm || crop.field || crop.plantingDate || crop.harvestDate) && (
+                    <div className="farms-card-location">
+                      {crop.farm && (
+                        <>
+                          🏠{' '}
+                          <Link href={`/farms/${crop.farm.id}`} className="farms-card-title-link">
+                            {crop.farm.name}
+                          </Link>
+                        </>
+                      )}
+                      {crop.field && <> · 📍 {crop.field.name}</>}
+                      {crop.plantingDate && (
+                        <>
+                          {' '}
+                          · 🌱 {formatDateShort(crop.plantingDate)}
+                          {daysSincePlanting(crop.plantingDate) != null
+                            ? `（植付から${daysSincePlanting(crop.plantingDate)}日）`
+                            : ''}
+                        </>
+                      )}
+                      {crop.harvestDate && <> · 📅 {formatDateShort(crop.harvestDate)}</>}
+                    </div>
                   )}
-                </div>
-              </article>
-            ))}
-          </div>
-        )}
+
+                  <div className="farms-card-actions">
+                    <Link
+                      href={`/crops/${crop.id}/retrospective`}
+                      className="btn btn-primary farms-card-button"
+                    >
+                      振り返り
+                    </Link>
+                    <Link href={`/crops/${crop.id}`} className="btn btn-outline farms-card-button">
+                      詳細
+                    </Link>
+                    {crop.plantingDate && (
+                      <Link
+                        href={`/gdd/${crop.id}`}
+                        className="btn btn-outline farms-card-button"
+                      >
+                        生育データ
+                      </Link>
+                    )}
+                  </div>
+                </article>
+              ))}
+            </div>
+          }
+        />
       </main>
     </div>
   )
