@@ -41,10 +41,12 @@ export default async function SalesPage({
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   const cropsForFilter = await prisma.crop.findMany({
     where: cropWhere,
+    include: { farm: true },
     orderBy: { name: 'asc' },
   }).catch(() =>
     prisma.crop.findMany({
       where: cropWhereFallback,
+      include: { farm: true },
       orderBy: { name: 'asc' },
     })
   )
@@ -80,7 +82,7 @@ export default async function SalesPage({
                 href={`/sales?cropId=${crop.id}`}
                 className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
-                {formatCropOptionLabel(crop)}
+                {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>
             ))}
           </div>

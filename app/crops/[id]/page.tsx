@@ -22,7 +22,8 @@ import {
 import { formatDateShort } from '@/lib/utils'
 import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
 import { formatHarvestAmount } from '@/lib/crops/harvest'
-import { harvestDateLabel, harvestDatesByCrop, japanDateKey } from '@/lib/pesticide-safety'
+import { harvestDateLabel, harvestDatesByCrop, japanDateKey, pesticideCounts, PESTICIDE_COUNT_NOTE } from '@/lib/pesticide-safety'
+import PesticideUsage from '@/components/PesticideUsage'
 
 export default async function CropDetailPage({
   params,
@@ -77,6 +78,7 @@ export default async function CropDetailPage({
     orderBy: { appliedAt: 'desc' },
   })
   const harvestFrom = harvestDatesByCrop(sprays).get(id)
+  const sprayCount = pesticideCounts(sprays)
 
   const statusLabel =
     crop.status === 'growing' ? '栽培中' : crop.status === 'harvested' ? '収穫済み' : '完了'
@@ -172,6 +174,11 @@ export default async function CropDetailPage({
         {/* 基本情報 */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">
           <h2 className="text-xl font-semibold mb-4">栽培情報</h2>
+          {harvestFrom && harvestFrom >= japanDateKey(new Date()) && (
+            <p className="mb-3 rounded bg-amber-50 p-2 text-sm text-amber-900">
+              記録上、収穫できるのは{harvestDateLabel(harvestFrom)}からです。
+            </p>
+          )}
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {crop.farm && (
               <div>
@@ -289,8 +296,11 @@ export default async function CropDetailPage({
                 {harvestDateLabel(japanDateKey(record.appliedAt))} · {record.productName}
               </Link>
               {record.daysBeforeHarvest != null && ` · 収穫${record.daysBeforeHarvest}日前まで`}
+              {' · '}
+              <PesticideUsage count={sprayCount(record.id)} entered={record.applicationCount} limit={record.applicationLimit} />
             </li>)}
           </ul> : <p className="text-gray-500">散布記録はありません</p>}
+          {sprays.length > 0 && <p className="mt-2 text-sm text-gray-600">{PESTICIDE_COUNT_NOTE}</p>}
         </section>
 
         {/* 収穫履歴 */}

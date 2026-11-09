@@ -20,10 +20,12 @@ export default async function FertilizersPage({
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   const cropsForFilter = await prisma.crop.findMany({
     where: cropWhere,
+    include: { farm: true },
     orderBy: { name: 'asc' },
   }).catch(() =>
     prisma.crop.findMany({
       where: cropWhereFallback,
+      include: { farm: true },
       orderBy: { name: 'asc' },
     })
   )
@@ -85,7 +87,7 @@ export default async function FertilizersPage({
                 href={`/fertilizers?cropId=${crop.id}`}
                 className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
-                {formatCropOptionLabel(crop)}
+                {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>
             ))}
             {farmsForFilter.map((farm) => (

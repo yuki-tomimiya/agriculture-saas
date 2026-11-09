@@ -28,18 +28,52 @@ export function harvestDatesByCrop(records: {
   return dates
 }
 
-export const pesticideCountSelect = { id: true, cropId: true, productName: true } as const
-export const pesticideSafetySelect = { ...pesticideCountSelect, appliedAt: true, daysBeforeHarvest: true } as const
-export type PesticideCountRecord = { id: string; cropId: string | null; productName: string }
+export const pesticideCountSelect = {
+  id: true, cropId: true, productName: true, appliedAt: true, createdAt: true, applicationLimit: true,
+} as const
+export const pesticideSafetySelect = { ...pesticideCountSelect, daysBeforeHarvest: true } as const
+export type PesticideCountRecord = {
+  id: string; cropId: string | null; productName: string
+  appliedAt: Date; createdAt: Date; applicationLimit: number | null
+}
 
-export function pesticideCounts(records: PesticideCountRecord[], excludeId?: string) {
+function orderedRecords(records: PesticideCountRecord[]) {
+  return records.map(record => ({ record, day: japanDateKey(record.appliedAt) })).sort((a, b) =>
+    a.day.localeCompare(b.day) ||
+    a.record.createdAt.getTime() - b.record.createdAt.getTime() ||
+    a.record.id.localeCompare(b.record.id),
+  )
+}
+
+export function pesticideCounts(records: PesticideCountRecord[]) {
   const counts = new Map<string, number>()
-  for (const record of records) {
-    if (!record.cropId || record.id === excludeId) continue
+  const byRecord = new Map<string, number>()
+  for (const { record } of orderedRecords(records)) {
+    if (!record.cropId) continue
     const key = JSON.stringify([record.cropId, record.productName.trim()])
-    counts.set(key, (counts.get(key) ?? 0) + 1)
+    const count = (counts.get(key) ?? 0) + 1
+    counts.set(key, count)
+    byRecord.set(record.id, count)
   }
-  return (cropId: string | null, name: string) => counts.get(JSON.stringify([cropId, name.trim()])) ?? 0
+  return (id: string) => byRecord.get(id) ?? 0
+}
+
+export function pesticideDraftUsage(records: PesticideCountRecord[], cropId: string, product: string, day: string, editId?: string) {
+  const name = product.trim()
+  if (!cropId || !name || !day) return { count: 0, limit: null }
+  const editing = records.find(record => record.id === editId)
+  let count = 1
+  let limit: number | null = null
+  for (const { record, day: recordDay } of orderedRecords(records)) {
+    if (record.id === editId || record.cropId !== cropId || record.productName.trim() !== name) continue
+    if (recordDay > day) break
+    if (recordDay === day && editing &&
+      (record.createdAt > editing.createdAt ||
+        (+record.createdAt === +editing.createdAt && record.id.localeCompare(editing.id) > 0))) continue
+    count += 1
+    if (record.applicationLimit != null) limit = record.applicationLimit
+  }
+  return { count, limit }
 }
 
 export function pesticideUsage(recordCount: number, enteredCount: number | null, limit: number | null) {

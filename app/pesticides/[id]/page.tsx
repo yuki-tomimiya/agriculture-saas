@@ -30,7 +30,7 @@ export default async function PesticideDetailPage({
     where: { userId: user.id, cropId: record.cropId },
     select: pesticideSafetySelect,
   }) : []
-  const count = pesticideCounts(history)(record.cropId, record.productName)
+  const count = pesticideCounts(history)(record.id)
   const available = record.cropId ? harvestDatesByCrop(history).get(record.cropId)
     : harvestAvailableDate(record.appliedAt, record.daysBeforeHarvest)
   const applied = harvestDateLabel(japanDateKey(record.appliedAt))
@@ -100,7 +100,7 @@ export default async function PesticideDetailPage({
               </div>
             )}
             {available && <div>
-              <dt className="text-sm text-gray-500">記録上の収穫開始日</dt>
+              <dt className="text-sm text-gray-500">{record.cropId ? 'この作付けで収穫できる日（記録上）' : 'この散布の記録上の収穫開始日'}</dt>
               <dd className="text-gray-900">{harvestDateLabel(available)}から</dd>
             </div>}
             {record.crop && (

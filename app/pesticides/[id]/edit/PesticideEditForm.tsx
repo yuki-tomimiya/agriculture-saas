@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import PestForecastLinks from '@/components/PestForecastLinks'
 import PesticideUsageField from '@/components/PesticideUsageField'
-import { pesticideCounts, type PesticideCountRecord } from '@/lib/pesticide-safety'
+import PesticideUsage from '@/components/PesticideUsage'
+import { pesticideDraftUsage, type PesticideCountRecord } from '@/lib/pesticide-safety'
 
 type CropOption = { id: string; name: string; variety: string | null; plantingDate: Date | null; farmName: string | null }
 type FarmOption = { id: string; name: string; prefectureCode: string | null }
@@ -44,13 +45,18 @@ export default function PesticideEditForm({
   const [amountUnit, setAmountUnit] = useState(record.amountUnit)
   const [dilution, setDilution] = useState(record.dilution)
   const [applicationCount, setApplicationCount] = useState(String(record.applicationCount))
-  const [applicationLimit, setApplicationLimit] = useState(String(record.applicationLimit))
+  const [limitOverrides, setLimitOverrides] = useState<Record<string, string>>({})
   const [daysBeforeHarvest, setDaysBeforeHarvest] = useState(String(record.daysBeforeHarvest))
   const [cropId, setCropId] = useState(record.cropId)
   const [farmId, setFarmId] = useState(record.farmId)
   const [notes, setNotes] = useState(record.notes)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const limitKey = JSON.stringify([cropId, productName.trim()])
+  const draft = pesticideDraftUsage(usageRecords, cropId, productName, appliedAt, record.id)
+  const savedLimit = cropId === record.cropId && productName.trim() === record.productName.trim()
+    ? record.applicationLimit : ''
+  const applicationLimit = limitOverrides[limitKey] ?? (savedLimit === '' ? String(draft.limit ?? '') : String(savedLimit))
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -163,10 +169,6 @@ export default function PesticideEditForm({
               />
             )}
             <div className="auth-field">
-              <label htmlFor="pesticide-application-count" className="label">使用回数</label>
-              <input id="pesticide-application-count" type="number" min="1" value={applicationCount} onChange={(e) => setApplicationCount(e.target.value)} className="input" />
-            </div>
-            <div className="auth-field">
               <label htmlFor="pesticide-crop" className="label">作物</label>
               <select id="pesticide-crop" value={cropId} onChange={(e) => setCropId(e.target.value)} className="input">
                 <option value="">選択しない</option>
@@ -175,9 +177,17 @@ export default function PesticideEditForm({
                 ))}
               </select>
             </div>
-            <PesticideUsageField limit={applicationLimit} onLimitChange={setApplicationLimit}
-              count={cropId && productName.trim() ? pesticideCounts(usageRecords, record.id)(cropId, productName) + 1 : 0}
-              entered={applicationCount} />
+            <div className="auth-field">
+              <label htmlFor="pesticide-application-count" className="label">使用回数</label>
+              <input id="pesticide-application-count" type="number" min="1" value={applicationCount} onChange={(e) => setApplicationCount(e.target.value)} className="input" />
+              {(draft.count > 0 || applicationCount) && <p className="mt-2 text-sm" aria-live="polite">
+                {draft.count > 0 && 'この作付けで'}
+                <PesticideUsage count={draft.count} entered={applicationCount ? Number(applicationCount) : null}
+                  limit={applicationLimit ? Number(applicationLimit) : null} />
+              </p>}
+            </div>
+            <PesticideUsageField limit={applicationLimit}
+              onLimitChange={value => setLimitOverrides(previous => ({ ...previous, [limitKey]: value }))} />
             <div className="auth-field">
               <label htmlFor="pesticide-farm" className="label">農場</label>
               <select id="pesticide-farm" value={farmId} onChange={(e) => setFarmId(e.target.value)} className="input">

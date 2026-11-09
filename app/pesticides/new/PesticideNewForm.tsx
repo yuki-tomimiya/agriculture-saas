@@ -7,7 +7,8 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import PestForecastLinks from '@/components/PestForecastLinks'
 import PesticideUsageField from '@/components/PesticideUsageField'
-import { japanDateKey, pesticideCounts, type PesticideCountRecord } from '@/lib/pesticide-safety'
+import PesticideUsage from '@/components/PesticideUsage'
+import { japanDateKey, pesticideDraftUsage, type PesticideCountRecord } from '@/lib/pesticide-safety'
 
 type CropOption = { id: string; name: string; variety: string | null; plantingDate: Date | null; farmName: string | null }
 type FarmOption = { id: string; name: string; prefectureCode: string | null }
@@ -36,13 +37,16 @@ export default function PesticideNewForm({
   const [amountUnit, setAmountUnit] = useState('mL')
   const [dilution, setDilution] = useState('')
   const [applicationCount, setApplicationCount] = useState('')
-  const [applicationLimit, setApplicationLimit] = useState('')
+  const [limitOverrides, setLimitOverrides] = useState<Record<string, string>>({})
   const [daysBeforeHarvest, setDaysBeforeHarvest] = useState('')
   const [cropId, setCropId] = useState(crops.some((crop) => crop.id === initialCropId) ? initialCropId : '')
   const [farmId, setFarmId] = useState(farms.some((farm) => farm.id === initialFarmId) ? initialFarmId : '')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const limitKey = JSON.stringify([cropId, productName.trim()])
+  const draft = pesticideDraftUsage(usageRecords, cropId, productName, appliedAt)
+  const applicationLimit = limitOverrides[limitKey] ?? String(draft.limit ?? '')
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -210,19 +214,6 @@ export default function PesticideNewForm({
               />
             )}
             <div className="auth-field">
-              <label htmlFor="pesticide-application-count" className="label">使用回数（この作付けで何回目か）</label>
-              <input
-                id="pesticide-application-count"
-                type="number"
-                min="1"
-                value={applicationCount}
-                onChange={(e) => setApplicationCount(e.target.value)}
-                className="input"
-                placeholder="例：2"
-              />
-            </div>
-
-            <div className="auth-field">
               <label htmlFor="pesticide-crop" className="label">作物</label>
               <select
                 id="pesticide-crop"
@@ -238,10 +229,25 @@ export default function PesticideNewForm({
                 ))}
               </select>
             </div>
-
-            <PesticideUsageField limit={applicationLimit} onLimitChange={setApplicationLimit}
-              count={cropId && productName.trim() ? pesticideCounts(usageRecords)(cropId, productName) + 1 : 0}
-              entered={applicationCount} />
+            <div className="auth-field">
+              <label htmlFor="pesticide-application-count" className="label">使用回数（この作付けで何回目か）</label>
+              <input
+                id="pesticide-application-count"
+                type="number"
+                min="1"
+                value={applicationCount}
+                onChange={(e) => setApplicationCount(e.target.value)}
+                className="input"
+                placeholder="例：2"
+              />
+              {(draft.count > 0 || applicationCount) && <p className="mt-2 text-sm" aria-live="polite">
+                {draft.count > 0 && 'この作付けで'}
+                <PesticideUsage count={draft.count} entered={applicationCount ? Number(applicationCount) : null}
+                  limit={applicationLimit ? Number(applicationLimit) : null} />
+              </p>}
+            </div>
+            <PesticideUsageField limit={applicationLimit}
+              onLimitChange={value => setLimitOverrides(previous => ({ ...previous, [limitKey]: value }))} />
             <div className="auth-field">
               <label htmlFor="pesticide-farm" className="label">農場</label>
               <select

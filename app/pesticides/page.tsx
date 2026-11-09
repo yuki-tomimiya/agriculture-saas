@@ -21,10 +21,12 @@ export default async function PesticidesPage({
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   const cropsForFilter = await prisma.crop.findMany({
     where: cropWhere,
+    include: { farm: true },
     orderBy: { name: 'asc' },
   }).catch(() =>
     prisma.crop.findMany({
       where: cropWhereFallback,
+      include: { farm: true },
       orderBy: { name: 'asc' },
     })
   )
@@ -89,7 +91,7 @@ export default async function PesticidesPage({
                 href={`/pesticides?cropId=${crop.id}`}
                 className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
-                {formatCropOptionLabel(crop)}
+                {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>
             ))}
             {farmsForFilter.map((farm) => (
@@ -126,7 +128,7 @@ export default async function PesticidesPage({
                     <th className="text-left py-3 px-4 font-semibold text-gray-900">農場</th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-900">使用量</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-900">希釈・収穫前日数</th>
-                    <th className="text-left py-3 px-4 font-semibold text-gray-900">記録上の収穫開始日</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">収穫できる日（記録上）</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-900">使用回数</th>
                   </tr>
                 </thead>
@@ -161,9 +163,11 @@ export default async function PesticidesPage({
                           .filter(Boolean)
                           .join(' · ') || '-'}
                       </td>
-                      <td className="py-3 px-4 text-sm">{available ? `${harvestDateLabel(available)}から` : '—'}</td>
                       <td className="py-3 px-4 text-sm">
-                        <PesticideUsage count={counts(rec.cropId, rec.productName)} entered={rec.applicationCount} limit={rec.applicationLimit} />
+                        {available ? `${rec.cropId ? 'この作付け：' : 'この散布：'}${harvestDateLabel(available)}から` : '—'}
+                      </td>
+                      <td className="py-3 px-4 text-sm">
+                        <PesticideUsage count={counts(rec.id)} entered={rec.applicationCount} limit={rec.applicationLimit} />
                       </td>
                     </tr>
                     )

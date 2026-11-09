@@ -18,6 +18,7 @@ export default async function TasksPage({ searchParams }: {
   const cropId = (await searchParams)?.cropId
   const cropsForFilter = await prisma.crop.findMany({
     where: { farm: { userId: user.id } },
+    include: { farm: true },
     orderBy: { name: 'asc' },
   })
   const tasks = await prisma.task.findMany({
@@ -71,7 +72,7 @@ export default async function TasksPage({ searchParams }: {
             {cropsForFilter.map(crop => (
               <Link key={crop.id} href={`/tasks?cropId=${crop.id}`}
                 className={crop.id === cropId ? 'farms-filter-active' : 'farms-filter-link'}>
-                {formatCropOptionLabel(crop)}
+                {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>
             ))}
           </div>
