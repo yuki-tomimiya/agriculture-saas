@@ -27,7 +27,7 @@ export default async function FaqDetailPage({
   return (
     <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="dashboard-main farms-page faq-page">
+      <main className="dashboard-main farms-page faq-page faq-article-page">
         <div className="farms-header">
           <div className="farms-header-text">
             <p className="gdd-breadcrumb">

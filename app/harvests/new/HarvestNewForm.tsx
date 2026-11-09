@@ -121,7 +121,7 @@ export default function HarvestNewForm({
     return (
       <div className="dashboard-page min-h-screen flex">
         <Sidebar />
-        <main className="dashboard-main farms-page">
+        <main className="dashboard-main farms-page form-column-page">
           <div className="card farm-new-card">
             <h1 className="farms-title">収穫を記録しました</h1>
             <p className="farms-subtitle">この作付けは終了しましたか？数回に分けて掘る場合は、まだ続くを選んでください。</p>
@@ -153,7 +153,7 @@ export default function HarvestNewForm({
     return (
       <div className="dashboard-page min-h-screen flex">
         <Sidebar />
-        <main className="dashboard-main farms-page">
+        <main className="dashboard-main farms-page form-column-page">
           <div className="card farm-new-card">
             <p className="farms-empty-text">
               先に作物を登録してください。作物がないと収穫を記録できません。
@@ -173,7 +173,7 @@ export default function HarvestNewForm({
   return (
     <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="dashboard-main farms-page">
+      <main className="dashboard-main farms-page form-column-page">
         <div className="farms-header">
           <div className="farms-header-text">
             <Link href="/harvests" className="farm-new-back">

@@ -107,7 +107,7 @@ export default function WorkRecordNewForm({
     return (
       <div className="dashboard-page min-h-screen flex">
         <Sidebar />
-        <main className="dashboard-main farms-page">
+        <main className="dashboard-main farms-page form-column-page">
           <div className="card farm-new-card">
             <p className="farms-empty-text">
               先に農場を登録してください。農場がないと作業記録を追加できません。
@@ -127,7 +127,7 @@ export default function WorkRecordNewForm({
   return (
     <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="dashboard-main farms-page">
+      <main className="dashboard-main farms-page form-column-page">
         <div className="farms-header">
           <div className="farms-header-text">
             <Link href="/work-records" className="farm-new-back">

@@ -23,7 +23,7 @@ export default function FarmEditForm({
   return (
     <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="dashboard-main farms-page">
+      <main className="dashboard-main farms-page form-column-page">
         <div className="farms-header">
           <div className="farms-header-text">
             <Link href={`/farms/${farmId}`} className="farm-new-back">

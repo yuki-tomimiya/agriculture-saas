@@ -77,7 +77,7 @@ export default function FertilizerNewForm({
   return (
     <div className="dashboard-page min-h-screen flex">
       <Sidebar />
-      <main className="dashboard-main farms-page">
+      <main className="dashboard-main farms-page form-column-page">
         <div className="farms-header">
           <div className="farms-header-text">
             <Link href="/fertilizers" className="farm-new-back">
