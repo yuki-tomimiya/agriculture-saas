@@ -718,8 +718,9 @@
 
 /* ===== 今日の提案（AI提案）ページ：プレビューと同じ ===== */
 .ai-proposal-wrap {
-  max-width: 42rem;
+  max-width: 76rem;
   margin-inline: auto;
+  container-type: inline-size;
 }
 .ai-proposal-title {
   font-size: 1.875rem;
@@ -772,6 +773,27 @@
   min-width: 0;
   flex: 1;
 }
+.ai-proposal-card-action-column,
+.ai-proposal-evidence {
+  min-width: 0;
+  max-width: 38rem;
+  overflow-wrap: anywhere;
+}
+.ai-proposal-evidence {
+  margin-top: 1rem;
+}
+@container (min-width: 60rem) {
+  .ai-proposal-card-body:has(> .ai-proposal-evidence) {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+  .ai-proposal-card-body > .ai-proposal-evidence {
+    margin-top: 0;
+    padding-inline-start: 1.25rem;
+    border-inline-start: 1px solid #e5e7eb;
+  }
+}
 .ai-proposal-card-type {
   font-size: 0.75rem;
   font-weight: 500;
@@ -803,6 +825,9 @@
   margin: 0;
 }
 .ai-proposal-conclusion {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.55;
   margin-top: 0.25rem;
   padding-top: 0.5rem;
   border-top: 1px solid #f3f4f6;

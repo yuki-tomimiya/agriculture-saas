@@ -16,20 +16,12 @@ export default function MilestoneAskActions({
   cropId,
   milestoneKey,
   trigger,
-  term,
-  ifYes,
-  sourceLabel,
-  howTo,
   yesLabel,
   variant = 'card',
 }: {
   cropId: string
   milestoneKey: string
   trigger: string
-  term: string
-  ifYes: string
-  sourceLabel: string
-  howTo: string[]
   yesLabel: string
   variant?: 'card' | 'row'
 }) {
@@ -106,20 +98,6 @@ export default function MilestoneAskActions({
 
   return (
     <div className={variant === 'row' ? 'ai-proposal-milestone-row' : 'ai-proposal-milestone'}>
-      {variant === 'card' && (
-        <>
-          <p className="ai-proposal-milestone-term">（{term}）</p>
-          <p className="ai-proposal-milestone-advice">{ifYes}</p>
-          {howTo.length > 0 && (
-            <ul className="ai-proposal-howto">
-              {howTo.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-          )}
-          <p className="ai-proposal-milestone-source">出典: {sourceLabel}</p>
-        </>
-      )}
       {recordedOn ? (
         <div className="ai-proposal-actions">
           <label className="ai-proposal-milestone-date">
