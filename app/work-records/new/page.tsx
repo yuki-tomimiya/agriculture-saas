@@ -26,7 +26,7 @@ export default async function NewWorkRecordPage({
   const farmsForForm = farms.map((farm) => ({
     id: farm.id,
     name: farm.name,
-    crops: farm.crops.map((c) => ({ id: c.id, name: c.name, variety: c.variety })),
+    crops: farm.crops.map((c) => ({ id: c.id, name: c.name, variety: c.variety, plantingDate: c.plantingDate })),
     tasks: farm.tasks.map((t) => ({ id: t.id, title: t.title })),
   }))
 

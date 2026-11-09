@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { formatCropOptionLabel } from '@/components/WorkManagementTabs'
 import { redirect } from 'next/navigation'
 import TaskNewForm from './TaskNewForm'
 
@@ -25,7 +26,7 @@ export default async function NewTaskPage({
   const farmsWithCrops = farms.map((f) => ({
     id: f.id,
     name: f.name,
-    crops: f.crops.map((c) => ({ id: c.id, name: c.name })),
+    crops: f.crops.map((c) => ({ id: c.id, name: formatCropOptionLabel(c) })),
   }))
 
   return (

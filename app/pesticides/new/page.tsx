@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { japanDateKey, pesticideCountSelect } from '@/lib/pesticide-safety'
 import { redirect } from 'next/navigation'
 import PesticideNewForm from './PesticideNewForm'
 
@@ -29,9 +30,13 @@ export default async function NewPesticidePage({
     orderBy: { name: 'asc' },
   })
 
+  const usageRecords = await prisma.pesticideRecord.findMany({
+    where: { userId: user.id, cropId: { in: crops.map(crop => crop.id) } },
+    select: pesticideCountSelect,
+  })
   const cropsForSelect = crops.map((c) => ({
     id: c.id,
-    name: c.name,
+    name: c.name, plantingDate: c.plantingDate, variety: c.variety,
     farmName: c.farm?.name ?? null,
   }))
   const farmsForSelect = farms.map((f) => ({
@@ -43,6 +48,7 @@ export default async function NewPesticidePage({
   return (
     <PesticideNewForm
       crops={cropsForSelect}
+      usageRecords={usageRecords}
       farms={farmsForSelect}
       initialCropId={searchParams?.cropId ?? ''}
       initialFarmId={searchParams?.farmId ?? ''}

@@ -43,6 +43,10 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
+    const applicationLimit = body.applicationLimit
+    if (applicationLimit != null && (!Number.isInteger(applicationLimit) || applicationLimit < 1 || applicationLimit > 2147483647)) {
+      return NextResponse.json({ error: '本剤の使用回数の上限は正の整数を入力してください' }, { status: 400 })
+    }
     const appliedAtStr = body.appliedAt
     const productName = typeof body.productName === 'string' ? body.productName.trim() : ''
     const amount = body.amount != null ? Number(body.amount) : null
@@ -94,6 +98,7 @@ export async function POST(request: NextRequest) {
         amountUnit: amountUnit ?? undefined,
         dilution: dilution ?? undefined,
         applicationCount: applicationCount ?? undefined,
+        applicationLimit,
         daysBeforeHarvest: daysBeforeHarvest ?? undefined,
         cropId: cropId ?? undefined,
         farmId: farmId ?? undefined,

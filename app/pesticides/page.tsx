@@ -4,9 +4,11 @@ import type { Prisma } from '@prisma/client'
 import { getPesticideWhere, getCropWhere } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import { formatDateShort } from '@/lib/utils'
+import { formatCropOptionLabel } from '@/components/WorkManagementTabs'
 import Sidebar from '@/components/Sidebar'
 import { RecordTabs } from '@/components/RecordTabs'
+import PesticideUsage from '@/components/PesticideUsage'
+import { harvestAvailableDate, harvestDateLabel, harvestDatesByCrop, japanDateKey, pesticideCounts, pesticideSafetySelect, PESTICIDE_COUNT_NOTE } from '@/lib/pesticide-safety'
 
 export default async function PesticidesPage({
   searchParams,
@@ -51,6 +53,12 @@ export default async function PesticidesPage({
   } catch {
     records = []
   }
+  const history = records.length ? await prisma.pesticideRecord.findMany({
+    where: { userId: user.id, cropId: { in: [...new Set(records.flatMap(record => record.cropId ? [record.cropId] : []))] } },
+    select: pesticideSafetySelect,
+  }) : []
+  const counts = pesticideCounts(history)
+  const harvestDates = harvestDatesByCrop(history)
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -81,7 +89,7 @@ export default async function PesticidesPage({
                 href={`/pesticides?cropId=${crop.id}`}
                 className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
-                {crop.name}
+                {formatCropOptionLabel(crop)}
               </Link>
             ))}
             {farmsForFilter.map((farm) => (
@@ -107,6 +115,7 @@ export default async function PesticidesPage({
           </div>
         ) : (
           <div className="card">
+            <p className="mb-3 text-sm text-gray-600">{PESTICIDE_COUNT_NOTE}</p>
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
@@ -117,14 +126,18 @@ export default async function PesticidesPage({
                     <th className="text-left py-3 px-4 font-semibold text-gray-900">農場</th>
                     <th className="text-right py-3 px-4 font-semibold text-gray-900">使用量</th>
                     <th className="text-left py-3 px-4 font-semibold text-gray-900">希釈・収穫前日数</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">記録上の収穫開始日</th>
+                    <th className="text-left py-3 px-4 font-semibold text-gray-900">使用回数</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {records.map((rec) => (
+                  {records.map((rec) => {
+                    const available = rec.cropId ? harvestDates.get(rec.cropId) : harvestAvailableDate(rec.appliedAt, rec.daysBeforeHarvest)
+                    return (
                     <tr key={rec.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                       <td className="py-3 px-4">
                         <Link href={`/pesticides/${rec.id}`} className="farms-card-title-link">
-                          {formatDateShort(rec.appliedAt)}
+                          {harvestDateLabel(japanDateKey(rec.appliedAt))}
                         </Link>
                       </td>
                       <td className="py-3 px-4 font-medium text-gray-900">{rec.productName}</td>
@@ -144,12 +157,17 @@ export default async function PesticidesPage({
                         {rec.amount != null ? `${rec.amount} ${rec.amountUnit ?? ''}` : '-'}
                       </td>
                       <td className="py-3 px-4 text-gray-600 text-sm">
-                        {[rec.dilution, rec.daysBeforeHarvest != null ? `収穫${rec.daysBeforeHarvest}日前` : null]
+                        {[rec.dilution, rec.daysBeforeHarvest != null ? `収穫${rec.daysBeforeHarvest}日前まで` : null]
                           .filter(Boolean)
                           .join(' · ') || '-'}
                       </td>
+                      <td className="py-3 px-4 text-sm">{available ? `${harvestDateLabel(available)}から` : '—'}</td>
+                      <td className="py-3 px-4 text-sm">
+                        <PesticideUsage count={counts(rec.cropId, rec.productName)} entered={rec.applicationCount} limit={rec.applicationLimit} />
+                      </td>
                     </tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

@@ -2,21 +2,26 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { formatCropOptionLabel } from '@/components/WorkManagementTabs'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import PestForecastLinks from '@/components/PestForecastLinks'
+import PesticideUsageField from '@/components/PesticideUsageField'
+import { japanDateKey, pesticideCounts, type PesticideCountRecord } from '@/lib/pesticide-safety'
 
-type CropOption = { id: string; name: string; farmName: string | null }
+type CropOption = { id: string; name: string; variety: string | null; plantingDate: Date | null; farmName: string | null }
 type FarmOption = { id: string; name: string; prefectureCode: string | null }
 
 export default function PesticideNewForm({
   crops,
+  usageRecords,
   farms,
   initialCropId = '',
   initialFarmId = '',
   initialDate = '',
 }: {
   crops: CropOption[]
+  usageRecords: PesticideCountRecord[]
   farms: FarmOption[]
   initialCropId?: string
   initialFarmId?: string
@@ -24,13 +29,14 @@ export default function PesticideNewForm({
 }) {
   const router = useRouter()
   const [appliedAt, setAppliedAt] = useState(() =>
-    /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : new Date().toISOString().slice(0, 10)
+    /^\d{4}-\d{2}-\d{2}$/.test(initialDate) ? initialDate : japanDateKey(new Date())
   )
   const [productName, setProductName] = useState('')
   const [amount, setAmount] = useState('')
   const [amountUnit, setAmountUnit] = useState('mL')
   const [dilution, setDilution] = useState('')
   const [applicationCount, setApplicationCount] = useState('')
+  const [applicationLimit, setApplicationLimit] = useState('')
   const [daysBeforeHarvest, setDaysBeforeHarvest] = useState('')
   const [cropId, setCropId] = useState(crops.some((crop) => crop.id === initialCropId) ? initialCropId : '')
   const [farmId, setFarmId] = useState(farms.some((farm) => farm.id === initialFarmId) ? initialFarmId : '')
@@ -67,6 +73,7 @@ export default function PesticideNewForm({
           amountUnit: amountUnit || undefined,
           dilution: dilution.trim() || undefined,
           applicationCount: applicationCount === '' ? undefined : parseInt(applicationCount, 10),
+          applicationLimit: applicationLimit === '' ? null : Number(applicationLimit),
           daysBeforeHarvest: daysBeforeHarvest === '' ? undefined : parseInt(daysBeforeHarvest, 10),
           cropId: cropId || undefined,
           farmId: farmId || undefined,
@@ -226,12 +233,15 @@ export default function PesticideNewForm({
                 <option value="">選択しない</option>
                 {crops.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.farmName ? `${c.name}（${c.farmName}）` : c.name}
+                    {formatCropOptionLabel(c)}
                   </option>
                 ))}
               </select>
             </div>
 
+            <PesticideUsageField limit={applicationLimit} onLimitChange={setApplicationLimit}
+              count={cropId && productName.trim() ? pesticideCounts(usageRecords)(cropId, productName) + 1 : 0}
+              entered={applicationCount} />
             <div className="auth-field">
               <label htmlFor="pesticide-farm" className="label">農場</label>
               <select

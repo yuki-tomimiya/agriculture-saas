@@ -27,7 +27,7 @@ export default async function NewFertilizerPage() {
 
   const cropsForSelect = crops.map((c) => ({
     id: c.id,
-    name: c.name,
+    name: c.name, plantingDate: c.plantingDate,
     variety: c.variety,
     farmName: c.farm?.name ?? null,
   }))

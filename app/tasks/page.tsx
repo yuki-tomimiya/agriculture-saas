@@ -4,16 +4,24 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
+import { formatCropOptionLabel } from '@/components/WorkManagementTabs'
 
-export default async function TasksPage() {
+export default async function TasksPage({ searchParams }: {
+  searchParams?: Promise<{ cropId?: string }>
+}) {
   const user = await getCurrentUser()
 
   if (!user) {
     redirect('/auth/signin')
   }
 
-  const tasks = await prisma.task.findMany({
+  const cropId = (await searchParams)?.cropId
+  const cropsForFilter = await prisma.crop.findMany({
     where: { farm: { userId: user.id } },
+    orderBy: { name: 'asc' },
+  })
+  const tasks = await prisma.task.findMany({
+    where: { farm: { userId: user.id }, ...(cropId ? { cropId } : {}) },
     include: {
       farm: true,
       crop: true,
@@ -56,6 +64,18 @@ export default async function TasksPage() {
             新規タスクを追加
           </Link>
         </div>
+
+        {cropsForFilter.length > 0 && (
+          <div className="farms-filter-bar">
+            <Link href="/tasks" className={cropId ? 'farms-filter-link' : 'farms-filter-active'}>すべて</Link>
+            {cropsForFilter.map(crop => (
+              <Link key={crop.id} href={`/tasks?cropId=${crop.id}`}
+                className={crop.id === cropId ? 'farms-filter-active' : 'farms-filter-link'}>
+                {formatCropOptionLabel(crop)}
+              </Link>
+            ))}
+          </div>
+        )}
 
         {tasks.length === 0 ? (
           <div className="card farms-empty-card">

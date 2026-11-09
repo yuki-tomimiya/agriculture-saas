@@ -1,5 +1,6 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { japanDateKey, pesticideCountSelect } from '@/lib/pesticide-safety'
 import { redirect, notFound } from 'next/navigation'
 import PesticideEditForm, { type RecordForForm } from './PesticideEditForm'
 
@@ -39,20 +40,25 @@ export default async function PesticideEditPage({
 
   const recordForForm: RecordForForm = {
     id: record.id,
-    appliedAt: record.appliedAt.toISOString().slice(0, 10),
+    appliedAt: japanDateKey(record.appliedAt),
     productName: record.productName,
     amount: record.amount == null ? '' : record.amount,
     amountUnit: record.amountUnit ?? 'mL',
     dilution: record.dilution ?? '',
     applicationCount: record.applicationCount == null ? '' : record.applicationCount,
+    applicationLimit: record.applicationLimit ?? '',
     daysBeforeHarvest: record.daysBeforeHarvest == null ? '' : record.daysBeforeHarvest,
     cropId: record.cropId ?? '',
     farmId: record.farmId ?? '',
     notes: record.notes ?? '',
   }
+  const usageRecords = await prisma.pesticideRecord.findMany({
+    where: { userId: user.id, cropId: { in: crops.map(crop => crop.id) } },
+    select: pesticideCountSelect,
+  })
   const cropsForSelect = crops.map((c) => ({
     id: c.id,
-    name: c.name,
+    name: c.name, plantingDate: c.plantingDate, variety: c.variety,
     farmName: c.farm?.name ?? null,
   }))
   const farmsForSelect = farms.map((f) => ({
@@ -65,6 +71,7 @@ export default async function PesticideEditPage({
     <PesticideEditForm
       record={recordForForm}
       crops={cropsForSelect}
+      usageRecords={usageRecords}
       farms={farmsForSelect}
     />
   )

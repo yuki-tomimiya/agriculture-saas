@@ -22,6 +22,7 @@ import {
 import { formatDateShort } from '@/lib/utils'
 import { RESULT_PROMPT, outcomeMissing } from '@/lib/crops/outcome'
 import { formatHarvestAmount } from '@/lib/crops/harvest'
+import { harvestDateLabel, harvestDatesByCrop, japanDateKey } from '@/lib/pesticide-safety'
 
 export default async function CropDetailPage({
   params,
@@ -71,6 +72,11 @@ export default async function CropDetailPage({
   }
 
   if (!crop) notFound()
+  const sprays = await prisma.pesticideRecord.findMany({
+    where: { userId: user.id, cropId: id },
+    orderBy: { appliedAt: 'desc' },
+  })
+  const harvestFrom = harvestDatesByCrop(sprays).get(id)
 
   const statusLabel =
     crop.status === 'growing' ? '栽培中' : crop.status === 'harvested' ? '収穫済み' : '完了'
@@ -271,6 +277,21 @@ export default async function CropDetailPage({
           cropId={crop.id}
           items={milestoneFormItems(advice.recordOnly ? '' : advice.name, advice.variety, crop.milestones)}
         />
+
+        <section className="bg-white p-6 rounded-lg shadow mb-8">
+          <h2 className="text-xl font-semibold mb-2">農薬の散布記録</h2>
+          {harvestFrom && harvestFrom >= japanDateKey(new Date()) && (
+            <p className="mb-2 font-medium">記録上、収穫できるのは{harvestDateLabel(harvestFrom)}からです。</p>
+          )}
+          {sprays.length ? <ul className="space-y-2">
+            {sprays.map(record => <li key={record.id}>
+              <Link href={`/pesticides/${record.id}`} className="text-green-700 hover:underline">
+                {harvestDateLabel(japanDateKey(record.appliedAt))} · {record.productName}
+              </Link>
+              {record.daysBeforeHarvest != null && ` · 収穫${record.daysBeforeHarvest}日前まで`}
+            </li>)}
+          </ul> : <p className="text-gray-500">散布記録はありません</p>}
+        </section>
 
         {/* 収穫履歴 */}
         <div className="bg-white p-6 rounded-lg shadow mb-8">

@@ -31,7 +31,7 @@ export default async function NewSalesPage({
 
   const cropsForSelect = crops.map((c) => ({
     id: c.id,
-    name: c.name,
+    name: c.name, plantingDate: c.plantingDate, variety: c.variety,
     farmName: c.farm?.name ?? null,
   }))
   const farmsForSelect = farms.map((f) => ({ id: f.id, name: f.name }))

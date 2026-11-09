@@ -2,11 +2,14 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { formatCropOptionLabel } from '@/components/WorkManagementTabs'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { COUNT_UNITS } from '@/lib/crops/harvest'
 
-type CropOption = { id: string; name: string; farmName: string | null; status: string }
+import { harvestDateLabel, japanDateKey } from '@/lib/pesticide-safety'
+
+type CropOption = { id: string; name: string; variety: string | null; plantingDate: Date | null; farmName: string | null; status: string; harvestFrom: string | null }
 
 function safeReturnTo(value?: string): string | null {
   if (!value || !value.startsWith('/crops/') || value.includes('//')) return null
@@ -31,8 +34,7 @@ export default function HarvestNewForm({
   )
   const [date, setDate] = useState(() => {
     if (initialDate && /^\d{4}-\d{2}-\d{2}$/.test(initialDate)) return initialDate
-    const d = new Date()
-    return d.toISOString().slice(0, 10)
+    return japanDateKey(new Date())
   })
   const [quantity, setQuantity] = useState('')
   const [weightUnit, setWeightUnit] = useState<'kg' | 'g'>('kg')
@@ -43,6 +45,7 @@ export default function HarvestNewForm({
   const [loading, setLoading] = useState(false)
   const [savedCropId, setSavedCropId] = useState<string | null>(null)
   const [finishing, setFinishing] = useState(false)
+  const harvestFrom = crops.find(crop => crop.id === cropId)?.harvestFrom
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -194,6 +197,11 @@ export default function HarvestNewForm({
           )}
 
           <form onSubmit={handleSubmit} className="farm-new-form">
+            {harvestFrom && date && date < harvestFrom && (
+              <p role="alert" className="rounded bg-amber-50 p-3 text-sm text-amber-900">
+                選んだ収穫日は、散布記録から計算した収穫開始日（{harvestDateLabel(harvestFrom)}）より前です。ラベルと散布記録を確認してください。
+              </p>
+            )}
             <div className="auth-field">
               <label htmlFor="harvest-crop" className="label">
                 作物 <span className="farm-new-required">必須</span>
@@ -207,7 +215,7 @@ export default function HarvestNewForm({
               >
                 {crops.map((crop) => (
                   <option key={crop.id} value={crop.id}>
-                    {crop.farmName ? `${crop.name}（${crop.farmName}）` : crop.name}
+                    {formatCropOptionLabel(crop)}
                   </option>
                 ))}
               </select>

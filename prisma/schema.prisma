@@ -215,6 +215,7 @@ model PesticideRecord {
   amountUnit        String?  // 単位（L, g, mL など）
   dilution          String?  // 希釈倍率（例: 1000倍）
   applicationCount  Int?     // 使用回数（この作付けで何回目か）
+  applicationLimit  Int?     // ラベルに記載された本剤の使用回数の上限
   daysBeforeHarvest Int?    // 収穫前日数
   cropId            String?
   crop              Crop?    @relation(fields: [cropId], references: [id], onDelete: SetNull)

@@ -2,6 +2,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import HarvestNewForm from './HarvestNewForm'
+import { harvestDatesByCrop, pesticideSafetySelect } from '@/lib/pesticide-safety'
 
 export default async function NewHarvestPage({
   searchParams,
@@ -32,11 +33,17 @@ export default async function NewHarvestPage({
   )
 
   const sp = searchParams ? await searchParams : undefined
+  const sprays = await prisma.pesticideRecord.findMany({
+    where: { userId: user.id, cropId: { in: crops.map(crop => crop.id) } },
+    select: pesticideSafetySelect,
+  })
+  const harvestDates = harvestDatesByCrop(sprays)
   const cropsForSelect = crops.map((c) => ({
     id: c.id,
-    name: c.name,
+    name: c.name, plantingDate: c.plantingDate, variety: c.variety,
     farmName: c.farm?.name ?? null,
     status: c.status,
+    harvestFrom: harvestDates.get(c.id) ?? null,
   }))
 
   return (

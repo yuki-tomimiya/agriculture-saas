@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
 import { RecordTabs } from '@/components/RecordTabs'
-import { WorkManagementTabs, buildWorkManagementQuery } from '@/components/WorkManagementTabs'
+import { WorkManagementTabs, buildWorkManagementQuery, formatCropOptionLabel } from '@/components/WorkManagementTabs'
 
 export default async function WorkRecordsPage({
   searchParams,
@@ -77,7 +77,7 @@ export default async function WorkRecordsPage({
                 href={`/work-records?cropId=${crop.id}`}
                 className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
-                {crop.name}
+                {formatCropOptionLabel(crop)}
               </Link>
             ))}
             {farmsForFilter.map((farm) => (

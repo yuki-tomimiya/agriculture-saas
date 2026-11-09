@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { formatCropOptionLabel } from '@/components/WorkManagementTabs'
 import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 
-type CropOption = { id: string; name: string; farmName: string | null }
+type CropOption = { id: string; name: string; variety: string | null; plantingDate: Date | null; farmName: string | null }
 type FarmOption = { id: string; name: string }
 
 function safeReturnTo(value?: string): string | null {
@@ -164,7 +165,7 @@ export default function SalesNewForm({
                 <option value="">選択しない</option>
                 {crops.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.farmName ? `${c.name}（${c.farmName}）` : c.name}
+                    {formatCropOptionLabel(c)}
                   </option>
                 ))}
               </select>

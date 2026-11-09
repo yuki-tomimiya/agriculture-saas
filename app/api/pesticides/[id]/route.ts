@@ -54,13 +54,17 @@ export async function PUT(
     }
 
     const body = await request.json()
+    const applicationLimit = body.applicationLimit
+    if (applicationLimit != null && (!Number.isInteger(applicationLimit) || applicationLimit < 1 || applicationLimit > 2147483647)) {
+      return NextResponse.json({ error: '本剤の使用回数の上限は正の整数を入力してください' }, { status: 400 })
+    }
     const appliedAtStr = body.appliedAt
     const productName = typeof body.productName === 'string' ? body.productName.trim() : undefined
     const amount = body.amount != null ? Number(body.amount) : undefined
     const amountUnit = typeof body.amountUnit === 'string' ? body.amountUnit.trim() || null : undefined
     const dilution = typeof body.dilution === 'string' ? body.dilution.trim() || null : undefined
-    const applicationCount = body.applicationCount != null ? Number(body.applicationCount) : undefined
-    const daysBeforeHarvest = body.daysBeforeHarvest != null ? Number(body.daysBeforeHarvest) : undefined
+    const applicationCount = body.applicationCount == null ? body.applicationCount : Number(body.applicationCount)
+    const daysBeforeHarvest = body.daysBeforeHarvest == null ? body.daysBeforeHarvest : Number(body.daysBeforeHarvest)
     const cropId = typeof body.cropId === 'string' ? body.cropId.trim() || null : undefined
     const farmId = typeof body.farmId === 'string' ? body.farmId.trim() || null : undefined
     const notes = typeof body.notes === 'string' ? body.notes.trim() || null : undefined
@@ -79,6 +83,14 @@ export async function PUT(
       }
     }
 
+    if (cropId && !await prisma.crop.findFirst({
+      where: { id: cropId, OR: [{ userId }, { farm: { userId } }] }, select: { id: true },
+    })) {
+      return NextResponse.json({ error: '指定した作物が見つかりません' }, { status: 400 })
+    }
+    if (farmId && !await prisma.farm.findFirst({ where: { id: farmId, userId }, select: { id: true } })) {
+      return NextResponse.json({ error: '指定した農場が見つかりません' }, { status: 400 })
+    }
     const record = await prisma.pesticideRecord.update({
       where: { id },
       data: {
@@ -88,6 +100,7 @@ export async function PUT(
         ...(amountUnit !== undefined && { amountUnit }),
         ...(dilution !== undefined && { dilution }),
         ...(applicationCount !== undefined && { applicationCount }),
+        applicationLimit,
         ...(daysBeforeHarvest !== undefined && { daysBeforeHarvest }),
         ...(cropId !== undefined && { cropId }),
         ...(farmId !== undefined && { farmId }),

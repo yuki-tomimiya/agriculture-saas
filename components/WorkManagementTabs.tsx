@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { japanDateKey } from '@/lib/pesticide-safety'
 
 type WorkManagementTab = 'work-records' | 'fertilizers'
 
@@ -54,13 +55,14 @@ export function buildWorkManagementQuery(params: {
   return search.toString()
 }
 
-/** 作物セレクト用の表示名（品種・農場で判別しやすくする） */
+/** 作物選択・絞り込みの表示名。 */
 export function formatCropOptionLabel(crop: {
   name: string
   variety?: string | null
+  plantingDate?: Date | null
   farmName?: string | null
 }): string {
-  const variety = crop.variety?.trim()
-  const withVariety = variety ? `${crop.name}（${variety}）` : crop.name
-  return crop.farmName ? `${withVariety} / ${crop.farmName}` : withVariety
+  const planted = crop.plantingDate ? `${japanDateKey(crop.plantingDate).replaceAll('-', '/')} 植付` : null
+  const label = [crop.name, crop.variety?.trim(), planted].filter(Boolean).join('・')
+  return crop.farmName ? `${label}（${crop.farmName}）` : label
 }

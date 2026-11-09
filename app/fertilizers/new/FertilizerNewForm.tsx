@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Sidebar from '@/components/Sidebar'
 import { WorkManagementTabs, formatCropOptionLabel } from '@/components/WorkManagementTabs'
 
-type CropOption = { id: string; name: string; variety: string | null; farmName: string | null }
+type CropOption = { id: string; name: string; variety: string | null; plantingDate: Date | null; farmName: string | null }
 type FarmOption = { id: string; name: string }
 
 export default function FertilizerNewForm({

@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { getCropWhere, getSaleWhere } from '@/lib/queries'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { formatCropOptionLabel } from '@/components/WorkManagementTabs'
 import { formatDateShort } from '@/lib/utils'
 import Sidebar from '@/components/Sidebar'
 import { RecordTabs } from '@/components/RecordTabs'
@@ -79,7 +80,7 @@ export default async function SalesPage({
                 href={`/sales?cropId=${crop.id}`}
                 className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
-                {crop.name}
+                {formatCropOptionLabel(crop)}
               </Link>
             ))}
           </div>

@@ -3,7 +3,8 @@ import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
-import { formatDate } from '@/lib/utils'
+import PesticideUsage from '@/components/PesticideUsage'
+import { harvestAvailableDate, harvestDateLabel, harvestDatesByCrop, japanDateKey, pesticideCounts, pesticideSafetySelect, PESTICIDE_COUNT_NOTE } from '@/lib/pesticide-safety'
 import PesticideDetailActions from './PesticideDetailActions'
 
 export default async function PesticideDetailPage({
@@ -25,6 +26,14 @@ export default async function PesticideDetailPage({
   })
 
   if (!record) notFound()
+  const history = record.cropId ? await prisma.pesticideRecord.findMany({
+    where: { userId: user.id, cropId: record.cropId },
+    select: pesticideSafetySelect,
+  }) : []
+  const count = pesticideCounts(history)(record.cropId, record.productName)
+  const available = record.cropId ? harvestDatesByCrop(history).get(record.cropId)
+    : harvestAvailableDate(record.appliedAt, record.daysBeforeHarvest)
+  const applied = harvestDateLabel(japanDateKey(record.appliedAt))
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -40,7 +49,7 @@ export default async function PesticideDetailPage({
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{record.productName}</h1>
             <p className="text-lg text-gray-600">
-              {formatDate(record.appliedAt)}
+              {applied}
               {record.amount != null && ` ・ ${record.amount} ${record.amountUnit ?? ''}`}
             </p>
           </div>
@@ -57,7 +66,7 @@ export default async function PesticideDetailPage({
           <dl className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <dt className="text-sm text-gray-500">散布日</dt>
-              <dd className="text-gray-900">{formatDate(record.appliedAt)}</dd>
+              <dd className="text-gray-900">{applied}</dd>
             </div>
             <div>
               <dt className="text-sm text-gray-500">農薬名</dt>
@@ -77,18 +86,23 @@ export default async function PesticideDetailPage({
                 <dd className="text-gray-900">{record.dilution}</dd>
               </div>
             )}
-            {record.applicationCount != null && (
+            {(count > 0 || record.applicationCount != null || record.applicationLimit != null) && (
               <div>
                 <dt className="text-sm text-gray-500">使用回数</dt>
-                <dd className="text-gray-900">{record.applicationCount}回目</dd>
+                <dd className="text-gray-900"><PesticideUsage count={count} entered={record.applicationCount} limit={record.applicationLimit} /></dd>
+                <dd className="mt-1 text-sm text-gray-600">{PESTICIDE_COUNT_NOTE}</dd>
               </div>
             )}
             {record.daysBeforeHarvest != null && (
               <div>
                 <dt className="text-sm text-gray-500">収穫前日数</dt>
-                <dd className="text-gray-900">収穫{record.daysBeforeHarvest}日前</dd>
+                <dd className="text-gray-900">収穫{record.daysBeforeHarvest}日前まで</dd>
               </div>
             )}
+            {available && <div>
+              <dt className="text-sm text-gray-500">記録上の収穫開始日</dt>
+              <dd className="text-gray-900">{harvestDateLabel(available)}から</dd>
+            </div>}
             {record.crop && (
               <div>
                 <dt className="text-sm text-gray-500">作物</dt>

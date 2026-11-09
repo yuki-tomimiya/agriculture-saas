@@ -10,7 +10,7 @@ import { WORK_TASK_TYPES } from '@/lib/work-records'
 type FarmWithRelations = {
   id: string
   name: string
-  crops: { id: string; name: string; variety: string | null }[]
+  crops: { id: string; name: string; variety: string | null; plantingDate: Date | null }[]
   tasks: { id: string; title: string }[]
 }
 
