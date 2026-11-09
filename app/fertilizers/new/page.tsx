@@ -1,9 +1,10 @@
 import { getCurrentUser } from '@/lib/auth'
+import { japanDateKey } from '@/lib/pesticide-safety'
 import { prisma } from '@/lib/prisma'
 import { redirect } from 'next/navigation'
 import FertilizerNewForm from './FertilizerNewForm'
 
-export default async function NewFertilizerPage() {
+export default async function NewFertilizerPage({ searchParams }: { searchParams: Promise<{ cropId?: string; date?: string }> }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
 
@@ -33,5 +34,11 @@ export default async function NewFertilizerPage() {
   }))
   const farmsForSelect = farms.map((f) => ({ id: f.id, name: f.name }))
 
-  return <FertilizerNewForm crops={cropsForSelect} farms={farmsForSelect} />
+  const { cropId, date } = await searchParams
+  const parsedDate = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+    ? new Date(date + 'T00:00:00Z') : null
+  const initialDate = parsedDate && Number.isFinite(+parsedDate) && japanDateKey(parsedDate) === date
+    ? date : japanDateKey(new Date())
+  const initialCropId = cropsForSelect.some(crop => crop.id === cropId) ? cropId : undefined
+  return <FertilizerNewForm crops={cropsForSelect} farms={farmsForSelect} initialDate={initialDate} initialCropId={initialCropId} />
 }

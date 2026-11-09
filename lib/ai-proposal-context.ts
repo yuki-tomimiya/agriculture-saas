@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
 import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
-import { formatMilestoneGeneral } from '@/lib/proposals/milestones'
+import { milestoneGeneralAdvice } from '@/lib/proposals/milestones'
 import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
 import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { LAST_YEAR_SAME_DAY_WINDOW_DAYS } from '@/lib/proposals/constants'
@@ -154,11 +154,17 @@ export function buildGeneralLayer(
   variety?: string | null,
   progress?: StageProgress
 ): string | null {
-  if (!cropName) return null
+  return buildGeneralLayerDetails(cropName, variety, progress).text
+}
 
-  if (!progress) return null
+export function buildGeneralLayerDetails(
+  cropName: string | null | undefined,
+  variety?: string | null,
+  progress?: StageProgress,
+): { text: string | null; milestone?: NonNullable<ReturnType<typeof milestoneGeneralAdvice>> } {
+  if (!cropName || !progress) return { text: null }
 
-  const fromMilestone = formatMilestoneGeneral({
+  const fromMilestone = milestoneGeneralAdvice({
     cropName,
     plantingMethod: progress.plantingMethod,
     variety,
@@ -168,10 +174,9 @@ export function buildGeneralLayer(
     records: progress.milestones ?? [],
     today: progress.today,
   })
-  if (fromMilestone) return fromMilestone
+  if (fromMilestone?.text) return { text: fromMilestone.text, milestone: fromMilestone }
   const stage = resolveCropStage(cropName, variety, progress)
-  if (stage) return formatStageGeneralLine(stage)
-  return null
+  return { text: stage ? formatStageGeneralLine(stage) : null }
 }
 
 export async function buildRegionalLayer(point?: {

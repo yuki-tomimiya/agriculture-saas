@@ -5,7 +5,7 @@ import {
   projectHarvestWindow,
 } from '@/lib/insights/harvest-date-window'
 import {
-  buildGeneralLayer,
+  buildGeneralLayerDetails,
   buildPersonalLayerForCrop,
   buildRegionalLayer,
   mergeLayers,
@@ -50,6 +50,8 @@ import { gddStartDate } from '@/lib/benchmarks/gdd-methods'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 
+export type ProposalMilestoneContext = { key: string; observedAt?: Date; afterHarvest?: boolean }
+
 export type ProposalCropLine = {
   cropId: string
   cropName: string
@@ -60,6 +62,7 @@ export type ProposalCropLine = {
   currentGDD: number | null
   targetGDD: number
   targetCaption?: string
+  milestoneContext?: ProposalMilestoneContext
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
 }
 
@@ -82,6 +85,7 @@ export type ScoredProposal = {
   lines?: ProposalCropLine[]
   layers: ProposalLayers
   conclusion: string
+  milestoneContext?: ProposalMilestoneContext
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
   /** この作付けだけの霜の一文。農場が混ざるまとめカードには、全員同じときだけ載せる */
   frostNote?: string
@@ -417,6 +421,7 @@ function groupSameSignal(cards: ScoredProposal[]): ScoredProposal[] {
         targetGDD: card.targetGDD ?? 0,
         targetCaption: card.targetCaption,
         action: card.action,
+        milestoneContext: card.milestoneContext,
       })),
     })
   }
@@ -886,7 +891,7 @@ export async function scoreGrowingCrops(
 
     const regional =
       (crop.farmId ? regionalByFarm.get(crop.farmId) : undefined) ?? fallbackRegional
-    const [personal, general] = await Promise.all([
+    const [personal, generalDetails] = await Promise.all([
       buildPersonalLayerForCrop({
         userId,
         cropId: crop.id,
@@ -899,7 +904,7 @@ export async function scoreGrowingCrops(
         farmName,
       }),
       Promise.resolve(
-        buildGeneralLayer(matchName, matchVariety, {
+        buildGeneralLayerDetails(matchName, matchVariety, {
           plantingMethod: crop.plantingMethod,
           daysSincePlanting: days,
           gddRatio,
@@ -951,6 +956,7 @@ export async function scoreGrowingCrops(
       targetCaption: basis.summary,
       conclusion: best.conclusion,
       action: best.action,
+      milestoneContext: !advice.recordOnly && !coolFinish ? generalDetails.milestone : undefined,
       frostNote: frostNoteByCrop.get(crop.id),
       layers: mergeLayers({
         personal: personalText,
@@ -961,7 +967,7 @@ export async function scoreGrowingCrops(
             ? climate?.coolSource === 'station' && climate.coolStationName
               ? `${TOMATO_NIGHT_SOURCE}。過去10年の観測では、${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。出典：気象庁ホームページ『過去の気象データ検索』（${JMA_SEARCH_TOP}）の日別値を加工して作成`
               : TOMATO_NIGHT_SOURCE
-            : general,
+            : generalDetails.text,
         conclusion: best.conclusion,
       }),
     })

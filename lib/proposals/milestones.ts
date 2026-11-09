@@ -271,7 +271,7 @@ const MILESTONES: MilestoneDef[] = [
     conditional: '最後以外の土寄せは葉が分かれる所を越えず、最後は分岐点まで寄せます。30℃以上の暑い時期の土寄せは避けます。',
     recordedLine: (days) => `最後の土寄せから${Math.max(0, days)}日です。${NEGI_DIG}`,
     sourceLabel: '秋田県「野菜栽培技術指針」p.240〜244／宮城県「みやぎの野菜指導指針」p.145〜146／JA福岡京築・京築普及指導センター「白ネギ栽培の手引き」p.1・20〜22・27／鹿児島県「有機百培」p.101〜102（収穫の見分け方）',
-    howTo: ['土寄せは生育に合わせて数回行います。', '最後以外は葉が分かれる所（分岐点）を越えず、最後は分岐点まで土を寄せます。', '30℃以上の暑い時期の土寄せは避けます。', NEGI_DIG],
+    howTo: ['土寄せは生育に合わせて数回行います。', '最後以外は葉が分かれる所（分岐点）を越えず、最後は分岐点まで土を寄せます。', '追肥は土寄せと同時に行います。最後の土寄せでは、ネギの太りと葉色を見て追肥を決めます。', '30℃以上の暑い時期の土寄せは避けます。', NEGI_DIG],
     window: { kind: 'days', from: 80, to: 170 }, windowNote: `定植から80〜170日（宮城・福岡の手順の日数を足して設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
   },
   {
@@ -459,11 +459,11 @@ const MILESTONES: MilestoneDef[] = [
     term: '芽そろい',
     yesLabel: '出そろった',
     ifYes: '出そろっていれば、1株1〜2本を残して芽をかきます。あわせて1回目の土寄せをします。',
-    conditional: '芽が出そろっていれば、1株1〜2本を残して芽をかきます。あわせて1回目の土寄せをします。',
+    conditional: '芽が出そろっていれば、1株1〜2本を残して芽をかきます。あわせて1回目の土寄せをします。秋田県の資料では、土寄せと合わせて追肥します。',
     recordedLine: (days) =>
-      `${days <= 0 ? '芽そろいは今日です' : `芽そろいから${days}日です`}。1株1〜2本を残して芽をかき、1回目の土寄せをします。`,
-    sourceLabel: '秋田県・熊本県野菜振興協会・鹿児島県の資料',
-    howTo: [],
+      `${days <= 0 ? '芽そろいは今日です' : `芽そろいから${days}日です`}。1株1〜2本を残して芽をかき、1回目の土寄せをします。秋田県の資料では、土寄せと合わせて追肥します。`,
+    sourceLabel: '秋田県・熊本県野菜振興協会・鹿児島県の資料。追肥は秋田県「野菜栽培技術指針」p.291',
+    howTo: ['秋田県の資料では、土寄せと合わせて追肥します。'],
     window: { kind: 'days', from: 15, to: 40 },
     windowNote: `植付から15〜40日（【一般】十勝・長崎の萌芽の試験を参考。${WINDOW_USE}）`,
     skipWhenHarvest: true,
@@ -476,11 +476,11 @@ const MILESTONES: MilestoneDef[] = [
     term: 'つぼみ',
     yesLabel: '見えた',
     ifYes: '見えていれば、2回目の土寄せをします。花が咲いてからでは遅いです。',
-    conditional: 'つぼみが見えていれば、2回目の土寄せをします。花が咲いてからでは遅いです。',
+    conditional: 'つぼみが見えていれば、2回目の土寄せをします。花が咲いてからでは遅いです。秋田県の資料では、土寄せと合わせて追肥します。',
     recordedLine: (days) =>
-      `${days <= 0 ? 'つぼみは今日です' : `つぼみから${days}日です`}。2回目の土寄せをします。花が咲いてからでは遅いです。`,
-    sourceLabel: '秋田県・鹿児島県の資料。北海道立十勝農業試験場は着蕾期の土寄せを標準にしています',
-    howTo: [],
+      `${days <= 0 ? 'つぼみは今日です' : `つぼみから${days}日です`}。2回目の土寄せをします。花が咲いてからでは遅いです。秋田県の資料では、土寄せと合わせて追肥します。`,
+    sourceLabel: '秋田県・鹿児島県の資料。北海道立十勝農業試験場は着蕾期の土寄せを標準にしています。追肥は秋田県「野菜栽培技術指針」p.291',
+    howTo: ['秋田県の資料では、土寄せと合わせて追肥します。'],
     window: { kind: 'days', from: 25, to: 70 },
     windowNote: `植付から25〜70日（【北海道】和寒・帯広の試験を参考。${WINDOW_USE}）。前の問いが残っているあいだは出さない`,
     skipWhenHarvest: true,
@@ -603,7 +603,7 @@ export function pickMilestoneAsk(input: {
  * 記録があれば断定。記録が無く窓の中なら条件つき。
  * 窓を過ぎたあとは言わない。活着の「根付いていれば」を、植付150日でも出し続けていた。
  */
-export function formatMilestoneGeneral(input: {
+export function milestoneGeneralAdvice(input: {
   cropName: string
   plantingMethod?: string | null
   variety?: string | null
@@ -612,12 +612,15 @@ export function formatMilestoneGeneral(input: {
   hasHarvest?: boolean
   records: MilestoneRecord[]
   today?: Date
-}): string | null {
+}): { text: string; key: string; observedAt?: Date; afterHarvest?: boolean } | null {
   const today = input.today ?? new Date()
   const items = catalogFor(input.cropName, input.variety)
   if (input.hasHarvest) {
-    const harvestLine = items.find((item) => item.harvestLine)?.harvestLine
-    if (harvestLine) return harvestLine
+    const item = items.find((candidate) => candidate.harvestLine)
+    if (item?.harvestLine) {
+      const record = recordedOf(input.records, item.key)
+      return { text: item.harvestLine, key: item.key, afterHarvest: true, observedAt: record ? new Date(record.observedAt) : undefined }
+    }
     // さつまいも・ジャガイモは、収穫記録のあとは片付け側に譲る
     if (items.some((item) => item.skipWhenHarvest)) return null
   }
@@ -626,13 +629,17 @@ export function formatMilestoneGeneral(input: {
     const record = recordedOf(input.records, item.key)
     if (record) {
       const days = daysSinceDate(record.observedAt, today)
-      return item.recordedLine(days)
+      return { text: item.recordedLine(days), key: item.key, observedAt: new Date(record.observedAt) }
     }
     if (item.skipWhenHarvest && input.hasHarvest) continue
     if (item.key === 'broccoli-bud' && input.plantingMethod === 'direct') continue
-    if (windowPlace(item.window, input) === 'inside') return item.conditional
+    if (windowPlace(item.window, input) === 'inside') return { text: item.conditional, key: item.key }
   }
   return null
+}
+
+export function formatMilestoneGeneral(input: Parameters<typeof milestoneGeneralAdvice>[0]): string | null {
+  return milestoneGeneralAdvice(input)?.text ?? null
 }
 
 export function milestoneFormItems(

@@ -10,7 +10,7 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed, listActiveDismissals } from '@/lib/proposals/dismissal'
 import { isFrostTrigger } from '@/lib/proposals/frost'
-import { scoreGrowingCrops, type ProposalCropLine, type ProposalUrgency } from '@/lib/proposals/scoring'
+import { scoreGrowingCrops, type ProposalCropLine, type ProposalMilestoneContext, type ProposalUrgency } from '@/lib/proposals/scoring'
 
 export type ProposalType = 'task_due' | 'schedule' | 'weather'
 
@@ -34,6 +34,7 @@ export type Proposal = {
   trigger?: string
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
   lines?: ProposalCropLine[]
+  milestoneContext?: ProposalMilestoneContext
   milestone?: {
     key: string
     question: string
@@ -193,6 +194,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
       action: card.action,
       lines: card.lines,
       milestone: card.milestone,
+      milestoneContext: card.milestoneContext,
     })
   }
 

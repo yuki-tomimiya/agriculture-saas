@@ -9,6 +9,8 @@ import ProposalDismissButton from './ProposalDismissButton'
 import ProposalSeasonActions from './ProposalSeasonActions'
 import MilestoneAskActions from './MilestoneAskActions'
 import { isFrostTrigger } from '@/lib/proposals/frost'
+import { loadProposalRecordGuidance, type CropRecordGuidance, type ProposalRecordGuidance } from '@/lib/proposals/record-guidance'
+import { harvestDateLabel } from '@/lib/pesticide-safety'
 import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 const typeLabel: Record<ProposalType, string> = {
@@ -29,7 +31,7 @@ const priorityBorderClass: Record<Proposal['priority'], string> = {
   low: 'ai-proposal-card--low',
 }
 
-function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
+function ProposalGroup({ title, items, guidance }: { title: string; items: Proposal[]; guidance: Map<string, ProposalRecordGuidance> }) {
   if (items.length === 0) return null
   return (
     <section className="ai-proposal-group">
@@ -39,6 +41,7 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
       </h2>
       <ul className="ai-proposal-list">
         {items.map((p) => {
+          const records = guidance.get(p.id)
           const milestone = p.trigger && (p.relatedCropId || (p.lines && p.lines.length > 1)) ? p.milestone : undefined
           return (
             <li key={p.id}>
@@ -55,7 +58,10 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                         <span className="insights-layer-tag insights-layer-tag--conclusion">今日の一手</span>
                         {p.layers.conclusion}
                       </p>}
-                      {!(p.lines && p.lines.length > 1) && <ProposalMeta proposal={p} />}
+                      {!(p.lines && p.lines.length > 1) && <>
+                        <ProposalMeta proposal={p} />
+                        {p.relatedCropId && <RecordGuidance entry={records?.byCrop.get(p.relatedCropId)} />}
+                      </>}
                       {p.milestone && p.lines && p.lines.length > 1 && p.trigger ? (
                         <div className="ai-proposal-milestone">
                           <ul className="ai-proposal-lines">
@@ -65,6 +71,7 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                                   {line.cropName}
                                   {line.farmName ? ` · ${line.farmName}` : ''}
                                   {line.daysSincePlanting != null ? ` · 植付から${line.daysSincePlanting}日` : ''}
+                                  <RecordGuidance entry={records?.byCrop.get(line.cropId)} />
                                 </span>
                                 <MilestoneAskActions
                                   cropId={line.cropId}
@@ -95,6 +102,7 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                                 {line.farmName ? ` · ${line.farmName}` : ''}
                                 {line.daysSincePlanting != null ? ` · 植付から${line.daysSincePlanting}日` : ''}
                                 {line.currentGDD != null ? ` · ${line.currentGDD}/${line.targetGDD}℃日` : ''}
+                                <RecordGuidance entry={records?.byCrop.get(line.cropId)} />
                               </span>
                               {p.trigger === 'season-finish' ? (
                                 <ProposalSeasonActions cropId={line.cropId} farmId={line.farmId} trigger={p.trigger} />
@@ -216,8 +224,24 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
                         )}
                       </div>
                     </div>
-                    {milestone ? <MilestoneEvidence milestone={milestone} />
-                      : <ProposalLayersBlock layers={p.layers} />}
+                    {(milestone || p.layers.personal || p.layers.regional || p.layers.general || records?.standards.length) ? (
+                      <div className="ai-proposal-evidence">
+                        {milestone ? <MilestoneEvidence milestone={milestone} /> : <ProposalLayersBlock layers={p.layers} />}
+                        {!!records?.standards.length && (
+                          <p className="mt-2 text-sm">
+                            施肥量を確認できる資料：
+                            {records.standards.map((standard, index) => (
+                              <span key={standard.url}>
+                                {index > 0 && '、'}
+                                <a href={standard.url} className="underline">{standard.title}</a>
+                              </span>
+                            ))}
+                            {records.standards.some(standard => standard.fallback) &&
+                              '。近くの県の基準を参考にできる場合があります。普及指導員に相談してください。'}
+                          </p>
+                        )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </article>
@@ -227,6 +251,29 @@ function ProposalGroup({ title, items }: { title: string; items: Proposal[] }) {
       </ul>
     </section>
   )
+}
+
+function RecordGuidance({ entry }: { entry?: CropRecordGuidance }) {
+  if (!entry) return null
+  const { fertilizer, harvestFrom } = entry
+  const elapsed = fertilizer?.daysAgo == null ? '' : fertilizer.daysAgo === 0 ? '（今日）' : `（${fertilizer.daysAgo}日前）`
+  return <>
+    {fertilizer && (
+      <span className="block text-sm">
+        {fertilizer.last
+          ? `最後の施肥：${harvestDateLabel(fertilizer.last)}${elapsed}`
+          : 'この作付けの施肥の記録はまだありません'}
+        {fertilizer.recorded && ' · 記録済み'}
+        {' · '}
+        <Link href={fertilizer.href} className="underline">施肥を記録する</Link>
+      </span>
+    )}
+    {harvestFrom && (
+      <span className="block text-sm">
+        農薬の記録では、収穫できるのは{harvestDateLabel(harvestFrom)}からです。
+      </span>
+    )}
+  </>
 }
 
 function ProposalMeta({ proposal }: { proposal: Proposal }) {
@@ -240,7 +287,7 @@ function ProposalMeta({ proposal }: { proposal: Proposal }) {
 }
 
 function MilestoneEvidence({ milestone }: { milestone: NonNullable<Proposal['milestone']> }) {
-  return <div className="ai-proposal-evidence">
+  return <div>
     <p className="ai-proposal-milestone-term">（{milestone.term}）</p>
     <p className="ai-proposal-milestone-advice">{milestone.ifYes}</p>
     {milestone.howTo.length > 0 && (
@@ -255,7 +302,7 @@ function MilestoneEvidence({ milestone }: { milestone: NonNullable<Proposal['mil
 function ProposalLayersBlock({ layers }: { layers: Proposal['layers'] }) {
   if (!layers.personal && !layers.regional && !layers.general) return null
   return (
-    <div className="ai-proposal-layers ai-proposal-evidence">
+    <div className="ai-proposal-layers">
       {layers.personal && (
         <p>
           <span className="insights-layer-tag">あなた</span>
@@ -296,6 +343,7 @@ export default async function AiProposalPage() {
   const todayItems = proposals.filter((item) => item.urgency === 'today' && !isConfirm(item.trigger))
   const weekItems = proposals.filter((item) => item.urgency === 'thisWeek' && !isConfirm(item.trigger))
   const watchCount = proposals.filter((item) => item.urgency === 'watch').length
+  const guidance = await loadProposalRecordGuidance(user.id, [...todayItems, ...weekItems, ...confirmItems])
   const visible = todayItems.length + weekItems.length + confirmItems.length
 
   return (
@@ -344,9 +392,9 @@ export default async function AiProposalPage() {
             </div>
           ) : (
             <>
-              <ProposalGroup title="今日やること" items={todayItems} />
-              <ProposalGroup title="今週中に" items={weekItems} />
-              <ProposalGroup title="確認したいこと" items={confirmItems} />
+              <ProposalGroup title="今日やること" items={todayItems} guidance={guidance} />
+              <ProposalGroup title="今週中に" items={weekItems} guidance={guidance} />
+              <ProposalGroup title="確認したいこと" items={confirmItems} guidance={guidance} />
               {watchCount > 0 && (
                 <p className="ai-proposal-watch">様子見 {watchCount}件（記録が止まっている作付け）</p>
               )}
