@@ -1,0 +1,140 @@
+{
+  "10": {
+    "name": "群馬県",
+    "title": "農作物病害虫・雑草防除指針",
+    "url": "https://www.pref.gunma.jp/page/9243.html",
+    "checkedOn": "2026-11-10"
+  },
+  "12": {
+    "name": "千葉県",
+    "title": "農作物病害虫雑草防除指針",
+    "url": "https://www.pref.chiba.lg.jp/annou/shokubo/bojoshishin.html",
+    "checkedOn": "2026-11-10"
+  },
+  "13": {
+    "name": "東京都",
+    "title": "東京都病害虫防除指針",
+    "url": "https://www.sangyo-rodo.metro.tokyo.lg.jp/nourin/shoku/boujyo/guideline",
+    "checkedOn": "2026-11-10"
+  },
+  "18": {
+    "name": "福井県",
+    "title": "農作物病害虫防除指針",
+    "url": "https://www.pref.fukui.lg.jp/doc/021033/shokuryouanzen/boujoshishin.html",
+    "checkedOn": "2026-11-10"
+  },
+  "19": {
+    "name": "山梨県",
+    "title": "病害虫防除基準・農薬適正使用指針",
+    "url": "https://www.pref.yamanashi.jp/byogaichu/boujo_kijyun/chojugai.html",
+    "checkedOn": "2026-11-10"
+  },
+  "20": {
+    "name": "長野県",
+    "title": "農作物病害虫・雑草防除基準",
+    "url": "https://www.pref.nagano.lg.jp/bojo/nouyaku/bojokijun/index.html",
+    "checkedOn": "2026-11-10"
+  },
+  "22": {
+    "name": "静岡県",
+    "title": "農薬安全使用指針・農作物病害虫防除基準",
+    "url": "https://www.pref.shizuoka.jp/sangyoshigoto/norinjimusho/1058658/boujo/1080327/index.html",
+    "checkedOn": "2026-11-10"
+  },
+  "23": {
+    "name": "愛知県",
+    "title": "農業病害虫・雑草防除の手引き",
+    "url": "https://www.pref.aichi.jp/site/byogaichu/tebiki.html",
+    "checkedOn": "2026-11-10"
+  },
+  "25": {
+    "name": "滋賀県",
+    "title": "農作物病害虫雑草防除基準",
+    "url": "https://www.pref.shiga.lg.jp/menu/26799.html",
+    "checkedOn": "2026-11-10"
+  },
+  "27": {
+    "name": "大阪府",
+    "title": "農作物病害虫防除指針",
+    "url": "https://www.pref.osaka.lg.jp/o120090/nosei/byogaicyu/boujo_shishin.html",
+    "checkedOn": "2026-11-10"
+  },
+  "34": {
+    "name": "広島県",
+    "title": "病害虫・雑草防除基準",
+    "url": "https://www.pref.hiroshima.lg.jp/site/byogaichu/boujo-kijun.html",
+    "checkedOn": "2026-11-10"
+  },
+  "35": {
+    "name": "山口県",
+    "title": "農作物病害虫・雑草防除指導基準",
+    "url": "https://www.pref.yamaguchi.lg.jp/soshiki/122/22316.html",
+    "checkedOn": "2026-11-10"
+  },
+  "37": {
+    "name": "香川県",
+    "title": "主要農作物病害虫・雑草防除指針",
+    "url": "https://www.pref.kagawa.lg.jp/byogaichubojo/byogaichu/sisin/byougaityuu_sisin.html",
+    "checkedOn": "2026-11-10"
+  },
+  "38": {
+    "name": "愛媛県",
+    "title": "農作物病害虫等防除指針",
+    "url": "https://www.pref.ehime.jp/page/11435.html",
+    "checkedOn": "2026-11-10"
+  },
+  "39": {
+    "name": "高知県",
+    "title": "高知県農薬情報システム",
+    "url": "https://www.nouyaku-sys.com/noyaku/user/haishinfile/list/kochi",
+    "checkedOn": "2026-11-10"
+  },
+  "40": {
+    "name": "福岡県",
+    "title": "病害虫・雑草防除の手引き",
+    "url": "https://www.pref.fukuoka.lg.jp/contents/bojonotebiki.html",
+    "checkedOn": "2026-11-10"
+  },
+  "41": {
+    "name": "佐賀県",
+    "title": "病害虫・雑草防除のてびき",
+    "url": "https://www.pref.saga.lg.jp/kiji003101846/index.html",
+    "checkedOn": "2026-11-10"
+  },
+  "42": {
+    "name": "長崎県",
+    "title": "病害虫・雑草防除基準",
+    "url": "https://www.pref.nagasaki.jp/bunrui/shigoto-sangyo/nogyo/nogyo-innovation/nouyaku-nogyo-shigoto-sangyo/bouzyo-kizyun/",
+    "checkedOn": "2026-11-10"
+  },
+  "43": {
+    "name": "熊本県",
+    "title": "病害虫・雑草防除指針",
+    "url": "https://www.pref.kumamoto.jp/soshiki/74/867.html",
+    "checkedOn": "2026-11-10"
+  },
+  "44": {
+    "name": "大分県",
+    "title": "主要病害虫および雑草防除指針",
+    "url": "https://www.pref.oita.jp/site/oita-boujosho/yasai.html",
+    "checkedOn": "2026-11-10"
+  },
+  "45": {
+    "name": "宮崎県",
+    "title": "病害虫・雑草防除等指導指針",
+    "url": "https://www.mppa.or.jp/pest-control/guidelines/",
+    "checkedOn": "2026-11-10"
+  },
+  "46": {
+    "name": "鹿児島県",
+    "title": "農作物病害虫防除対策等",
+    "url": "https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/noyaku/nouyaku.html",
+    "checkedOn": "2026-11-10"
+  },
+  "02": {
+    "name": "青森県",
+    "title": "農作物病害虫防除指針",
+    "url": "https://www.nounavi-aomori.jp/farmer/archives/15556",
+    "checkedOn": "2026-11-10"
+  }
+}

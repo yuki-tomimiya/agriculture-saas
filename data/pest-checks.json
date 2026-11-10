@@ -1,0 +1,1177 @@
+[
+  {
+    "key": "tomato:yellow-leaf-curl",
+    "cropKind": "tomato",
+    "name": "黄化葉巻病",
+    "question": "トマトに黄化葉巻病は出ていませんか？",
+    "marker": "新葉の葉縁が黄化し、葉が巻き、株の伸長が止まる",
+    "appearance": {
+      "publisher": "京都府",
+      "title": "野菜の病害虫",
+      "year": "2007",
+      "page": "HTML",
+      "url": "https://www.pref.kyoto.jp/byogai/yasai.html"
+    },
+    "searchCrop": "ﾄﾏﾄ",
+    "searchPest": "コナジラミ類（うつす虫）",
+    "measures": [
+      {
+        "scope": "national",
+        "text": "施設の開口部と出入口を0.4mm以下の網で覆い、施設の周りの雑草と発病株を除きます。",
+        "site": "house",
+        "sources": [
+          {
+            "publisher": "農研機構・野菜茶業研究所",
+            "title": "トマト黄化葉巻病の防除に関する技術指針",
+            "year": "2009",
+            "page": "PDF 1～2枚目",
+            "url": "https://www.naro.go.jp/publicity_report/publication/files/tomato_yellow_leaf_h21.5.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "cucumber:powdery-mildew",
+    "cropKind": "cucumber",
+    "name": "うどんこ病",
+    "question": "キュウリにうどんこ病は出ていませんか？",
+    "marker": "葉に白い粉をふいたような斑点",
+    "appearance": {
+      "publisher": "宮城県",
+      "title": "病害虫ライブラリー キュウリ うどんこ病",
+      "year": "2023",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.miyagi.jp/documents/8593/04_kyuri-udonko.pdf"
+    },
+    "searchCrop": "きゅうり",
+    "searchPest": "うどんこ病",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "07",
+        "text": "夏秋作では抵抗性品種を選ぶ方法があります。",
+        "sources": [
+          {
+            "publisher": "福島県農業総合センター",
+            "title": "キュウリうどんこ病抵抗性品種の病害防止効果",
+            "year": "表示なし",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.fukushima.lg.jp/uploaded/attachment/449017.pdf"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "施設栽培では乾燥を避けます。",
+        "site": "house",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 きゅうり",
+            "year": "2026",
+            "page": "PDF 2枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010304.pdf#page=2"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "39",
+        "months": [
+          10,
+          11,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9
+        ],
+        "label": "10〜11月・3月以降（促成施設）",
+        "site": "house",
+        "source": {
+          "publisher": "高知県",
+          "title": "キュウリ うどんこ病",
+          "year": "表示なし",
+          "page": "HTML",
+          "url": "https://www.nogyo.tosa.pref.kochi.lg.jp/info/dtl.php?ID=3678"
+        }
+      }
+    ]
+  },
+  {
+    "key": "eggplant:mites",
+    "cropKind": "eggplant",
+    "name": "ハダニ類",
+    "question": "ナスにハダニ類は出ていませんか？",
+    "marker": "被害葉に白い斑点状の吸汁痕",
+    "appearance": {
+      "publisher": "高知県",
+      "title": "ナス ハダニ類",
+      "year": "表示なし",
+      "page": "HTML",
+      "url": "https://www.nogyo.tosa.pref.kochi.lg.jp/info/dtl.php?ID=3521"
+    },
+    "searchCrop": "なす",
+    "searchPest": "ハダニ類",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "39",
+        "text": "ほ場内と周辺の雑草を除きます。",
+        "sources": [
+          {
+            "publisher": "高知県",
+            "title": "ナス ハダニ類",
+            "year": "表示なし",
+            "page": "HTML",
+            "url": "https://www.nogyo.tosa.pref.kochi.lg.jp/info/dtl.php?ID=3521"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "eggplant:thrips",
+    "cropKind": "eggplant",
+    "name": "アザミウマ類",
+    "question": "ナスにアザミウマ類は出ていませんか？",
+    "marker": "果実の褐色の傷やざらつき",
+    "appearance": {
+      "publisher": "宮城県",
+      "title": "病害虫ライブラリー ナス アザミウマ類",
+      "year": "2026",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.miyagi.jp/documents/8593/01nasu_azamiuma.pdf"
+    },
+    "searchCrop": "なす",
+    "searchPest": "アザミウマ類",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "施設の開口部を0.4mm以下の網で覆い、育苗時も苗を覆います。",
+        "site": "house",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 なす",
+            "year": "2026",
+            "page": "PDF 5枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010302.pdf#page=5"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "pepper:aphids",
+    "cropKind": "pepper",
+    "name": "アブラムシ類",
+    "question": "ピーマンにアブラムシ類は出ていませんか？",
+    "marker": "新葉が巻く。葉裏などに群生",
+    "appearance": {
+      "publisher": "島根県",
+      "title": "ピーマン アブラムシ類",
+      "year": "表示なし",
+      "page": "HTML",
+      "url": "https://www.pref.shimane.lg.jp/industry/norin/gijutsu/nougyo_tech/byougaityuu/byougaityuu-index/piman/pi068.html"
+    },
+    "searchCrop": "ﾋﾟｰﾏﾝ",
+    "searchPest": "アブラムシ類",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "施設の開口部に防虫網を張ります。",
+        "site": "house",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 ﾋﾟｰﾏﾝ",
+            "year": "2026",
+            "page": "PDF 4枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010303.pdf#page=4"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "44",
+        "text": "防虫網を使い、ほ場と周辺の雑草を管理します。",
+        "sources": [
+          {
+            "publisher": "大分県",
+            "title": "主要病害虫および雑草防除指針 ピーマン",
+            "year": "2026",
+            "page": "PDF 8枚目",
+            "url": "https://www.pref.oita.jp/uploaded/life/2221401_4717898_misc.pdf#page=8"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "44",
+        "months": [
+          7,
+          8
+        ],
+        "label": "7〜8月",
+        "source": {
+          "publisher": "大分県",
+          "title": "主要病害虫および雑草防除指針 ピーマン",
+          "year": "2026",
+          "page": "PDF 8枚目",
+          "url": "https://www.pref.oita.jp/uploaded/life/2221401_4717898_misc.pdf#page=8"
+        }
+      }
+    ]
+  },
+  {
+    "key": "pepper:thrips",
+    "cropKind": "pepper",
+    "name": "アザミウマ類",
+    "question": "ピーマンにアザミウマ類は出ていませんか？",
+    "marker": "葉がかすり状に退色。果実は種類により線状の傷",
+    "appearance": {
+      "publisher": "高知県",
+      "title": "アザミウマ類の生態と特徴",
+      "year": "2018",
+      "page": "HTML",
+      "url": "https://www.nogyo.tosa.pref.kochi.lg.jp/info/dtl.php?ID=7968"
+    },
+    "searchCrop": "ﾋﾟｰﾏﾝ",
+    "searchPest": "アザミウマ類",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "施設の開口部に防虫網を張ります。",
+        "site": "house",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 ﾋﾟｰﾏﾝ",
+            "year": "2026",
+            "page": "PDF 5枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010303.pdf#page=5"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "44",
+        "text": "防虫網を使い、ほ場と周辺の雑草を管理します。",
+        "sources": [
+          {
+            "publisher": "大分県",
+            "title": "主要病害虫および雑草防除指針 ピーマン",
+            "year": "2026",
+            "page": "PDF 7枚目",
+            "url": "https://www.pref.oita.jp/uploaded/life/2221401_4717898_misc.pdf#page=7"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "strawberry-june:powdery-mildew",
+    "cropKind": "strawberry-june",
+    "name": "うどんこ病",
+    "question": "イチゴにうどんこ病は出ていませんか？",
+    "marker": "葉や果実に白い粉状のかび",
+    "appearance": {
+      "publisher": "宮城県",
+      "title": "病害虫ライブラリー イチゴ うどんこ病",
+      "year": "2023",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.miyagi.jp/documents/8593/05_ichigo-udonnko.pdf"
+    },
+    "searchCrop": "いちご",
+    "searchPest": "うどんこ病",
+    "measures": [],
+    "seasons": []
+  },
+  {
+    "key": "strawberry-june:gray-mold",
+    "cropKind": "strawberry-june",
+    "name": "灰色かび病",
+    "question": "イチゴに灰色かび病は出ていませんか？",
+    "marker": "果実に灰色のかび。枯れた花弁などから周辺に広がる",
+    "appearance": {
+      "publisher": "宮城県",
+      "title": "病害虫ライブラリー イチゴ 灰色かび病",
+      "year": "2023",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.miyagi.jp/documents/8593/04_ichigo-haikabi.pdf"
+    },
+    "searchCrop": "いちご",
+    "searchPest": "灰色かび病",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "施設内の湿度を低く保ち、枯れた葉や発病果を除きます。",
+        "site": "house",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 いちご",
+            "year": "2026",
+            "page": "PDF 3枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010324.pdf#page=3"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "26",
+        "months": [
+          12,
+          1,
+          2,
+          3,
+          4
+        ],
+        "label": "12〜4月",
+        "source": {
+          "publisher": "京都府",
+          "title": "野菜の病害虫",
+          "year": "2007",
+          "page": "HTML",
+          "url": "https://www.pref.kyoto.jp/byogai/yasai.html"
+        }
+      }
+    ]
+  },
+  {
+    "key": "sweet-potato:foot-rot",
+    "cropKind": "sweet-potato",
+    "name": "基腐病",
+    "question": "さつまいもに基腐病は出ていませんか？",
+    "marker": "株元の茎が黒変、地上部がしおれる。いもはなり首側から腐る",
+    "appearance": {
+      "publisher": "鹿児島県",
+      "title": "サツマイモ基腐病とは",
+      "year": "2025",
+      "page": "HTML",
+      "url": "https://www.pref.kagoshima.jp/ag06/satsumaimomotogusarebyoutoha.html"
+    },
+    "searchCrop": "かんしょ",
+    "searchPest": "基腐病",
+    "measures": [
+      {
+        "scope": "national",
+        "text": "健全な種いも・苗を使い、連作を避け、排水を確保します。地域に合う抵抗性品種を選び、発病株は早く見つけて除きます。",
+        "sources": [
+          {
+            "publisher": "農研機構ほか",
+            "title": "サツマイモ基腐病の発生生態と防除対策（令和4年度版）",
+            "year": "2023",
+            "page": "p.2～4／PDF 8～10枚目",
+            "url": "https://www.naro.go.jp/publicity_report/publication/files/stem_blight_and_storage_tuber_rot_of_sweetpotator04.pdf#page=8"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "sweet-corn:corn-borer",
+    "cropKind": "sweet-corn",
+    "name": "アワノメイガ",
+    "question": "スイートコーンにアワノメイガは出ていませんか？",
+    "marker": "茎や雌穂に食入口、虫ふん",
+    "appearance": {
+      "publisher": "島根県",
+      "title": "スイートコーン アワノメイガ、アワヨトウ",
+      "year": "表示なし",
+      "page": "HTML",
+      "url": "https://www.pref.shimane.lg.jp/industry/norin/gijutsu/nougyo_tech/byougaityuu/byougaityuu-index/kon/sc113.html"
+    },
+    "searchCrop": "未成熟とうもろこし",
+    "searchPest": "アワノメイガ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "25",
+        "text": "防虫網で覆い、受粉後に雄穂を早めに取ります。",
+        "sources": [
+          {
+            "publisher": "滋賀県",
+            "title": "令和8年度農作物病害虫雑草防除基準 いも類スィートコーン",
+            "year": "2026",
+            "page": "p.101／PDF 3枚目",
+            "url": "https://www.pref.shiga.lg.jp/documents/7023/5603321.pdf#page=3"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "23",
+        "text": "受粉後に雄穂を切り、収穫後の株をすぐすき込み、茎の太い雑草を除きます。",
+        "sources": [
+          {
+            "publisher": "愛知県",
+            "title": "農業病害虫・雑草防除の手引き トウモロコシ",
+            "year": "2026",
+            "page": "p.36／PDF 1枚目",
+            "url": "https://www.pref.aichi.jp/uploaded/attachment/629721.pdf#page=1"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "42",
+        "months": [
+          7,
+          8
+        ],
+        "label": "7月中旬〜8月上旬",
+        "site": "open",
+        "source": {
+          "publisher": "長崎県",
+          "title": "病害虫防除基準 未成熟とうもろこし",
+          "year": "2022",
+          "page": "p.145／PDF 67枚目",
+          "url": "https://www.pref.nagasaki.lg.jp/uploads/2022/07/1657697339.pdf#page=67"
+        }
+      }
+    ]
+  },
+  {
+    "key": "potato:late-blight",
+    "cropKind": "potato",
+    "name": "疫病",
+    "question": "ジャガイモに疫病は出ていませんか？",
+    "marker": "葉に不整形の暗色斑。湿ると病斑の裏側に白いかび",
+    "appearance": {
+      "publisher": "島根県",
+      "title": "ジャガイモ 疫病",
+      "year": "表示なし",
+      "page": "HTML",
+      "url": "https://www.pref.shimane.lg.jp/industry/norin/gijutsu/nougyo_tech/byougaityuu/byougaityuu-index/zyagaimo/ja116.html"
+    },
+    "searchCrop": "ばれいしょ",
+    "searchPest": "疫病",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "43",
+        "text": "健全な種いもを使います。",
+        "sources": [
+          {
+            "publisher": "熊本県",
+            "title": "令和8年度 病害虫・雑草防除指針 ばれいしょ",
+            "year": "2026",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.kumamoto.jp/uploaded/attachment/306623.pdf#page=1"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "43",
+        "months": [
+          4,
+          10,
+          11
+        ],
+        "label": "春作では早い年で4月下旬ごろから、秋作では10〜11月",
+        "site": "open",
+        "source": {
+          "publisher": "熊本県",
+          "title": "令和8年度 病害虫・雑草防除指針 ばれいしょ",
+          "year": "2026",
+          "page": "PDF 1枚目",
+          "url": "https://www.pref.kumamoto.jp/uploaded/attachment/306623.pdf#page=1"
+        }
+      }
+    ]
+  },
+  {
+    "key": "edamame:armyworm",
+    "cropKind": "edamame",
+    "name": "ハスモンヨトウ",
+    "question": "エダマメにハスモンヨトウは出ていませんか？",
+    "marker": "幼虫が群がって葉を食べ、葉が白く透けたようになる",
+    "appearance": {
+      "publisher": "京都府農林水産技術センター農林センター",
+      "title": "黒大豆エダマメ化学農薬低減マニュアル",
+      "year": "2025",
+      "page": "PDF 2～3枚目",
+      "url": "https://www.pref.kyoto.jp/byogai/documents/kurodaizuedamame-manual_202502.pdf"
+    },
+    "searchCrop": "えだまめ",
+    "searchPest": "ハスモンヨトウ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "卵塊や若い幼虫が集まった葉を取り除きます。",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 えだまめ",
+            "year": "2026",
+            "page": "PDF 3枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010313.pdf#page=3"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "37",
+        "text": "卵塊や若い幼虫が集まった葉を取り除きます。",
+        "sources": [
+          {
+            "publisher": "香川県",
+            "title": "病害虫防除指針 エダマメ",
+            "year": "表示なし",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.kagawa.lg.jp/documents/56836/3-5-22_edamame.pdf#page=1"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "26",
+        "months": [
+          7,
+          8,
+          9
+        ],
+        "label": "7月から発生し8〜9月に被害が多い（黒大豆エダマメ）",
+        "site": "open",
+        "source": {
+          "publisher": "京都府農林水産技術センター農林センター",
+          "title": "黒大豆エダマメ化学農薬低減マニュアル",
+          "year": "2025",
+          "page": "PDF 3枚目",
+          "url": "https://www.pref.kyoto.jp/byogai/documents/kurodaizuedamame-manual_202502.pdf#page=3"
+        }
+      }
+    ]
+  },
+  {
+    "key": "lettuce-head:soft-rot",
+    "cropKind": "lettuce-head",
+    "name": "軟腐病",
+    "question": "玉レタスに軟腐病は出ていませんか？",
+    "marker": "地面に接する外葉などから水浸状に腐敗",
+    "appearance": {
+      "publisher": "香川県",
+      "title": "レタス 軟腐病",
+      "year": "表示なし",
+      "page": "HTML",
+      "url": "https://www.pref.kagawa.lg.jp/byogaichubojo/byogaichu/syasin/yasai/yasai_byouki/retasu/nanpu.html"
+    },
+    "searchCrop": "ﾚﾀｽ",
+    "searchPest": "軟腐病",
+    "measures": [
+      {
+        "scope": "general",
+        "text": "ほ場の排水をよくします。",
+        "sources": [
+          {
+            "publisher": "岩手県農業研究センター",
+            "title": "レタス腐敗性病害の耕種的防除法",
+            "year": "2008",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.iwate.jp/agri/_res/projects/project_agri/_page_/002/004/790/repo_436.pdf"
+          },
+          {
+            "publisher": "熊本県",
+            "title": "病害虫・雑草防除指針 レタス",
+            "year": "2026",
+            "page": "PDF 6枚目",
+            "url": "https://www.pref.kumamoto.jp/uploaded/attachment/306632.pdf#page=6"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "03",
+        "text": "収穫後の残さをほ場の外へ出します。",
+        "site": "open",
+        "sources": [
+          {
+            "publisher": "岩手県農業研究センター",
+            "title": "レタス腐敗性病害の耕種的防除法",
+            "year": "2008",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.iwate.jp/agri/_res/projects/project_agri/_page_/002/004/790/repo_436.pdf"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "43",
+        "text": "傷んだ葉は早めに取り除きます。",
+        "sources": [
+          {
+            "publisher": "熊本県",
+            "title": "令和8年度 病害虫・雑草防除指針 ﾚﾀｽ",
+            "year": "2026",
+            "page": "PDF 6枚目",
+            "url": "https://www.pref.kumamoto.jp/uploaded/attachment/306632.pdf#page=6"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "03",
+        "months": [
+          7,
+          8
+        ],
+        "label": "7月下旬〜8月（夏どり）",
+        "site": "open",
+        "source": {
+          "publisher": "岩手県農業研究センター",
+          "title": "夏どりレタスの軟腐病の発生要因",
+          "year": "平成16年度",
+          "page": "PDF 1枚目",
+          "url": "https://www.pref.iwate.jp/agri/_res/projects/project_agri/_page_/002/004/221/h16shidou_34.pdf"
+        }
+      }
+    ]
+  },
+  {
+    "key": "cabbage:cabbageworm",
+    "cropKind": "cabbage",
+    "name": "アオムシ",
+    "question": "キャベツにアオムシは出ていませんか？",
+    "marker": "食痕が広がると葉脈が残る。緑色の幼虫",
+    "appearance": {
+      "publisher": "京都府農林センター",
+      "title": "野菜の病害虫 モンシロチョウ",
+      "year": "表示なし",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.kyoto.jp/nougijyutsu/documents/1355376223675_1.pdf"
+    },
+    "searchCrop": "ｷｬﾍﾞﾂ",
+    "searchPest": "アオムシ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "26",
+        "text": "数が少なければ幼虫を手で取ります。",
+        "sources": [
+          {
+            "publisher": "京都府農林センター",
+            "title": "野菜の病害虫 モンシロチョウ",
+            "year": "表示なし",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.kyoto.jp/nougijyutsu/documents/1355376223675_1.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "32",
+        "months": [
+          4,
+          5,
+          6
+        ],
+        "label": "4〜6月（6〜7月収穫型）",
+        "site": "open",
+        "source": {
+          "publisher": "島根県",
+          "title": "キャベツ モンシロチョウ",
+          "year": "表示なし",
+          "page": "HTML",
+          "url": "https://www.pref.shimane.lg.jp/industry/norin/gijutsu/nougyo_tech/byougaityuu/byougaityuu-index/kyabetu/ky-monshiro.html"
+        }
+      }
+    ]
+  },
+  {
+    "key": "cabbage:diamondback",
+    "cropKind": "cabbage",
+    "name": "コナガ",
+    "question": "キャベツにコナガは出ていませんか？",
+    "marker": "葉裏から表皮を残して食べる。進むと穴が開く",
+    "appearance": {
+      "publisher": "山梨県",
+      "title": "キャベツ コナガ",
+      "year": "2023",
+      "page": "HTML",
+      "url": "https://www.pref.yamanashi.jp/byogaichu/byogaichu_kaisetu/yasai_kaki/kyabetu_konaga.html"
+    },
+    "searchCrop": "ｷｬﾍﾞﾂ",
+    "searchPest": "コナガ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "育苗床を網で覆い、卵や若い幼虫の付いた葉を取り除きます。",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 ｷｬﾍﾞﾂ",
+            "year": "2026",
+            "page": "PDF 4枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010317.pdf#page=4"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "daikon:flea-beetle",
+    "cropKind": "daikon",
+    "name": "キスジノミハムシ",
+    "question": "ダイコンにキスジノミハムシは出ていませんか？",
+    "marker": "葉に小さな丸い穴、根表面に食害痕",
+    "appearance": {
+      "publisher": "岐阜県",
+      "title": "ダイコン キスジノミハムシについて",
+      "year": "表示なし",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.gifu.lg.jp/uploaded/attachment/302934.pdf"
+    },
+    "searchCrop": "だいこん",
+    "searchPest": "キスジノミハムシ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "25",
+        "text": "ほ場周辺のアブラナ科の雑草を除きます。",
+        "site": "open",
+        "sources": [
+          {
+            "publisher": "滋賀県（近畿農政局掲載）",
+            "title": "高島市のグリーンな栽培体系事業資料",
+            "year": "令和5～6年度",
+            "page": "PDF 3枚目",
+            "url": "https://www.maff.go.jp/kinki/seisan/midori/attach/pdf/241025-9.pdf#page=3"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "daikon:soft-rot",
+    "cropKind": "daikon",
+    "name": "軟腐病",
+    "question": "ダイコンに軟腐病は出ていませんか？",
+    "marker": "地際や根が水浸状に軟らかく腐る",
+    "appearance": {
+      "publisher": "石川県",
+      "title": "ダイコン軟腐病",
+      "year": "表示なし",
+      "page": "HTML",
+      "url": "https://www.pref.ishikawa.lg.jp/noken/noushi/sindanzirei/kensakuitiran/daikonnanpu.html"
+    },
+    "searchCrop": "だいこん",
+    "searchPest": "軟腐病",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "43",
+        "text": "排水をよくし、発病株を処分します。",
+        "sources": [
+          {
+            "publisher": "熊本県",
+            "title": "令和8年度 病害虫・雑草防除指針 だいこん",
+            "year": "2026",
+            "page": "PDF 5枚目",
+            "url": "https://www.pref.kumamoto.jp/uploaded/attachment/306629.pdf#page=5"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "onion:downy-mildew",
+    "cropKind": "onion",
+    "name": "べと病",
+    "question": "玉ねぎにべと病は出ていませんか？",
+    "marker": "葉の黄化・湾曲と、葉表の灰色がかったかび",
+    "appearance": {
+      "publisher": "香川県",
+      "title": "タマネギ べと病",
+      "year": "表示なし",
+      "page": "HTML",
+      "url": "https://www.pref.kagawa.lg.jp/byogaichubojo/byogaichu/syasin/yasai/yasai_byouki/tamanegi/beto.html"
+    },
+    "searchCrop": "たまねぎ",
+    "searchPest": "べと病",
+    "measures": [
+      {
+        "scope": "national",
+        "text": "発病株を見つけたら除き、排水をよくします。",
+        "sources": [
+          {
+            "publisher": "農林水産省",
+            "title": "高温等に備えた野菜の技術対策 たまねぎ",
+            "year": "表示なし",
+            "page": "PDF 1枚目",
+            "url": "https://www.maff.go.jp/j/seisan/ryutu/yasai/attach/pdf/yasai-kouontaisaku-24.pdf"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "41",
+        "text": "越年罹病株を早めに抜き取ります。",
+        "sources": [
+          {
+            "publisher": "佐賀県農業試験研究センターほか",
+            "title": "タマネギべと病防除対策マニュアル",
+            "year": "2019",
+            "page": "p.10／PDF 12枚目",
+            "url": "https://www.pref.saga.lg.jp/kiji00370267/3_70267_145580_up_82jy2qdq.pdf#page=12"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "43",
+        "months": [
+          1,
+          2,
+          3
+        ],
+        "label": "1〜3月",
+        "site": "open",
+        "source": {
+          "publisher": "熊本県",
+          "title": "病害虫・雑草防除指針 タマネギ",
+          "year": "2026",
+          "page": "PDF 1枚目",
+          "url": "https://www.pref.kumamoto.jp/uploaded/attachment/306634.pdf#page=1"
+        }
+      }
+    ]
+  },
+  {
+    "key": "spinach:downy-mildew",
+    "cropKind": "spinach",
+    "name": "べと病",
+    "question": "ホウレンソウにべと病は出ていませんか？",
+    "marker": "葉表は黄斑、裏面に灰色がかったかび",
+    "appearance": {
+      "publisher": "宮城県",
+      "title": "病害虫ライブラリー ホウレンソウ べと病",
+      "year": "2023",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.miyagi.jp/documents/8593/01_hourensou-beto.pdf"
+    },
+    "searchCrop": "ほうれんそう",
+    "searchPest": "べと病",
+    "measures": [
+      {
+        "scope": "general",
+        "text": "抵抗性品種を検討します。品種の抵抗性は病原菌のレースによって違います。",
+        "sources": [
+          {
+            "publisher": "大阪府",
+            "title": "農作物病害虫防除指針 ほうれんそう",
+            "year": "2026",
+            "page": "9-179／PDF 1枚目",
+            "url": "https://www.pref.osaka.lg.jp/documents/84837/2603_09_33_hourensou.pdf#page=1"
+          },
+          {
+            "publisher": "福岡県",
+            "title": "病害虫・雑草防除の手引き",
+            "year": "2026",
+            "page": "p.146／PDF 153枚目",
+            "url": "https://www.pref.fukuoka.lg.jp/uploaded/life/805964_62798283_misc.pdf#page=153"
+          },
+          {
+            "publisher": "千葉県",
+            "title": "病害虫防除指針 ほうれんそう",
+            "year": "2026",
+            "page": "PDF 2枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010332.pdf#page=2"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "27",
+        "text": "発病株を早めに除きます。",
+        "sources": [
+          {
+            "publisher": "大阪府",
+            "title": "農作物病害虫防除指針 ほうれんそう",
+            "year": "2026",
+            "page": "9-179／PDF 1枚目",
+            "url": "https://www.pref.osaka.lg.jp/documents/84837/2603_09_33_hourensou.pdf#page=1"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "40",
+        "months": [
+          3,
+          4,
+          9,
+          10,
+          11
+        ],
+        "label": "3〜4月・9月下旬〜11月",
+        "source": {
+          "publisher": "福岡県",
+          "title": "病害虫・雑草防除の手引き",
+          "year": "2026",
+          "page": "p.146／PDF 153枚目",
+          "url": "https://www.pref.fukuoka.lg.jp/uploaded/life/805964_62798283_misc.pdf#page=153"
+        }
+      },
+      {
+        "code": "04",
+        "months": [
+          10,
+          11,
+          12,
+          3,
+          4,
+          5
+        ],
+        "label": "秋まき10〜12月・冬〜春まき3〜5月",
+        "source": {
+          "publisher": "宮城県",
+          "title": "病害虫ライブラリー ホウレンソウ べと病",
+          "year": "2023",
+          "page": "PDF 1枚目",
+          "url": "https://www.pref.miyagi.jp/documents/8593/01_hourensou-beto.pdf"
+        }
+      }
+    ]
+  },
+  {
+    "key": "broccoli:cabbageworm",
+    "cropKind": "broccoli",
+    "name": "アオムシ",
+    "question": "ブロッコリーにアオムシは出ていませんか？",
+    "marker": "本葉に穴。若い幼虫が葉にいる",
+    "appearance": {
+      "publisher": "香川県",
+      "title": "定植後の管理、中耕、土寄せ",
+      "year": "2020",
+      "page": "HTML",
+      "url": "https://www.pref.kagawa.lg.jp/noukei16300/gijutu-keiei/shitai/5-syuueki/blockori2.html"
+    },
+    "searchCrop": "ﾌﾞﾛｯｺﾘｰ",
+    "searchPest": "アオムシ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "07",
+        "text": "露地の秋作では、定植からトンネルで覆う方法があります。",
+        "site": "open",
+        "sources": [
+          {
+            "publisher": "福島県農業試験場相馬支場",
+            "title": "トンネル被覆ブロッコリー有機栽培の生育と収量及び害虫侵入防止効果",
+            "year": "平成17年度",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.fukushima.lg.jp/uploaded/attachment/449544.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "broccoli:diamondback",
+    "cropKind": "broccoli",
+    "name": "コナガ",
+    "question": "ブロッコリーにコナガは出ていませんか？",
+    "marker": "葉の裏に幼虫がいないか、葉に食べられた跡がないかを見ます。",
+    "appearance": null,
+    "searchCrop": "ﾌﾞﾛｯｺﾘｰ",
+    "searchPest": "コナガ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "1mm×1mmの網で覆い、卵や若い幼虫の付いた葉を除きます。",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "令和8年版 病害虫防除指針 ﾌﾞﾛｯｺﾘｰ",
+            "year": "2026",
+            "page": "PDF 3枚目",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010319.pdf#page=3"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "komatsuna:flea-beetle",
+    "cropKind": "komatsuna",
+    "name": "キスジノミハムシ",
+    "question": "コマツナにキスジノミハムシは出ていませんか？",
+    "marker": "葉に直径約1mmの丸い穴",
+    "appearance": {
+      "publisher": "近畿農政局掲載",
+      "title": "コマツナのグリーンな栽培マニュアル",
+      "year": "令和4年度取組",
+      "page": "PDF 1～2枚目",
+      "url": "https://www.maff.go.jp/kinki/seisan/keieishien/fukyu/attach/pdf/241025-7.pdf"
+    },
+    "searchCrop": "こまつな",
+    "searchPest": "キスジノミハムシ",
+    "measures": [
+      {
+        "scope": "national",
+        "text": "施設では、簡易太陽熱消毒と0.6mmの網を組み合わせた試験があります。",
+        "site": "house",
+        "sources": [
+          {
+            "publisher": "旧四国農業試験場",
+            "title": "コマツナのキスジノミハムシの物理的防除法",
+            "year": "平成12年度",
+            "page": "HTML",
+            "url": "https://www.naro.go.jp/org/warc/research_results/skk_seika/h12/skk2000-001.htm"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "36",
+        "text": "露地の試験では、0.6mmの網で覆うと軟弱徒長のおそれがあります。",
+        "site": "open",
+        "sources": [
+          {
+            "publisher": "徳島県",
+            "title": "コマツナの防虫網の目合い比較",
+            "year": "平成16年度",
+            "page": "HTML",
+            "url": "https://www.naro.go.jp/org/warc/research_results/h16/03_kankyo/p77/index.html"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "negi-long:rust",
+    "cropKind": "negi-long",
+    "name": "さび病",
+    "question": "根深ネギにさび病は出ていませんか？",
+    "marker": "葉に橙色で盛り上がった小斑点",
+    "appearance": {
+      "publisher": "宮城県",
+      "title": "病害虫ライブラリー ネギ さび病",
+      "year": "2023",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.miyagi.jp/documents/8593/02_negi-sabi.pdf"
+    },
+    "searchCrop": "ねぎ",
+    "searchPest": "さび病",
+    "measures": [
+      {
+        "scope": "national",
+        "text": "関東の秋冬どりの例では、肥料切れや窒素の多すぎを避け、耐病性品種を検討します。",
+        "sources": [
+          {
+            "publisher": "農林水産省",
+            "title": "総合防除実践マニュアル 第2版",
+            "year": "2026",
+            "page": "p.51／PDF 51枚目",
+            "url": "https://www.maff.go.jp/j/syouan/syokubo/gaicyu/syokubo_seika/attach/pdf/syokubo_seika-115.pdf#page=51"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "43",
+        "months": [
+          4,
+          5,
+          9,
+          10
+        ],
+        "label": "4〜5月・9〜10月",
+        "source": {
+          "publisher": "熊本県",
+          "title": "病害虫・雑草防除指針 ネギ",
+          "year": "2026",
+          "page": "PDF 4枚目",
+          "url": "https://www.pref.kumamoto.jp/uploaded/attachment/306634.pdf#page=4"
+        }
+      },
+      {
+        "code": "26",
+        "months": [
+          4,
+          5,
+          6,
+          9,
+          10,
+          11
+        ],
+        "label": "4〜6月・9〜11月",
+        "source": {
+          "publisher": "京都府",
+          "title": "野菜の病害虫",
+          "year": "2007",
+          "page": "HTML",
+          "url": "https://www.pref.kyoto.jp/byogai/yasai.html"
+        }
+      }
+    ]
+  },
+  {
+    "key": "negi-long:onion-thrips",
+    "cropKind": "negi-long",
+    "name": "ネギアザミウマ",
+    "question": "根深ネギにネギアザミウマは出ていませんか？",
+    "marker": "葉の白いかすり状の食痕",
+    "appearance": {
+      "publisher": "宮城県",
+      "title": "病害虫ライブラリー ネギ ネギアザミウマ",
+      "year": "2023",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.miyagi.jp/documents/8593/01_negi-negiazamiuma.pdf"
+    },
+    "searchCrop": "ねぎ",
+    "searchPest": "ネギアザミウマ",
+    "measures": [
+      {
+        "scope": "national",
+        "text": "関東の秋冬どりの例では、赤色の防虫ネットで侵入を抑えます。",
+        "sources": [
+          {
+            "publisher": "農林水産省",
+            "title": "総合防除実践マニュアル 第2版",
+            "year": "2026",
+            "page": "p.53／PDF 53枚目",
+            "url": "https://www.maff.go.jp/j/syouan/syokubo/gaicyu/syokubo_seika/attach/pdf/syokubo_seika-115.pdf#page=53"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  }
+]

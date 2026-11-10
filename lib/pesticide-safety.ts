@@ -31,7 +31,7 @@ export function harvestDatesByCrop(records: {
 export const pesticideCountSelect = {
   id: true, cropId: true, productName: true, appliedAt: true, createdAt: true, applicationLimit: true,
 } as const
-export const pesticideSafetySelect = { ...pesticideCountSelect, daysBeforeHarvest: true } as const
+export const pesticideSafetySelect = { ...pesticideCountSelect, daysBeforeHarvest: true, applicationCount: true } as const
 export type PesticideCountRecord = {
   id: string; cropId: string | null; productName: string
   appliedAt: Date; createdAt: Date; applicationLimit: number | null

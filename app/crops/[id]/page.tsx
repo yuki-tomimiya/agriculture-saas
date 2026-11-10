@@ -4,6 +4,8 @@ import { redirect, notFound } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import CropDeleteButton from '@/components/CropDeleteButton'
+import CropPestChecks from '@/components/CropPestChecks'
+import { findPest } from '@/lib/pests/catalog'
 import CropMilestones from '@/components/CropMilestones'
 import { milestoneFormItems } from '@/lib/proposals/milestones'
 import { cropPoints } from '@/lib/benchmarks/crop-points'
@@ -40,6 +42,7 @@ export default async function CropDetailPage({
     field: true,
     harvests: { orderBy: { date: 'desc' as const }, take: 20 },
     outcome: true,
+    pestChecks: { orderBy: { observedAt: 'desc' as const, createdAt: 'desc' as const } },
     milestones: { orderBy: { observedAt: 'asc' as const } },
     tasks: { orderBy: { dueDate: 'asc' as const } },
     _count: {
@@ -280,6 +283,10 @@ export default async function CropDetailPage({
           </div>
         )}
 
+        <CropPestChecks cropId={id} today={japanDateKey(new Date())} rows={crop.pestChecks.map(row => ({
+          id: row.id, name: findPest(row.pestKey)?.name ?? row.pestKey,
+          observedDay: japanDateKey(row.observedAt), present: row.present, notes: row.notes,
+        }))} />
         <CropMilestones
           cropId={crop.id}
           items={milestoneFormItems(advice.recordOnly ? '' : advice.name, advice.variety, crop.milestones)}

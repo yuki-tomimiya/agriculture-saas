@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
 import { proposalRemindAfter } from '@/lib/proposals/dismissal'
 import { PROPOSAL_DISMISS_DAYS, SEASON_FINISH_DISMISS_DAYS, SEASON_FINISH_TRIGGER } from '@/lib/proposals/constants'
+import { isPestTrigger } from '@/lib/pests/catalog'
 import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 export async function POST(request: NextRequest) {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const exactRow = trigger === SEASON_FINISH_TRIGGER || isMilestoneTrigger(trigger)
+    const exactRow = trigger === SEASON_FINISH_TRIGGER || isMilestoneTrigger(trigger) || isPestTrigger(trigger)
     const remindAfter = proposalRemindAfter(
       new Date(),
       trigger === SEASON_FINISH_TRIGGER ? SEASON_FINISH_DISMISS_DAYS : PROPOSAL_DISMISS_DAYS
@@ -50,7 +51,7 @@ export async function POST(request: NextRequest) {
                   userId,
                   cropId,
                   NOT: {
-                    OR: [{ trigger: SEASON_FINISH_TRIGGER }, { trigger: { startsWith: 'milestone:' } }],
+                    OR: [{ trigger: SEASON_FINISH_TRIGGER }, { trigger: { startsWith: 'milestone:' } }, { trigger: { startsWith: 'pest:' } }],
                   },
                 },
           })

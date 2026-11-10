@@ -11,6 +11,8 @@ import MilestoneAskActions from './MilestoneAskActions'
 import { isFrostTrigger } from '@/lib/proposals/frost'
 import { loadProposalRecordGuidance, type CropRecordGuidance, type ProposalRecordGuidance } from '@/lib/proposals/record-guidance'
 import { harvestDateLabel } from '@/lib/pesticide-safety'
+import { loadPestQuestions } from '@/lib/pests/service'
+import PestQuestion from './PestQuestion'
 import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 const typeLabel: Record<ProposalType, string> = {
@@ -332,7 +334,7 @@ export default async function AiProposalPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
 
-  const proposals = await getTodayProposals(user.id)
+  const [proposals, pestQuestions] = await Promise.all([getTodayProposals(user.id), loadPestQuestions(user.id)])
   const isConfirm = (trigger?: string) =>
     trigger === 'season-finish' ||
     trigger === 'conditions-missing' ||
@@ -344,7 +346,7 @@ export default async function AiProposalPage() {
   const weekItems = proposals.filter((item) => item.urgency === 'thisWeek' && !isConfirm(item.trigger))
   const watchCount = proposals.filter((item) => item.urgency === 'watch').length
   const guidance = await loadProposalRecordGuidance(user.id, [...todayItems, ...weekItems, ...confirmItems])
-  const visible = todayItems.length + weekItems.length + confirmItems.length
+  const visible = todayItems.length + weekItems.length + confirmItems.length + pestQuestions.length
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -395,6 +397,14 @@ export default async function AiProposalPage() {
               <ProposalGroup title="今日やること" items={todayItems} guidance={guidance} />
               <ProposalGroup title="今週中に" items={weekItems} guidance={guidance} />
               <ProposalGroup title="確認したいこと" items={confirmItems} guidance={guidance} />
+              {pestQuestions.length > 0 && (
+                <section className="ai-proposal-group">
+                  <h2 className="ai-proposal-group-title">病害虫の見回り</h2>
+                  <ul className="ai-proposal-list">
+                    {pestQuestions.map(question => <PestQuestion key={question.cropId + question.pest.key} question={question} />)}
+                  </ul>
+                </section>
+              )}
               {watchCount > 0 && (
                 <p className="ai-proposal-watch">様子見 {watchCount}件（記録が止まっている作付け）</p>
               )}
