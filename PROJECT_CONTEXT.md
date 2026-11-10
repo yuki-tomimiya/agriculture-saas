@@ -72,7 +72,8 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 作付けの結果 | 振り返り先頭の結果（`CropOutcome`、`lib/crops/outcome.ts`。イチゴの呼び方は正品、ほかはA品）。収穫の重さは kg（`lib/crops/harvest.ts`）。自分の記録のまとまりは `personalGroupKey`。前回の作付けは `previousPlanting`（`lib/crops/conditions.ts`） |
 | 農場の場所 | 都道府県・市区町村は `Farm.prefectureCode` / `municipalityCode`（`data/municipalities.json`、`lib/places/`）。県の候補は近い観測所の番号（`data/jma-prec-no.json`） |
 | 今日の提案の施肥・収穫日の補足 | 記録の取得と作付けごとの対応は `lib/proposals/record-guidance.ts`、県の資料リンクは `data/fertilizer-standards.json` と `lib/fertilizer-standards.ts`（台帳 E13・F2） |
-| 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」と農薬の記録。今日の提案には出さない |
+| 病害虫の見回り | モデルは `PestCheck`、保存と編集は `app/api/crops/[id]/pest-checks/route.ts`。品目別データと指針の入口は `data/pest-checks.json`・`data/pest-defense-guides.json`、問いかけの選択と助言取得は `lib/pests/`、表示は `app/dashboard/ai-proposal/PestQuestion.tsx` と `components/CropPestChecks.tsx`（台帳 F3〜F9・I15） |
+| 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」・農薬の記録・今日の提案の病害虫の回答後（台帳 F1） |
 | 農薬の収穫日・回数 | `lib/pesticide-safety.ts`、`components/PesticideUsage.tsx`、`components/PesticideUsageField.tsx`、`app/pesticides/`、`app/crops/[id]/page.tsx`、`app/harvests/new/`（台帳 F2）。計算の確認は `tests/pesticide-safety.test.ts` |
 | 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`, `lib/gdd.ts`。目安は `lib/benchmarks/gdd-methods.ts`（起点と数え方は台帳 B1c〜B1f） |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
