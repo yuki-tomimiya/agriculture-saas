@@ -14,11 +14,13 @@ export default function FertilizerNewForm({
   farms,
   initialDate,
   initialCropId,
+  initialFarmId,
 }: {
   crops: CropOption[]
   farms: FarmOption[]
   initialDate: string
   initialCropId?: string
+  initialFarmId?: string
 }) {
   const router = useRouter()
   const [appliedAt, setAppliedAt] = useState(initialDate)
@@ -27,7 +29,7 @@ export default function FertilizerNewForm({
   const [amountUnit, setAmountUnit] = useState('kg')
   const [componentInfo, setComponentInfo] = useState('')
   const [cropId, setCropId] = useState(initialCropId ?? '')
-  const [farmId, setFarmId] = useState('')
+  const [farmId, setFarmId] = useState(initialFarmId ?? '')
   const [notes, setNotes] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)

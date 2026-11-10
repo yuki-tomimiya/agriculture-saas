@@ -39,6 +39,7 @@ export default async function NewFertilizerPage({ searchParams }: { searchParams
     ? new Date(date + 'T00:00:00Z') : null
   const initialDate = parsedDate && Number.isFinite(+parsedDate) && japanDateKey(parsedDate) === date
     ? date : japanDateKey(new Date())
-  const initialCropId = cropsForSelect.some(crop => crop.id === cropId) ? cropId : undefined
-  return <FertilizerNewForm crops={cropsForSelect} farms={farmsForSelect} initialDate={initialDate} initialCropId={initialCropId} />
+  const initialCrop = crops.find(crop => crop.id === cropId)
+  const initialFarmId = farmsForSelect.find(farm => farm.id === initialCrop?.farmId)?.id
+  return <FertilizerNewForm crops={cropsForSelect} farms={farmsForSelect} initialDate={initialDate} initialCropId={initialCrop?.id} initialFarmId={initialFarmId} />
 }

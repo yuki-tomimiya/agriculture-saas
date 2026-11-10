@@ -21,6 +21,10 @@ export function latestFertilizerDates(records: { cropId: string | null; appliedA
   return dates
 }
 
+export function fertilizerRecordedForMilestone(last?: string, observedAt?: Date): boolean {
+  return !!last && !!observedAt && last >= japanDateKey(observedAt)
+}
+
 export function upcomingHarvestDate(date: string | undefined, today: string) {
   return date && date > today ? date : undefined
 }
@@ -103,7 +107,7 @@ export async function loadProposalRecordGuidance(userId: string, proposals: Prop
         entry.fertilizer = {
           last,
           daysAgo: last && last <= today ? (Date.parse(today) - Date.parse(last)) / 86_400_000 : undefined,
-          recorded: !!last && !!observedAt && last > japanDateKey(observedAt),
+          recorded: fertilizerRecordedForMilestone(last, observedAt),
           href: '/fertilizers/new?' + new URLSearchParams({ cropId: crop.cropId, date: today }),
         }
       }
