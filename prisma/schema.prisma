@@ -130,8 +130,7 @@ model Crop {
   outcome            CropOutcome?
 }
 
-/// 作付けに紐づく生育の節目。同じ key は1件（やり直したら上書き）。
-/// 観察時点の積算温度は保存しない。observedAt から毎回計算する。
+/// 見回りの回答は何度でも残せる。作付けの削除と一緒に消える。
 model PestCheck {
   id         String   @id @default(cuid())
   cropId     String
@@ -145,6 +144,8 @@ model PestCheck {
   @@index([cropId, observedAt])
 }
 
+/// 作付けに紐づく生育の節目。同じ key は1件（やり直したら上書き）。
+/// 観察時点の積算温度は保存しない。observedAt から毎回計算する。
 model CropMilestone {
   id         String   @id @default(cuid())
   cropId     String

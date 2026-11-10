@@ -14,8 +14,9 @@ export default function PestAdvice({ advice }: { advice: PestAdviceData }) {
         {advice.measures.length ? <ul className="list-disc pl-5">
           {advice.measures.map(item => (
             <li key={item.sources[0].url}>
-              {item.scope === 'prefecture' ? `${prefectureByCode(item.code)?.name}の資料では、` : ''}
-              {item.text}{' '}
+              {item.scope === 'prefecture'
+                ? `${prefectureByCode(item.code)?.name}の資料では、${item.text}としています。`
+                : item.text}{' '}
               {item.sources.map((source, index) => (
                 <a key={source.url} className="underline mr-2" href={source.url} title={source.title}>
                   出典{item.sources.length > 1 ? index + 1 : ''}
@@ -23,7 +24,7 @@ export default function PestAdvice({ advice }: { advice: PestAdviceData }) {
               ))}
             </li>
           ))}
-        </ul> : <p>出典のある対策は見つかっていません。</p>}
+        </ul> : <p>{advice.emptyMessage}</p>}
       </section>
       <section>
         <h4 className="font-semibold">登録のある農薬の探し方</h4>

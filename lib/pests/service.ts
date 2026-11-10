@@ -4,6 +4,7 @@ import { forecastOffice } from '@/lib/pest-forecast'
 import { findPest, pestGuide, isPestTrigger } from '@/lib/pests/catalog'
 import { listActiveDismissals } from '@/lib/proposals/dismissal'
 import { selectPestQuestion } from '@/lib/pests/selection'
+import { pestMeasuresForSite } from '@/lib/pests/presentation'
 
 const owner = (userId: string) => ({ OR: [{ userId }, { farm: { userId } }] })
 const cropFields = {
@@ -47,7 +48,7 @@ export async function loadPestQuestions(userId: string, now = new Date()) {
     const timing = question.previous
       ? `去年は${Number(question.previous.observedDay.slice(5, 7))}月${Number(question.previous.observedDay.slice(8))}日に「いた」と記録しています。`
       : question.season
-        ? `${question.season.source.publisher}の資料での発生時期は、${question.season.label}です。`
+        ? `${question.season.source.publisher}の資料では、${question.season.label}とされています。`
         : null
     return [{
       cropId: crop.id, cropName: crop.name, farmName: crop.farm?.name,
@@ -61,8 +62,8 @@ export async function loadPestAdvice(userId: string, crop: NonNullable<Awaited<R
   if (!pest) return null
   const code = crop.farm?.prefectureCode
   const rank = (scope: string, pref?: string) => scope === 'national' ? 0 : scope === 'general' ? 1 : pref === code ? 2 : 3
-  const measures = pest.measures.filter(item => !item.site || item.site === crop.growingSite)
-    .sort((a, b) => rank(a.scope, a.code) - rank(b.scope, b.code)).slice(0, 3)
+  const { matching, emptyMessage } = pestMeasuresForSite(pest.measures, crop.growingSite)
+  const measures = matching.sort((a, b) => rank(a.scope, a.code) - rank(b.scope, b.code)).slice(0, 3)
   const records = await prisma.pesticideRecord.findMany({
     where: { userId, cropId: crop.id }, select: pesticideSafetySelect,
     orderBy: [{ appliedAt: 'desc' }, { createdAt: 'desc' }, { id: 'desc' }],
@@ -70,7 +71,7 @@ export async function loadPestAdvice(userId: string, crop: NonNullable<Awaited<R
   const count = pesticideCounts(records)
   const latest = [...new Map([...records].reverse().map(record => [record.productName.trim(), record])).values()]
   return {
-    measures, searchCrop: pest.searchCrop, searchPest: pest.searchPest,
+    measures, emptyMessage, searchCrop: pest.searchCrop, searchPest: pest.searchPest,
     guide: pestGuide(code), forecast: forecastOffice(code),
     harvestFrom: harvestDatesByCrop(records).get(crop.id),
     usages: latest.map(record => ({

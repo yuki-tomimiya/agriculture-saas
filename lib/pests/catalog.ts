@@ -19,8 +19,12 @@ export type Pest = {
 
 export const pests: readonly Pest[] = catalog
 export const pesticideSearchUrl = 'https://pesticide.maff.go.jp/agricultural-chemicals/various-search/'
-export const pestGuide = (code?: string | null) => code && Object.hasOwn(guides, code)
-  ? guides[code as keyof typeof guides] : null
+export function pestGuide(code?: string | null) {
+  if (!code || !Object.hasOwn(guides, code)) return null
+  const guide = guides[code as keyof typeof guides]
+  const title = guide.title.includes(guide.name) ? guide.title : `${guide.name}「${guide.title}」`
+  return { ...guide, title }
+}
 export const findPest = (key: string) => pests.find(pest => pest.key === key)
 export const pestTrigger = (key: string) => 'pest:' + key
 export const isPestTrigger = (trigger?: string) => trigger?.startsWith('pest:') ?? false

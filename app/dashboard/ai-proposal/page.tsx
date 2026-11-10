@@ -13,6 +13,7 @@ import { loadProposalRecordGuidance, type CropRecordGuidance, type ProposalRecor
 import { harvestDateLabel } from '@/lib/pesticide-safety'
 import { loadPestQuestions } from '@/lib/pests/service'
 import PestQuestion from './PestQuestion'
+import { groupPestQuestions } from '@/lib/pests/presentation'
 import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 const typeLabel: Record<ProposalType, string> = {
@@ -335,6 +336,7 @@ export default async function AiProposalPage() {
   if (!user) redirect('/auth/signin')
 
   const [proposals, pestQuestions] = await Promise.all([getTodayProposals(user.id), loadPestQuestions(user.id)])
+  const pestGroups = groupPestQuestions(pestQuestions)
   const isConfirm = (trigger?: string) =>
     trigger === 'season-finish' ||
     trigger === 'conditions-missing' ||
@@ -401,7 +403,7 @@ export default async function AiProposalPage() {
                 <section className="ai-proposal-group">
                   <h2 className="ai-proposal-group-title">病害虫の見回り</h2>
                   <ul className="ai-proposal-list">
-                    {pestQuestions.map(question => <PestQuestion key={question.cropId + question.pest.key} question={question} />)}
+                    {pestGroups.map(group => <PestQuestion key={group[0].pest.key} questions={group} />)}
                   </ul>
                 </section>
               )}

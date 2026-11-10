@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { pests, pestGuide } from '@/lib/pests/catalog'
 import { selectPestQuestion } from '@/lib/pests/selection'
+import { groupPestQuestions, pestMeasuresForSite } from '@/lib/pests/presentation'
 import { PROPOSAL_DISMISS_DAYS } from '@/lib/proposals/constants'
 
 const crop = { cropKind: 'cucumber', farmId: 'farm', growingSite: 'house', plantingDay: '2026-10-01' }
@@ -69,4 +70,25 @@ test('台帳指定の23都府県だけ県の指針がある', () => {
     assert.equal(Boolean(pestGuide(code)), codes.includes(code), code)
   }
   assert.equal(pestGuide(null), null)
+  assert.equal(pestGuide('40')?.title, '福岡県「病害虫・雑草防除の手引き」')
+  assert.equal(pestGuide('13')?.title, '東京都病害虫防除指針')
+})
+
+test('同じ問いかけの作付けを1枚にまとめ、1件の問いも1枚にする', () => {
+  const first = { cropId: 'a', pest: { key: 'tomato:yellow-leaf-curl' }, timing: '去年の記録' }
+  const second = { ...first, cropId: 'b', timing: '県の時期' }
+  const single = { cropId: 'c', pest: { key: 'pepper:aphids' }, timing: null }
+  assert.deepEqual(groupPestQuestions([first, single, second]), [[first, second], [single]])
+  assert.deepEqual(groupPestQuestions([single]), [[single]])
+})
+
+test('育て方が合わない場合と、対策自体がない場合の案内を分ける', () => {
+  const tomato = pests.find(p => p.key === 'tomato:yellow-leaf-curl')!
+  const strawberry = pests.find(p => p.key === 'strawberry-june:powdery-mildew')!
+  const outdoors = pestMeasuresForSite(tomato.measures, 'open')
+  assert.deepEqual(outdoors.matching, [])
+  assert.match(outdoors.emptyMessage ?? '', /露地.*ハウス向け/)
+  assert.deepEqual(pestMeasuresForSite(tomato.measures, null), outdoors)
+  assert.equal(pestMeasuresForSite(tomato.measures, 'house').emptyMessage, null)
+  assert.equal(pestMeasuresForSite(strawberry.measures, 'house').emptyMessage, '出典のある対策は見つかっていません。')
 })

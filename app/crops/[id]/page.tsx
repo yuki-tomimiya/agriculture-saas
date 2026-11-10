@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { redirect, notFound } from 'next/navigation'
@@ -42,7 +43,7 @@ export default async function CropDetailPage({
     field: true,
     harvests: { orderBy: { date: 'desc' as const }, take: 20 },
     outcome: true,
-    pestChecks: { orderBy: { observedAt: 'desc' as const, createdAt: 'desc' as const } },
+    pestChecks: { orderBy: [{ observedAt: 'desc' as const }, { createdAt: 'desc' as const }] },
     milestones: { orderBy: { observedAt: 'asc' as const } },
     tasks: { orderBy: { dueDate: 'asc' as const } },
     _count: {
@@ -55,7 +56,7 @@ export default async function CropDetailPage({
         tasks: true,
       },
     },
-  } as const
+  } satisfies Prisma.CropInclude
 
   let crop = await prisma.crop.findFirst({
     where: {
