@@ -3,7 +3,58 @@
  * 予報気温から「目標℃日に達する日」を算出し、提案文を生成する
  */
 
-import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
+import { dailyHeat, type ActiveGddMethod, type HeatCount } from '@/lib/benchmarks/gdd-methods'
+
+export type HarvestGddReference = {
+  sampleCount: number
+  method: Pick<ActiveGddMethod, 'low' | 'count'>
+}
+
+export function formatHarvestGddTarget(targetGdd: number, reference?: HarvestGddReference): string {
+  const value = targetGdd.toLocaleString('ja-JP')
+  if (!reference) return `収穫の目安（${value}℃日）`
+  if (reference.sampleCount === 0) {
+    return `資料の目安（${value}${reference.method.count === 'simple' ? '℃' : '℃日'}）`
+  }
+  if (reference.sampleCount === 1) return `前回のあなたが収穫した時点（${value}℃日）`
+  return `過去${reference.sampleCount}作の収穫時点の平均（${value}℃日）`
+}
+
+function passedMethodTarget(currentGdd: number, reference?: HarvestGddReference): string | null {
+  if (!reference || reference.sampleCount === 0 || currentGdd <= reference.method.low) return null
+  return formatHarvestGddTarget(reference.method.low, { sampleCount: 0, method: reference.method })
+}
+
+export function formatHarvestGddReached(currentGdd: number, targetGdd: number, reference?: HarvestGddReference): string {
+  const target = formatHarvestGddTarget(targetGdd, reference)
+  const passedMethod = passedMethodTarget(currentGdd, reference)
+  if (!passedMethod) {
+    return currentGdd > targetGdd ? `${target}を超えています。` : `${target}にはすでに届いています。`
+  }
+  const reached = currentGdd > targetGdd ? `${target}も超えています。` : `${target}にはすでに届いています。`
+  return `${passedMethod}は超えました。${reached}`
+}
+
+export function formatHarvestGddOutlook({
+  currentGdd,
+  targetGdd,
+  reference,
+  windowText,
+}: {
+  currentGdd: number
+  targetGdd: number
+  reference?: HarvestGddReference
+  windowText: string | null
+}): string {
+  const target = formatHarvestGddTarget(targetGdd, reference)
+  const passedMethod = passedMethodTarget(currentGdd, reference)
+  if (windowText) {
+    const prefix = passedMethod ? `${passedMethod}は超えました。` : ''
+    return `${prefix}${target}に届くのは${windowText}。`
+  }
+  const prefix = passedMethod ? `${passedMethod}は超えましたが、` : ''
+  return `${prefix}今季は${target}には届かない見込みです。`
+}
 
 export type GDDProjectionResult = {
   /** 予報期間中の日別累積GDD（現在値 + 予報分） */
@@ -27,7 +78,7 @@ export function computeGDDProjection(
   baseTemp: number,
   forecastDailyTemps: { date: Date; avgTemp: number }[],
   targetGDD: number,
-  options?: { harvestWindowText?: string | null; seasonUnreachable?: boolean }
+  options?: { harvestWindowText?: string | null; seasonUnreachable?: boolean; reference?: HarvestGddReference }
 ): GDDProjectionResult {
   let cumulative = currentGDD
   const dailyProjections: GDDProjectionResult['dailyProjections'] = []
@@ -56,9 +107,9 @@ export function computeGDDProjection(
     targetReachDate,
     daysToTarget,
     endCumulativeGDD,
-    baseTemp,
     harvestWindowText: options?.harvestWindowText,
     seasonUnreachable: options?.seasonUnreachable,
+    reference: options?.reference,
   })
 
   return {
@@ -76,30 +127,33 @@ function buildSuggestions(args: {
   targetReachDate: Date | null
   daysToTarget: number | null
   endCumulativeGDD: number
-  baseTemp: number
   harvestWindowText?: string | null
   seasonUnreachable?: boolean
+  reference?: HarvestGddReference
 }): string[] {
-  const { currentGDD, targetGDD, targetReachDate, daysToTarget, endCumulativeGDD, harvestWindowText, seasonUnreachable } = args
+  const { currentGDD, targetGDD, targetReachDate, daysToTarget, endCumulativeGDD, harvestWindowText, seasonUnreachable, reference } = args
   const list: string[] = []
 
   if (harvestWindowText) {
-    list.push(`収穫の目安に届くのは${harvestWindowText}。`)
+    list.push(formatHarvestGddOutlook({ currentGdd: currentGDD, targetGdd: targetGDD, reference, windowText: harvestWindowText }))
     return list
   }
   if (currentGDD >= targetGDD) {
-    list.push('収穫の目安には、すでに届いています。')
+    list.push(formatHarvestGddReached(currentGDD, targetGDD, reference))
     return list
   }
   if (seasonUnreachable) {
-    list.push('今季は、収穫の目安に届かない見込みです。')
+    list.push(formatHarvestGddOutlook({ currentGdd: currentGDD, targetGdd: targetGDD, reference, windowText: null }))
     return list
   }
 
   if (targetReachDate && daysToTarget != null) {
     list.push('過去の気温が取れないため、収穫の見込みは日付で出していません。')
   } else if (endCumulativeGDD < targetGDD) {
-    list.push(`今後2週間の計算では、まだ目標の${targetGDD}℃日に届きません（見込み：約${Math.round(endCumulativeGDD)}℃日）。`)
+    const target = formatHarvestGddTarget(targetGDD, reference)
+    const passedMethod = passedMethodTarget(currentGDD, reference)
+    const prefix = passedMethod ? `${passedMethod}は超えました。` : ''
+    list.push(`${prefix}今後2週間の計算では、まだ${target}に届きません（見込み：約${Math.round(endCumulativeGDD).toLocaleString('ja-JP')}℃日）。`)
   }
 
   if (list.length === 0) {

@@ -7,7 +7,6 @@ type MenuItem = {
   href: string
   label: string
   icon: string
-  highlight?: boolean
   matchPaths?: string[]
 }
 
@@ -31,7 +30,7 @@ export default function Sidebar() {
   const menuSections: MenuSection[] = [
     {
       items: [
-        { href: '/dashboard/ai-proposal', label: 'AIが今日の作業を提案', icon: '✨', highlight: true },
+        { href: '/dashboard/ai-proposal', label: '今日の提案', icon: '📌' },
         { href: '/dashboard', label: 'ダッシュボード', icon: '📊' },
         { href: '/calendar', label: 'カレンダー', icon: '📅', matchPaths: ['/calendar'] },
         { href: '/weather', label: '気象ナビ', icon: '🌤️' },
@@ -57,12 +56,6 @@ export default function Sidebar() {
   ]
 
   const isItemActive = (item: MenuItem) => {
-    const isAiProposal = 'highlight' in item && item.highlight
-
-    if (isAiProposal) {
-      return pathname === '/dashboard/ai-proposal'
-    }
-
     if (item.matchPaths) {
       return item.matchPaths.some(
         (path) => pathname === path || (pathname?.startsWith(path + '/') ?? false)
@@ -88,21 +81,12 @@ export default function Sidebar() {
             )}
             {section.items.map((item) => {
               const isActive = isItemActive(item)
-              const isAiProposal = 'highlight' in item && item.highlight
-              const baseClass = 'app-sidebar-link'
-              let stateClass = ''
-
-              if (isAiProposal) {
-                stateClass = isActive ? 'app-sidebar-link--ai-active' : 'app-sidebar-link--ai'
-              } else if (isActive) {
-                stateClass = 'app-sidebar-link--active'
-              }
 
               return (
                 <Link
                   key={item.label}
                   href={item.href}
-                  className={`${baseClass} ${stateClass}`.trim()}
+                  className={`app-sidebar-link${isActive ? ' app-sidebar-link--active' : ''}`}
                 >
                   <span className="app-sidebar-icon">{item.icon}</span>
                   <span className="app-sidebar-label">{item.label}</span>

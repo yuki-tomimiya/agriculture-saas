@@ -1,5 +1,5 @@
 import { getCurrentUser } from '@/lib/auth'
-import { getTodayProposals, type Proposal, type ProposalType } from '@/lib/ai-proposal'
+import type { Proposal, ProposalType } from '@/lib/ai-proposal'
 import { recordHref, taskHref } from '@/lib/proposals/links'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
@@ -11,10 +11,8 @@ import MilestoneAskActions from './MilestoneAskActions'
 import { isFrostTrigger } from '@/lib/proposals/frost'
 import { loadProposalRecordGuidance, type ProposalRecordGuidance } from '@/lib/proposals/record-guidance'
 import { FertilizerStandards, RecordGuidance } from '@/components/ProposalRecordGuidance'
-import { loadPestQuestions } from '@/lib/pests/service'
 import PestQuestion from './PestQuestion'
-import { groupPestQuestions } from '@/lib/pests/presentation'
-import { isMilestoneTrigger } from '@/lib/proposals/milestones'
+import { loadTodayProposalGroups } from '@/lib/proposals/presentation'
 
 const typeLabel: Record<ProposalType, string> = {
   task_due: 'タスク',
@@ -105,6 +103,7 @@ function ProposalGroup({ title, items, guidance }: { title: string; items: Propo
                                 {line.farmName ? ` · ${line.farmName}` : ''}
                                 {line.daysSincePlanting != null ? ` · 植付から${line.daysSincePlanting}日` : ''}
                                 {line.currentGDD != null ? ` · ${line.currentGDD}/${line.targetGDD}℃日` : ''}
+                                {line.harvestOutlook && <span className="block">{line.harvestOutlook}</span>}
                                 <RecordGuidance entry={records?.byCrop.get(line.cropId)} />
                               </span>
                               {p.trigger === 'season-finish' ? (
@@ -300,20 +299,9 @@ export default async function AiProposalPage() {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
 
-  const [proposals, pestQuestions] = await Promise.all([getTodayProposals(user.id), loadPestQuestions(user.id)])
-  const pestGroups = groupPestQuestions(pestQuestions)
-  const isConfirm = (trigger?: string) =>
-    trigger === 'season-finish' ||
-    trigger === 'conditions-missing' ||
-    trigger === 'result-missing' ||
-    trigger === 'place-missing' ||
-    isMilestoneTrigger(trigger)
-  const confirmItems = proposals.filter((item) => isConfirm(item.trigger))
-  const todayItems = proposals.filter((item) => item.urgency === 'today' && !isConfirm(item.trigger))
-  const weekItems = proposals.filter((item) => item.urgency === 'thisWeek' && !isConfirm(item.trigger))
-  const watchCount = proposals.filter((item) => item.urgency === 'watch').length
+  const { todayItems, weekItems, confirmItems, pestGroups, watchCount } = await loadTodayProposalGroups(user.id)
   const guidance = await loadProposalRecordGuidance(user.id, [...todayItems, ...weekItems, ...confirmItems])
-  const visible = todayItems.length + weekItems.length + confirmItems.length + pestQuestions.length
+  const visible = todayItems.length + weekItems.length + confirmItems.length + pestGroups.length
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -346,11 +334,14 @@ export default async function AiProposalPage() {
           {visible === 0 && watchCount === 0 ? (
             <div className="ai-proposal-empty">
               <p className="ai-proposal-empty-text">
-                今日の提案はありません。タスクの期限や作物の植え付け日を登録すると、ここに表示されます。
+                今表示する提案はありません。農場の場所や作付け（品目・植え付け日・育て方）に未登録の項目があれば、登録すると栽培の提案に使われます。
               </p>
               <div className="ai-proposal-empty-actions">
                 <Link href="/tasks" className="ai-proposal-btn-primary">
                   タスクを確認
+                </Link>
+                <Link href="/farms" className="ai-proposal-btn-primary">
+                  農場を確認
                 </Link>
                 <Link href="/crops" className="ai-proposal-btn-primary">
                   作物を確認
@@ -368,7 +359,7 @@ export default async function AiProposalPage() {
               <ProposalGroup title="今日やること" items={todayItems} guidance={guidance} />
               <ProposalGroup title="今週中に" items={weekItems} guidance={guidance} />
               <ProposalGroup title="確認したいこと" items={confirmItems} guidance={guidance} />
-              {pestQuestions.length > 0 && (
+              {pestGroups.length > 0 && (
                 <section className="ai-proposal-group">
                   <h2 className="ai-proposal-group-title">病害虫の見回り</h2>
                   <ul className="ai-proposal-list">

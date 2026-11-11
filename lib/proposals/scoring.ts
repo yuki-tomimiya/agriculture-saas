@@ -62,6 +62,7 @@ export type ProposalCropLine = {
   currentGDD: number | null
   targetGDD: number
   targetCaption?: string
+  harvestOutlook?: string
   milestoneContext?: ProposalMilestoneContext
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
 }
@@ -273,11 +274,13 @@ function appendFrostNote(general: string | null, note: string | undefined): stri
   return `${general}${glue}${note}`
 }
 
-/** 同じ地点・同じ文言の霜は1枚。地点が違うと日付が違うので、文言が同じときだけまとめる */
-function groupFrostCards(cards: ScoredProposal[]): ScoredProposal[] {
-  const buckets = new Map<string, ScoredProposal[]>()
+type FrostCard = ScoredProposal & Pick<SweetPotatoFrost, 'harvestOutlook'>
+
+/** 霜の見通しと行動が同じカードはまとめ、作付けごとの物差しは行に添える */
+function groupFrostCards(cards: FrostCard[]): ScoredProposal[] {
+  const buckets = new Map<string, FrostCard[]>()
   for (const card of cards) {
-    const key = `${card.trigger}|${card.title}|${card.conclusion}`
+    const key = JSON.stringify([card.trigger, card.title, card.conclusion, card.harvestOutlook?.windowText])
     const list = buckets.get(key) ?? []
     list.push(card)
     buckets.set(key, list)
@@ -285,7 +288,11 @@ function groupFrostCards(cards: ScoredProposal[]): ScoredProposal[] {
   const grouped: ScoredProposal[] = []
   for (const list of buckets.values()) {
     if (list.length < 2) {
-      grouped.push(list[0])
+      const [card] = list
+      const outlook = card.harvestOutlook
+      const title = outlook && !outlook.windowText ? outlook.text.replace(/。$/, '') : card.title
+      const conclusion = outlook?.windowText ? `${outlook.text}${card.conclusion}` : card.conclusion
+      grouped.push({ ...card, title, conclusion, layers: { ...card.layers, conclusion } })
       continue
     }
     const head = list.some((card) => card.urgency === 'today')
@@ -315,6 +322,7 @@ function groupFrostCards(cards: ScoredProposal[]): ScoredProposal[] {
         currentGDD: card.currentGDD ?? null,
         targetGDD: card.targetGDD ?? 0,
         targetCaption: card.targetCaption,
+        harvestOutlook: card.harvestOutlook?.text,
         action: card.action,
       })),
     })
@@ -546,7 +554,7 @@ export async function scoreGrowingCrops(
 
   const cards: ScoredProposal[] = []
   const milestoneCards: ScoredProposal[] = []
-  const frostCards: ScoredProposal[] = []
+  const frostCards: FrostCard[] = []
   const springFrostCards: ScoredProposal[] = []
   const frostNoteByCrop = new Map<string, string>()
 
@@ -776,6 +784,7 @@ export async function scoreGrowingCrops(
             firstFrost: climate.frost,
             currentGdd: currentGDD,
             targetGdd: targetGDD,
+            reference: basis.view.status === 'active' ? { sampleCount: basis.sampleCount, method: basis.view } : undefined,
             hasSeenRoots,
             harvestWindow,
             harvestWindowReady,
@@ -791,6 +800,7 @@ export async function scoreGrowingCrops(
         score: withinWeek ? 96 : frost.trigger === 'frost-forecast' ? 88 : 84,
         trigger: frost.trigger,
         title: frost.title,
+        harvestOutlook: frost.harvestOutlook,
         cropId: crop.id,
         cropName: crop.name,
         farmId: crop.farmId ?? undefined,

@@ -1,6 +1,7 @@
 import { normalizeCropNameForMatch } from '@/lib/benchmarks/crops'
 import { LATE_FROST_COVER, LATE_FROST_POTATO, LATE_FROST_SOURCE } from '@/lib/benchmarks/planting-conditions'
 import { formatHarvestWindow, type HarvestDateWindow } from '@/lib/insights/harvest-date-window'
+import { formatHarvestGddOutlook, type HarvestGddReference } from '@/lib/gdd'
 import { MILESTONE_SOURCE_CHIBA } from '@/lib/proposals/milestones'
 import type { ForecastDay } from '@/lib/weather-forecast'
 import {
@@ -56,6 +57,7 @@ export type SweetPotatoFrost = {
   urgency: 'today' | 'thisWeek'
   title: string
   conclusion: string
+  harvestOutlook?: { text: string; windowText: string | null }
   /** 同じ作付けの別カードの【一般】に添える一文 */
   generalLine: string
   sourceLine: string
@@ -115,6 +117,7 @@ export function assessSweetPotatoFrost(args: {
   firstFrost: FrostOrigin | null
   currentGdd: number | null
   targetGdd: number
+  reference?: HarvestGddReference
   hasSeenRoots: boolean
   /** 年ごとの気温で出した幅。null は年内に届いた年が0 */
   harvestWindow: HarvestDateWindow | null
@@ -144,26 +147,34 @@ export function assessSweetPotatoFrost(args: {
   const note = origin.source === 'station' ? STATION_FROST_NOTE : FORECAST_FROST_NOTE
   const action = digLine(args.hasSeenRoots)
   const window = args.harvestWindow
+  const windowText = window ? formatHarvestWindow(window) : null
+  const outlook = formatHarvestGddOutlook({
+    currentGdd: args.currentGdd,
+    targetGdd: args.targetGdd,
+    reference: args.reference,
+    windowText,
+  })
   if (!window) {
     return {
       trigger: FROST_SEASON_TRIGGER,
       urgency: 'thisWeek',
-      title: '今季は、試し掘りの目安に届かない見込みです',
+      title: '霜の前に収穫を考えましょう',
       conclusion: `${when}。${action}。`,
-      generalLine: `今季は、試し掘りの目安に届かない見込みです。${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。${note}`,
+      harvestOutlook: { text: outlook, windowText },
+      generalLine: `${outlook}${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。${note}`,
       sourceLine: sourceLine(origin),
     }
   }
   if (window.late.getTime() <= earliestDateThisYear(args.today, frost).getTime()) return null
 
-  const span = formatHarvestWindow(window)
   const after = args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'
   return {
     trigger: FROST_SEASON_TRIGGER,
     urgency: 'thisWeek',
     title: when,
-    conclusion: `試し掘りの目安に届くのは${span}。それより、霜が先になる年があります。${action}。`,
-    generalLine: `${when}。試し掘りの目安に届くのは${span}。それより、霜が先になる年があります。${after}。${note}`,
+    conclusion: `見込みの時期より先に霜が来る年があります。${action}。`,
+    harvestOutlook: { text: outlook, windowText },
+    generalLine: `${when}。${outlook}見込みの時期より先に霜が来る年があります。${after}。${note}`,
     sourceLine: sourceLine(origin),
   }
 }

@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getCropWhere, getHarvestWhere, getPesticideWhere, getFertilizerWhere, getWorkRecordWhere } from '@/lib/queries'
-import { getTodayProposals } from '@/lib/ai-proposal'
+import { loadTodayProposalGroups } from '@/lib/proposals/presentation'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
@@ -102,12 +102,16 @@ export default async function DashboardPage() {
   const recentHarvestWhere = { AND: [harvestWhere, { date: { gte: recentSince } }] }
   const recentHarvestWhereFallback = { AND: [harvestWhereFallback, { date: { gte: recentSince } }] }
 
-  let todayProposalCount = 0
-  try {
-    todayProposalCount = (await getTodayProposals(user.id)).filter((p) => p.urgency === 'today').length
-  } catch {
-    todayProposalCount = 0
-  }
+  const proposalGroups = await loadTodayProposalGroups(user.id).catch(() => null)
+  const proposalNote = proposalGroups
+    ? [
+        '今日やること',
+        `今週中に${proposalGroups.weekItems.length}`,
+        `確認${proposalGroups.confirmItems.length}`,
+        ...(proposalGroups.pestGroups.length ? [`病害虫の見回り${proposalGroups.pestGroups.length}`] : []),
+        ...(proposalGroups.watchCount ? [`様子見${proposalGroups.watchCount}`] : []),
+      ].join('・')
+    : '提案の件数を取得できませんでした'
 
   let recentCrops = await prisma.crop.findMany({
     where: growingWhere,
@@ -189,10 +193,10 @@ export default async function DashboardPage() {
         <div className="dashboard-kpi-grid">
           <DashboardKpi
             title="今日の提案"
-            value={todayProposalCount}
+            value={proposalGroups?.todayItems.length ?? 0}
             tone="purple"
             href="/dashboard/ai-proposal"
-            note="今日やることと確認"
+            note={proposalNote}
             prominent
           />
           <DashboardKpi title="農場数" value={farms} tone="green" href="/farms" note="累計" emptyHref="/farms/new" emptyLabel="＋ 農場を追加" />

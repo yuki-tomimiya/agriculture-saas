@@ -2000,22 +2000,6 @@
 .app-sidebar-label {
   font-size: 0.875rem;
 }
-/* AI 提案カード（ハイライト） */
-.app-sidebar-link--ai {
-  background-color: #f5f3ff;
-  color: #5b21b6;
-  border-color: #ddd6fe;
-  font-weight: 600;
-}
-.app-sidebar-link--ai:hover {
-  background-color: #ede9fe;
-}
-.app-sidebar-link--ai-active {
-  background-color: #e0e7ff;
-  color: #4338ca;
-  border-color: #c4b5fd;
-  font-weight: 700;
-}
 /* 通常メニューのアクティブ状態 */
 .app-sidebar-link--active {
   background-color: #ecfdf3;

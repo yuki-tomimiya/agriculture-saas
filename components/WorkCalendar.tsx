@@ -400,7 +400,7 @@ export default async function WorkCalendar({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">作業カレンダー（{todayMonth}月）</h2>
       <p className="dashboard-section-sub">
-        提案（AI）と実績（作業・施肥）、昨年の前後2日の記録を確認できます。日付を押しても記録画面には移りません。
+        提案と実績（作業・施肥）、昨年の前後2日の記録を確認できます。日付を押しても記録画面には移りません。
       </p>
       <div className="dashboard-calendar-frame">
         <div className="dashboard-calendar-header">
@@ -437,7 +437,7 @@ export default async function WorkCalendar({
         <p className="dashboard-calendar-review-title">今月の状況サマリー</p>
         <ul className="dashboard-calendar-review-list">
           <li>
-            AI提案がある日は <span className="font-semibold">{proposalDays}日</span>、実績がある日は{' '}
+            提案がある日は <span className="font-semibold">{proposalDays}日</span>、実績がある日は{' '}
             <span className="font-semibold">{recordDays}日</span>
             {lastYearDays > 0 && (
               <>

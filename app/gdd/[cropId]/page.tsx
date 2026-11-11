@@ -8,7 +8,7 @@ import GDDChart from '@/components/GDDChart'
 import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
 import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDailyPrecipitation, getHistoricalDailyRadiation, getHistoricalDailyTemps, hasWeatherCoordinates } from '@/lib/weather-forecast'
-import { computeGDDProjection } from '@/lib/gdd'
+import { computeGDDProjection, formatHarvestGddOutlook } from '@/lib/gdd'
 import { dailyHeat, displayHeat, gddStartDate, type ActiveDayMethod, type ActiveGddMethod } from '@/lib/benchmarks/gdd-methods'
 import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
@@ -146,6 +146,7 @@ export default async function GddCropPage({
   })
   const currentGDD = historicalCumulative[historicalCumulative.length - 1]?.cumulativeGDD ?? 0
   const targetGDD = harvestBasis.gdd ?? 0
+  const reference = activeMethod ? { sampleCount: harvestBasis.sampleCount, method: activeMethod } : undefined
   const weatherPoint = canFetchWeather
     ? { latitude: Number(point.latitude), longitude: Number(point.longitude) }
     : null
@@ -195,14 +196,16 @@ export default async function GddCropPage({
           forecastByYmd: forecastAvgByDate(forecastTemps),
         })
       : null
+  const harvestWindowText = harvestWindow && currentGDD < targetGDD ? formatHarvestWindow(harvestWindow) : null
+  const seasonUnreachable = allowHarvestDateWindow && Boolean(archive) && !harvestWindow && currentGDD < targetGDD
+  const harvestOutlook = harvestWindowText || seasonUnreachable
+    ? formatHarvestGddOutlook({ currentGdd: currentGDD, targetGdd: targetGDD, reference, windowText: harvestWindowText })
+    : null
   const projection = canFetchWeather && activeMethod && targetGDD > 0
     ? computeGDDProjection(currentGDD, heat.count, heat.baseTemp, forecastTemps, targetGDD, {
-        harvestWindowText:
-          harvestWindow && currentGDD < targetGDD
-            ? formatHarvestWindow(harvestWindow)
-            : null,
-        seasonUnreachable:
-          allowHarvestDateWindow && Boolean(archive) && !harvestWindow && currentGDD < targetGDD,
+        harvestWindowText,
+        seasonUnreachable,
+        reference,
       })
     : null
   const heavyRainDays = forecastRainfall.filter((d) => d.precipitationMm >= FORECAST_HEAVY_RAIN_MM)
@@ -297,13 +300,7 @@ export default async function GddCropPage({
             currentGDD={currentGDD}
             targetGDD={targetGDD}
             showHarvestTarget={activeMethod != null}
-            targetCaption={
-              activeMethod
-                ? harvestBasis.source === 'variety' || harvestBasis.source === 'crop'
-                  ? `${harvestBasis.summary}（${activeMethod.scopeLabel}の幅は${activeMethod.rangeLabel}）`
-                  : `${activeMethod.scopeLabel}の目安 ${activeMethod.rangeLabel}`
-                : undefined
-            }
+            harvestReference={reference}
             valueCaption={
               activeMethod
                 ? undefined
@@ -342,16 +339,11 @@ export default async function GddCropPage({
               <p className="dashboard-gdd-summary-text">出典：{dayMethod.sourceLine}</p>
             </>
           )}
+          {harvestOutlook && (
+            <p className="dashboard-gdd-summary-text">{harvestOutlook}</p>
+          )}
           {activeMethod && currentGDD >= activeMethod.low && (
             <p className="dashboard-gdd-summary-text">{activeMethod.reachBody}</p>
-          )}
-          {allowHarvestDateWindow && activeMethod && currentGDD < targetGDD && harvestWindow && (
-            <p className="dashboard-gdd-summary-text">
-              目安に届くのは{formatHarvestWindow(harvestWindow)}。
-            </p>
-          )}
-          {allowHarvestDateWindow && activeMethod && currentGDD < targetGDD && archive && !harvestWindow && (
-            <p className="dashboard-gdd-summary-text">今季は、この目安に届かない見込みです。</p>
           )}
 
           {canFetchWeather && (

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import WeatherDataSource from '@/components/WeatherDataSource'
+import { formatHarvestGddReached, formatHarvestGddTarget, type HarvestGddReference } from '@/lib/gdd'
 
 type CropForGDD = {
   id: string
@@ -18,8 +19,7 @@ type GDDChartProps = {
   targetGDD?: number
   /** 日長で育つ品目は、収穫目安の線と「目安まで何%」を出さない */
   showHarvestTarget?: boolean
-  /** 赤線の意味。未指定のときは「目標」と書く */
-  targetCaption?: string
+  harvestReference?: HarvestGddReference
   /** 目安の線を出さないときの、現在値の説明 */
   valueCaption?: string
   /** グラフの数え始め。未指定は植え付け。 */
@@ -96,7 +96,7 @@ export default function GDDChart({
   currentGDD = 0,
   targetGDD = 0,
   showHarvestTarget = true,
-  targetCaption,
+  harvestReference,
   valueCaption,
   originLabel,
   daysFromPlanting = 0,
@@ -221,7 +221,7 @@ export default function GDDChart({
   const projectedBarWidth =
     projectedProgressPct != null ? Math.min(100, projectedProgressPct) : null
 
-  const basisLabel = targetCaption ?? `目標 ${Math.round(targetGDD)}℃日`
+  const basisLabel = formatHarvestGddTarget(targetGDD, harvestReference)
 
   return (
     <section className="dashboard-card">
@@ -413,13 +413,11 @@ export default function GDDChart({
         </div>
       </div>
 
-      {normalGddByDay !== undefined && (
+      {(normalGddByDay !== undefined || (showHarvestTarget && targetGDD > 0)) && (
         <p className="dashboard-gdd-note">
-          {normalGddByDay == null
-            ? '10年平均を取得できなかったため、比較の線は出していません。'
-            : showHarvestTarget
-              ? `10年平均（推計）＝この地点の過去10年を平均した再解析です。赤の破線は${basisLabel}です。`
-              : '10年平均（推計）＝この地点の過去10年を平均した再解析です。'}
+          {normalGddByDay === null && '10年平均を取得できなかったため、比較の線は出していません。'}
+          {normalGddByDay && '10年平均（推計）＝この地点の過去10年を平均した再解析です。'}
+          {showHarvestTarget && targetGDD > 0 && `赤の破線は、${basisLabel}です。`}
         </p>
       )}
 
@@ -460,7 +458,7 @@ export default function GDDChart({
         </div>
         {currentProgressPct > 100 && (
           <p className="dashboard-gdd-summary-text" style={{ marginTop: '0.5rem' }}>
-            {basisLabel}を超えています（現在 {Math.round(currentGDD)} ℃日）。
+            {formatHarvestGddReached(currentGDD, targetGDD, harvestReference)}
           </p>
         )}
       </div>

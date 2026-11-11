@@ -34,6 +34,7 @@ export type HarvestBasis = {
   /** 絹糸など、気温ではなく日数で数える品目の実績・資料値。 */
   days: number | null
   source: 'variety' | 'crop' | 'method' | 'none'
+  sampleCount: number
   summary: string
   detail: string | null
   spreadNote: string | null
@@ -212,6 +213,7 @@ export function pickHarvestBasis(samples: HarvestSample[], crop: HarvestBasisCro
   const view = viewForCrop(crop)
   const empty = {
     view,
+    sampleCount: 0,
     detail: null,
     spreadNote: null,
     days: null,
@@ -239,6 +241,7 @@ export function pickHarvestBasis(samples: HarvestSample[], crop: HarvestBasisCro
       gdd: null,
       days,
       source: picked.source,
+      sampleCount: count,
       summary:
         picked.source === 'crop'
           ? `同じ品種の実績がないので、${key}の過去${count}作の平均 ${days}日`
@@ -277,16 +280,16 @@ export function pickHarvestBasis(samples: HarvestSample[], crop: HarvestBasisCro
   const gdd = average(usable)
   const count = usable.length
   const key = compareSubject(crop).label
-  const summary =
-    picked.source === 'crop'
+  const summary = count === 1
+    ? `${picked.source === 'crop' ? `同じ品種の実績がないため、${key}の記録を使います。 ` : ''}前回のあなたは${gdd}℃日で収穫しました`
+    : picked.source === 'crop'
       ? `同じ品種の実績がないので、${key}の過去${count}作の平均 ${gdd}℃日`
-      : count === 1
-        ? `前回のあなたは${gdd}℃日で収穫しました`
-        : `過去${count}作の収穫時点の平均 ${gdd}℃日`
+      : `過去${count}作の収穫時点の平均 ${gdd}℃日`
   return {
     gdd,
     days: null,
     source: picked.source,
+    sampleCount: count,
     summary,
     detail: detailLine(usable, gdd),
     spreadNote: spreadNote(usable, gdd),
