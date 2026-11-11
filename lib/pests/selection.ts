@@ -24,7 +24,8 @@ export function selectPestQuestion(
       .sort((a, b) => b.answeredDay.localeCompare(a.answeredDay))[0]
     if (deferred.has(pest.key) || (latest && dayGap(today, latest.answeredDay) < (latest.present ? 14 : 28))) return []
 
-    const previous = history.filter(check => check.pestKey === pest.key && Number(check.observedDay.slice(0, 4)) === year - 1)
+    const previousYear = history.filter(check => check.pestKey === pest.key && Number(check.observedDay.slice(0, 4)) === year - 1)
+    const previous = previousYear
       .map(check => {
         const [, m, d] = check.observedDay.split('-').map(Number)
         const anniversary = new Date(Date.UTC(year, m - 1, Math.min(d, new Date(Date.UTC(year, m, 0)).getUTCDate())))
@@ -33,9 +34,13 @@ export function selectPestQuestion(
       .filter(check => check.gap <= 14)
       .sort((a, b) => Number(!!crop.farmId && b.farmId === crop.farmId) -
         Number(!!crop.farmId && a.farmId === crop.farmId) || a.gap - b.gap)[0]
-    const season: PestSeason | undefined = pest.seasons.find(item =>
-      item.code === crop.prefectureCode && item.months.includes(month) && (!item.site || item.site === crop.growingSite))
-    if (!previous && !season && (!crop.plantingDay || dayGap(today, crop.plantingDay) <= 7)) return []
+    if (previousYear.length && !previous) return []
+
+    const localSeasons = pest.seasons.filter(item =>
+      item.code === crop.prefectureCode && (!item.site || item.site === crop.growingSite))
+    const season: PestSeason | undefined = previous ? undefined : localSeasons.find(item => item.months.includes(month))
+    if (!previous && !season &&
+      (localSeasons.length || !crop.plantingDay || dayGap(today, crop.plantingDay) <= 7)) return []
 
     return [{
       pest, previous, season, latest,

@@ -18,14 +18,17 @@ test('前年の記録は前後14日。同じ農場が優先される', () => {
   ]
   assert.equal(ask({}, [], history)?.previous?.farmId, 'farm')
   assert.equal(ask({}, [], [{ ...history[0], observedDay: '2025-10-27' }])?.previous?.gap, 14)
-  assert.equal(ask({}, [], [{ ...history[0], observedDay: '2025-11-25' }])?.previous, undefined)
+  const outside = [{ ...history[0], observedDay: '2025-11-25' }]
+  assert.equal(ask({}, [], outside), null)
+  assert.equal(ask({ prefectureCode: '39' }, [], outside), null)
 })
 
 test('県と栽培場所が合うときだけ資料の時期を使う', () => {
   assert.equal(ask({ prefectureCode: '39' })?.season?.code, '39')
   assert.equal(ask({ prefectureCode: '39', plantingDay: '2026-11-09' })?.season?.code, '39')
-  assert.equal(ask({ prefectureCode: '39', growingSite: 'open' })?.season, undefined)
-  assert.equal(ask({ prefectureCode: '12' })?.season, undefined)
+  assert.equal(ask({ prefectureCode: '39', growingSite: 'open' })?.rank, 3)
+  assert.equal(ask({ prefectureCode: '12' })?.rank, 3)
+  assert.equal(selectPestQuestion({ ...crop, prefectureCode: '39' }, '2026-12-10', [], [], new Set()), null)
 })
 
 test('巡回は植付8日目から。記録だけの品目には聞かない', () => {
@@ -46,6 +49,17 @@ test('回答後の共通間隔と、組ごとの再質問、あとでを区別�
   assert.equal(PROPOSAL_DISMISS_DAYS, 7)
   const next = ask({ cropKind: 'pepper' }, [check('2026-11-03', false, 'pepper:aphids')])
   assert.equal(next?.pest.key, 'pepper:thrips')
+})
+
+test('畑で見た日をさかのぼって記録しても、再質問の間隔は保存日から数える', () => {
+  const check = { pestKey, observedDay: '2026-09-20', answeredDay: '2026-11-10', present: true }
+  const on = (today: string, answer: typeof check) => selectPestQuestion(crop, today, [answer], [], new Set())
+  assert.equal(on('2026-11-16', { ...check, pestKey: 'other' }), null)
+  assert.ok(on('2026-11-17', { ...check, pestKey: 'other' }))
+  assert.equal(on('2026-11-23', check), null)
+  assert.ok(on('2026-11-24', check))
+  assert.equal(on('2026-12-07', { ...check, present: false }), null)
+  assert.ok(on('2026-12-08', { ...check, present: false }))
 })
 
 test('24組に選択名・目印があり、採用した出典にURLがある', () => {

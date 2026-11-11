@@ -8,7 +8,7 @@ import { pestMeasuresForSite } from '@/lib/pests/presentation'
 
 const owner = (userId: string) => ({ OR: [{ userId }, { farm: { userId } }] })
 const cropFields = {
-  id: true, name: true, cropKind: true, farmId: true, growingSite: true,
+  id: true, name: true, cropKind: true, farmId: true, growingSite: true, status: true,
   farm: { select: { name: true, prefectureCode: true } },
 } as const
 

@@ -39,7 +39,10 @@ export type ProposalRecordGuidance = {
   standards: ReturnType<typeof fertilizerStandard>[]
 }
 
-function targets(proposal: Proposal) {
+type RecordGuidanceTarget = Pick<Proposal,
+  'id' | 'trigger' | 'relatedCropId' | 'relatedFarmId' | 'lines' | 'milestone' | 'milestoneContext'>
+
+function targets(proposal: RecordGuidanceTarget) {
   const lines = proposal.lines ?? (proposal.relatedCropId ? [{
     cropId: proposal.relatedCropId,
     farmId: proposal.relatedFarmId,
@@ -56,7 +59,7 @@ function targets(proposal: Proposal) {
   })
 }
 
-export async function loadProposalRecordGuidance(userId: string, proposals: Proposal[], now = new Date()) {
+export async function loadProposalRecordGuidance(userId: string, proposals: RecordGuidanceTarget[], now = new Date()) {
   const today = japanDateKey(now)
   const cards = proposals.map(proposal => ({
     proposal,

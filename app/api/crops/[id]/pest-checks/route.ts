@@ -28,7 +28,8 @@ export async function POST(request: NextRequest, context: Context) {
   const body = await request.json().catch(() => null)
   const pest = typeof body?.key === 'string' ? findPest(body.key) : undefined
   const observedAt = observedDate(body?.observedDay)
-  if (!pest || pest.cropKind !== crop.cropKind || typeof body?.present !== 'boolean' || !observedAt) {
+  if (!pest || pest.cropKind !== crop.cropKind || typeof body?.present !== 'boolean' || !observedAt ||
+    (body.source === 'field' && crop.status !== 'growing')) {
     return error('病害虫・回答・見た日を確かめてください', 400)
   }
   const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 500) || null : null

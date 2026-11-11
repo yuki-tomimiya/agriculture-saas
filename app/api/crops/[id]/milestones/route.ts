@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cookies } from 'next/headers'
 import { prisma } from '@/lib/prisma'
-import { isKnownMilestoneKey, parseMilestoneDate } from '@/lib/proposals/milestones'
+import { adviceNames } from '@/lib/crops/conditions'
+import { isKnownMilestoneKey, milestoneDateInputValue, parseMilestoneDate } from '@/lib/proposals/milestones'
+import { loadProposalRecordGuidance } from '@/lib/proposals/record-guidance'
 
 async function ownedCrop(userId: string, id: string) {
   return prisma.crop.findFirst({
     where: { id, OR: [{ userId }, { farm: { userId } }] },
-    select: { id: true, name: true, variety: true },
+    select: { id: true, name: true, variety: true, cropKind: true, status: true, farmId: true },
   })
 }
 
@@ -36,17 +38,22 @@ export async function POST(
 
     const body = await request.json()
     const key = typeof body.key === 'string' ? body.key.trim() : ''
-    if (!isKnownMilestoneKey(crop.name, crop.variety, key)) {
-      return NextResponse.json({ error: 'この作付けには、その節目はありません' }, { status: 400 })
-    }
-    const source = body.source === 'answered' ? 'answered' : body.source === 'manual' ? 'manual' : null
-    if (!source) {
+    const { source } = body
+    if (source !== 'answered' && source !== 'manual' && source !== 'field') {
       return NextResponse.json({ error: '記録の出どころが不正です' }, { status: 400 })
+    }
+    const subject = adviceNames(crop)
+    const known = isKnownMilestoneKey(subject.name, subject.variety, key)
+    const allowed = source === 'field'
+      ? crop.status === 'growing' && !subject.recordOnly && known
+      : known || isKnownMilestoneKey(crop.name, crop.variety, key)
+    if (!allowed) {
+      return NextResponse.json({ error: 'この作付けには、その節目はありません' }, { status: 400 })
     }
 
     const rawDate = typeof body.observedAt === 'string' && body.observedAt.trim() ? body.observedAt.trim() : todayInputValue()
     const observedAt = parseMilestoneDate(rawDate)
-    if (!observedAt) {
+    if (!observedAt || (source === 'field' && milestoneDateInputValue(observedAt) !== rawDate)) {
       return NextResponse.json({ error: '日付が不正です' }, { status: 400 })
     }
     const endOfToday = new Date()
@@ -56,13 +63,23 @@ export async function POST(
     }
 
     const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 500) : null
+    const guidance = source === 'field' ? (await loadProposalRecordGuidance(userId, [{
+      id: crop.id,
+      relatedCropId: crop.id,
+      relatedFarmId: crop.farmId ?? undefined,
+      milestoneContext: { key, observedAt, afterHarvest: key === 'pepper-feed' },
+    }])).get(crop.id) : undefined
     const saved = await prisma.cropMilestone.upsert({
       where: { cropId_key: { cropId: crop.id, key } },
       create: { cropId: crop.id, key, observedAt, source, notes: notes || null },
       update: { observedAt, source, ...(typeof body.notes === 'string' ? { notes: notes || null } : {}) },
     })
 
-    return NextResponse.json({ ok: true, id: saved.id, observedAt: saved.observedAt.toISOString() })
+    return NextResponse.json({
+      ok: true, id: saved.id, observedAt: saved.observedAt.toISOString(),
+      fertilizer: guidance?.byCrop.get(crop.id)?.fertilizer,
+      standards: guidance?.standards,
+    })
   } catch (error) {
     console.error('Milestone save error:', error)
     return NextResponse.json({ error: '保存に失敗しました' }, { status: 500 })

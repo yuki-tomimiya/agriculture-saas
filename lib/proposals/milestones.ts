@@ -96,6 +96,8 @@ export type MilestoneFormItem = {
   question: string
   sourceLabel: string
   observedAt: string | null
+  ifYes: string
+  howTo: string[]
 }
 
 type Window =
@@ -655,6 +657,8 @@ export function milestoneFormItems(
       question: item.question,
       sourceLabel: item.sourceLabel,
       observedAt: record ? milestoneDateInputValue(record.observedAt) : null,
+      ifYes: item.ifYes,
+      howTo: item.howTo,
     }
   })
 }

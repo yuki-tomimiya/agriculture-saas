@@ -131,6 +131,11 @@ export default async function CropDetailPage({
             </span>
           </div>
           <div className="flex gap-2 flex-wrap">
+            {crop.status === 'growing' && (
+              <Link href={`/records/field?cropId=${encodeURIComponent(crop.id)}`} className="btn btn-outline">
+                畑で見たことを記録する
+              </Link>
+            )}
             {crop.status !== 'growing' && (
               <Link href={`/crops/${id}/retrospective`} className="btn btn-primary">
                 今シーズンの振り返り

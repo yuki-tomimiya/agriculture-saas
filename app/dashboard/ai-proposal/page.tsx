@@ -9,8 +9,8 @@ import ProposalDismissButton from './ProposalDismissButton'
 import ProposalSeasonActions from './ProposalSeasonActions'
 import MilestoneAskActions from './MilestoneAskActions'
 import { isFrostTrigger } from '@/lib/proposals/frost'
-import { loadProposalRecordGuidance, type CropRecordGuidance, type ProposalRecordGuidance } from '@/lib/proposals/record-guidance'
-import { harvestDateLabel } from '@/lib/pesticide-safety'
+import { loadProposalRecordGuidance, type ProposalRecordGuidance } from '@/lib/proposals/record-guidance'
+import { FertilizerStandards, RecordGuidance } from '@/components/ProposalRecordGuidance'
 import { loadPestQuestions } from '@/lib/pests/service'
 import PestQuestion from './PestQuestion'
 import { groupPestQuestions } from '@/lib/pests/presentation'
@@ -230,19 +230,7 @@ function ProposalGroup({ title, items, guidance }: { title: string; items: Propo
                     {(milestone || p.layers.personal || p.layers.regional || p.layers.general || records?.standards.length) ? (
                       <div className="ai-proposal-evidence">
                         {milestone ? <MilestoneEvidence milestone={milestone} /> : <ProposalLayersBlock layers={p.layers} />}
-                        {!!records?.standards.length && (
-                          <p className="mt-2 text-sm">
-                            施肥量を確認できる資料：
-                            {records.standards.map((standard, index) => (
-                              <span key={standard.url}>
-                                {index > 0 && '、'}
-                                <a href={standard.url} className="underline">{standard.title}</a>
-                              </span>
-                            ))}
-                            {records.standards.some(standard => standard.fallback) &&
-                              '。近くの県の基準を参考にできる場合があります。普及指導員に相談してください。'}
-                          </p>
-                        )}
+                        <FertilizerStandards standards={records?.standards} />
                       </div>
                     ) : null}
                   </div>
@@ -254,29 +242,6 @@ function ProposalGroup({ title, items, guidance }: { title: string; items: Propo
       </ul>
     </section>
   )
-}
-
-function RecordGuidance({ entry }: { entry?: CropRecordGuidance }) {
-  if (!entry) return null
-  const { fertilizer, harvestFrom } = entry
-  const elapsed = fertilizer?.daysAgo == null ? '' : fertilizer.daysAgo === 0 ? '（今日）' : `（${fertilizer.daysAgo}日前）`
-  return <>
-    {fertilizer && (
-      <span className="block text-sm">
-        {fertilizer.last
-          ? `最後の施肥：${harvestDateLabel(fertilizer.last)}${elapsed}`
-          : 'この作付けの施肥の記録はまだありません'}
-        {fertilizer.recorded && ' · 記録済み'}
-        {' · '}
-        <Link href={fertilizer.href} className="underline">施肥を記録する</Link>
-      </span>
-    )}
-    {harvestFrom && (
-      <span className="block text-sm">
-        農薬の記録では、収穫できるのは{harvestDateLabel(harvestFrom)}からです。
-      </span>
-    )}
-  </>
 }
 
 function ProposalMeta({ proposal }: { proposal: Proposal }) {
@@ -372,6 +337,10 @@ export default async function AiProposalPage() {
                 生育ナビ
               </Link>
             </div>
+          </div>
+
+          <div className="mb-4">
+            <Link href="/records/field" className="btn btn-primary">畑で見たことを記録する</Link>
           </div>
 
           {visible === 0 && watchCount === 0 ? (
