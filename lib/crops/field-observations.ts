@@ -26,6 +26,29 @@ const observationLabels: Record<string, string> = {
   yellowing: '茎や葉が黄色く枯れてきた',
 }
 
+// 報告で確認できた条件だけを取り除き、助言の残りと出典は節目の定義を使う。
+const reportedConditions: Record<string, string> = {
+  'onion-lodging': '葉が倒れてきたら、',
+  'cabbage-heading': '球ができ始めたら、',
+  'cabbage-firm': '球がしまってきたら、',
+  'lettuce-outer-leaves': '外葉が外へ開き、',
+  'flower-3rd': '咲いていれば、',
+  rooting: '根付いていれば、',
+  'first-fruit': 'ふくらみ始めていれば、',
+  'side-shoot': '伸び始めていれば、',
+  'pepper-feed': '収穫が始まっていれば、',
+  sprout: '出そろっていれば、',
+  bud: '見えていれば、',
+}
+
+function reportedMilestoneAdvice(key: string, advice: string): string {
+  if (key === 'main-stem') {
+    return advice.replace(/^支柱の高さ（20節前後）まで伸びていれば、/, '支柱の高さ（20節前後）まで伸びたので、')
+  }
+  const condition = reportedConditions[key]
+  return condition && advice.startsWith(condition) ? advice.slice(condition.length) : advice
+}
+
 export function fieldObservationOptions(crop: {
   cropKind: string | null
   name: string
@@ -37,7 +60,11 @@ export function fieldObservationOptions(crop: {
   return {
     milestones: milestoneFormItems(subject.name, subject.variety, crop.milestones)
       .filter(item => item.sourceLabel && item.ifYes)
-      .map(item => ({ ...item, label: observationLabels[item.key] ?? item.term })),
+      .map(item => ({
+        ...item,
+        label: observationLabels[item.key] ?? item.term,
+        reportedAdvice: reportedMilestoneAdvice(item.key, item.ifYes),
+      })),
     pests: pests.filter(pest => pest.cropKind === crop.cropKind).map(pest => ({
       key: pest.key, name: pest.name, marker: pest.marker, appearanceUrl: pest.appearance?.url,
     })),

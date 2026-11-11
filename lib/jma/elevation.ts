@@ -1,6 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { weatherLocation } from '@/lib/open-meteo/archive'
-import { openMeteoUrl } from '@/lib/open-meteo/url'
+import { fetchOpenMeteo } from '@/lib/open-meteo/fetch'
 
 const inflight = new Map<string, Promise<number | null>>()
 const retryAfter = new Map<string, number>()
@@ -17,7 +17,7 @@ export async function farmElevationM(lat: number, lon: number): Promise<number |
       if (saved) return saved.metres
       if ((retryAfter.get(location) ?? 0) > Date.now()) return null
       const [latitude, longitude] = location.split(',')
-      const res = await fetch(openMeteoUrl('elevation', new URLSearchParams({ latitude, longitude })))
+      const res = await fetchOpenMeteo('elevation', new URLSearchParams({ latitude, longitude }))
       if (!res.ok) throw new Error('elevation unavailable')
       const json = await res.json() as { elevation?: number[] }
       const value = json.elevation?.[0]

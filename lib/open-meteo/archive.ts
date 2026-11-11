@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma'
-import { openMeteoUrl } from './url'
+import { fetchOpenMeteo } from './fetch'
 
 /** ⚙ 運用の値（根拠台帳I14）：直近7日を24時間ごとに更新。昨年以前は取り直さない。 */
 export const ARCHIVE_REFRESH_DAYS = 7
@@ -40,7 +40,7 @@ async function fetchRange(location: string, start: string, end: string): Promise
   const params = new URLSearchParams({ latitude, longitude, start_date: start, end_date: end, daily: Object.values(variables).join(','), timezone: 'Asia/Tokyo' })
   try {
     // DBが取り直す時期を決める。Nextの永続キャッシュで古い応答を再保存しない。
-    const res = await fetch(openMeteoUrl('archive', params), { cache: 'no-store' })
+    const res = await fetchOpenMeteo('archive', params, { cache: 'no-store' })
     if (process.env.NODE_ENV !== 'production') console.info(`[OpenMeteo archive] ${start}..${end} status=${res.status}`)
     if (!res.ok) {
       retryAfter.set(location, Date.now() + RETRY_MS)

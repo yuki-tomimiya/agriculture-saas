@@ -1,5 +1,5 @@
 import { loadDailyWeather } from '@/lib/open-meteo/archive'
-import { openMeteoUrl } from '@/lib/open-meteo/url'
+import { fetchOpenMeteo } from '@/lib/open-meteo/fetch'
 /**
  * 気象予報データ（気象ナビ・生育ナビで共通利用）
  * Open-Meteo APIから取得。失敗時はフォールバックを返す。
@@ -103,7 +103,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
   })
 
   try {
-    const res = await fetch(openMeteoUrl('forecast', params), {
+    const res = await fetchOpenMeteo('forecast', params, {
       next: { revalidate: 3600 },
     })
     if (!res.ok) throw new Error(`Open-Meteo failed: ${res.status}`)
@@ -222,7 +222,7 @@ export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint
   })
 
   try {
-    const res = await fetch(openMeteoUrl('forecast', params), {
+    const res = await fetchOpenMeteo('forecast', params, {
       next: { revalidate: 3600 },
     })
     if (!res.ok) throw new Error(`Open-Meteo failed: ${res.status}`)

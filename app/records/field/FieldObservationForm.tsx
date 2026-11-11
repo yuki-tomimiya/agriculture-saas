@@ -131,7 +131,7 @@ function ObservationSaveForm({ cropId, today, milestone, pest, pending, setPendi
         <section className="space-y-2 rounded-md border p-3">
           <p role="status">{date}の記録を保存しました。</p>
           {milestone && <>
-            <p>{milestone.ifYes}</p>
+            <p>{milestone.reportedAdvice}</p>
             {!!milestone.howTo.length && <ul className="list-disc pl-5">{milestone.howTo.map(line => <li key={line}>{line}</li>)}</ul>}
             <p className="text-sm">出典　{milestone.sourceLabel}</p>
             {result.fertilizer && <RecordGuidance entry={{ fertilizer: result.fertilizer }} />}
