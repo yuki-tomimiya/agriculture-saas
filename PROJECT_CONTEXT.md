@@ -38,6 +38,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | `/faq/[slug]` | 1つの質問の答え |
 | `/plan` | 来年の計画（振り返りと計画のカード。詳細ページはなし） |
 | `/records` | 記録の入口（作業・農薬・収穫・販売。施肥は作業のタブ） |
+| `/records/field` | 畑で見たことの記録。入口は今日の提案と作付け詳細。選択肢は `lib/crops/field-observations.ts`、保存は節目・病害虫の既存API |
 | `/soil` | 土壌診断（農場管理の下。写真・圃場あり。詳細ページはなし） |
 | `/insights` | 振り返りと計画（入口カード。来年の計画を含む） |
 | `/insights/compare` | 作付け比較（あなた） |
@@ -58,9 +59,9 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | 領域 | パス |
 |------|------|
-| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。終了確認の日数は台帳 I2）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
+| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。終了確認の日数は台帳 I2）, `lib/proposals/presentation.ts`（ダッシュボードと今日の提案の表示区分）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
 | 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`（台帳 B7）, `lib/proposals/frost.ts`（さつまいもの霜の締切・春の霜の終わり。台帳 D9） |
-| 天気の保存・出典 | 過去の天気の保存は `lib/open-meteo/archive.ts` → `OpenMeteoDaily`（取り直しは台帳 I14）。実績・予報の日平均は `lib/weather-forecast.ts`（台帳 A1・B7）。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。取り先の住所は `lib/open-meteo/url.ts`（`OPEN_METEO_API_KEY` で契約者用へ）。出典の表示は `components/WeatherDataSource.tsx`（気象庁用も共通。出典の扱いは台帳 A3） |
+| 天気の保存・出典 | 過去の天気の保存は `lib/open-meteo/archive.ts` → `OpenMeteoDaily`（取り直しは台帳 I14）。実績・予報の日平均は `lib/weather-forecast.ts`（台帳 A1・B7）。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。取り先の住所は `lib/open-meteo/url.ts`（`OPEN_METEO_API_KEY` で契約者用へ）、取得は `lib/open-meteo/fetch.ts`（台帳 I14）。出典の表示は `components/WeatherDataSource.tsx`（気象庁用も共通。出典の扱いは台帳 A3） |
 | 植える条件 | `lib/benchmarks/planting-conditions.ts`（台帳 D10。霜の注意の対象は同じ表の `lateFrostAdvice`、台帳 D11）。登録画面は `components/CropForm.tsx`、来年の計画は `lib/insights/next-year-plan.ts`、農場詳細は `components/FarmPlantingConditions.tsx`。遅霜のカードは `lib/proposals/scoring.ts` |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準）。ブロッコリーの2段の歩き方は `projectTwoStageHarvestWindow`（`lib/insights/harvest-date-window.ts`）。数え方・幅・暑い年／涼しい年は台帳 B1c〜B1f・B7・B8 |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |
@@ -72,7 +73,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 作付けの結果 | 振り返り先頭の結果（`CropOutcome`、`lib/crops/outcome.ts`。イチゴの呼び方は正品、ほかはA品）。収穫の重さは kg（`lib/crops/harvest.ts`）。自分の記録のまとまりは `personalGroupKey`。前回の作付けは `previousPlanting`（`lib/crops/conditions.ts`） |
 | 農場の場所 | 都道府県・市区町村は `Farm.prefectureCode` / `municipalityCode`（`data/municipalities.json`、`lib/places/`）。県の候補は近い観測所の番号（`data/jma-prec-no.json`） |
 | 今日の提案の施肥・収穫日の補足 | 記録の取得と作付けごとの対応は `lib/proposals/record-guidance.ts`、県の資料リンクは `data/fertilizer-standards.json` と `lib/fertilizer-standards.ts`（台帳 E13・F2） |
-| 病害虫の見回り | モデルは `PestCheck`、保存と編集は `app/api/crops/[id]/pest-checks/route.ts`。品目別データと指針の入口は `data/pest-checks.json`・`data/pest-defense-guides.json`、問いかけの選択と助言取得は `lib/pests/`、表示は `app/dashboard/ai-proposal/PestQuestion.tsx` と `components/CropPestChecks.tsx`（台帳 F3〜F9・I15） |
+| 病害虫の見回り | モデルは `PestCheck`、保存と編集は `app/api/crops/[id]/pest-checks/route.ts`。品目別データと指針の入口は `data/pest-checks.json`・`data/pest-defense-guides.json`。問いかけの時期と選択は `lib/pests/selection.ts`、助言取得は `lib/pests/service.ts`、表示は `app/dashboard/ai-proposal/PestQuestion.tsx` と `components/CropPestChecks.tsx`（台帳 F3〜F9・I15） |
 | 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」・農薬の記録・今日の提案の病害虫の回答後（台帳 F1） |
 | 農薬の収穫日・回数 | `lib/pesticide-safety.ts`、`components/PesticideUsage.tsx`、`components/PesticideUsageField.tsx`、`app/pesticides/`、`app/crops/[id]/page.tsx`、`app/harvests/new/`（台帳 F2）。計算の確認は `tests/pesticide-safety.test.ts` |
 | 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`, `lib/gdd.ts`。目安は `lib/benchmarks/gdd-methods.ts`（起点と数え方は台帳 B1c〜B1f） |
@@ -98,7 +99,7 @@ lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth
 
 ## サイドバー（`Sidebar.tsx`）
 
-AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ → 生育ナビ → 農場管理（土壌診断）→ 作物管理 → 記録 → 振り返りと計画 → 区切り → タスク → 外部連携 → FAQ
+今日の提案 → ダッシュボード → カレンダー → 気象ナビ → 生育ナビ → 農場管理（土壌診断）→ 作物管理 → 記録 → 振り返りと計画 → 区切り → タスク → 外部連携 → FAQ
 
 ---
 
@@ -108,7 +109,7 @@ AI提案（紫）→ ダッシュボード → カレンダー → 気象ナビ 
 
 - 入力フォームの列は `app/globals.css` の `.form-column-page`。
 
-- 緑: 通常UI / 紫: AI提案メニューのみ
+- サイドバーの選択中のメニューは緑。
 - 3層タグ: `.insights-layer-tag`（あなた / 地域 / 一般 / 今日の一手）
 
 ---
