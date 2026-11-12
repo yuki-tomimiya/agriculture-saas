@@ -123,7 +123,9 @@ lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth
 ## 開発時の注意
 
 - 未ログイン: `getCurrentUser()` → `redirect('/auth/signin')`
-- 起動: `npm run dev` または `アプリを起動.bat`
+- 起動: `npm run dev` または `アプリを起動.bat`（`http://127.0.0.1:3000`）。LANから確認するときは `npm run dev:lan`
+- テスト: `npm test`（`tests/` 内の `.test.ts`・`.test.tsx`）。コードの確認: `npm run lint`（`.eslintrc.json`）
+- ビルド: `npm run build`。前に `scripts/check-build-port.mjs` が3000番ポートを確認する
 - UI 確認は本番アプリのみ（静的 `ui-preview-*.html` は廃止済み）
 - `.env` / `node_modules` はコミットしない
 - 起動できないとき：`npm install` → `npx prisma generate` → `npx prisma migrate dev`。ポート3000が埋まっていれば `サーバー停止.bat`。`.env` と `prisma/dev.db` があるか確認（旧 SETUP.md の要点。2026-10-07 に統合）

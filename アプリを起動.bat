@@ -43,12 +43,12 @@ if not exist "prisma\dev.db" (
   echo.
 )
 
-echo Starting dev server on http://localhost:3000
+echo Starting dev server on http://127.0.0.1:3000
 echo Browser will open in ~10 seconds.
 echo Press Ctrl+C in this window to stop.
 echo.
 
-start "tillto-open-browser" /min cmd /c "ping -n 11 127.0.0.1 >nul & start http://localhost:3000"
+start "tillto-open-browser" /min cmd /c "ping -n 11 127.0.0.1 >nul & start http://127.0.0.1:3000"
 
 call npm run dev
 if errorlevel 1 (
