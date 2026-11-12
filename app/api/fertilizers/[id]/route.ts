@@ -80,6 +80,14 @@ export async function PUT(
       }
     }
 
+    if (cropId && !await prisma.crop.findFirst({
+      where: { id: cropId, OR: [{ userId }, { farm: { userId } }] }, select: { id: true },
+    })) {
+      return NextResponse.json({ error: '指定した作物が見つかりません' }, { status: 400 })
+    }
+    if (farmId && !await prisma.farm.findFirst({ where: { id: farmId, userId }, select: { id: true } })) {
+      return NextResponse.json({ error: '指定した農場が見つかりません' }, { status: 400 })
+    }
     const record = await prisma.fertilizerRecord.update({
       where: { id },
       data: {

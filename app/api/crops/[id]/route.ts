@@ -43,6 +43,7 @@ export async function PATCH(
     const harvestDateStr = body.harvestDate
     const status = typeof body.status === 'string' && ['growing', 'harvested', 'completed'].includes(body.status) ? body.status : undefined
     const nextFarmId = farmId === undefined ? existing.farmId : farmId
+    const farmChanged = nextFarmId !== existing.farmId
     const editingConditions = typeof body.cropKind === 'string'
     if (editingConditions && !nextFarmId) {
       return NextResponse.json({ error: '農場を選んでください' }, { status: 400 })
@@ -50,10 +51,10 @@ export async function PATCH(
 
     let farmHasFields = false
     let farmFields: { id: string }[] = []
-    if (editingConditions && nextFarmId) {
+    if ((editingConditions || farmId !== undefined) && nextFarmId) {
       const farm = await prisma.farm.findFirst({
         where: { id: nextFarmId, userId },
-        include: { fields: true },
+        select: { fields: { select: { id: true } } },
       })
       if (!farm) {
         return NextResponse.json({ error: '指定した農場が見つかりません' }, { status: 400 })
@@ -115,8 +116,13 @@ export async function PATCH(
       updateData.farmId = farmId
       updateData.userId = farmId ? null : userId
     }
+    if (farmChanged && !conditions) {
+      updateData.fieldId = null
+      updateData.fieldUndivided = false
+    }
     const crop = await prisma.crop.update({
-      where: { id },
+      // 圃場を確かめた後に別の更新で農場が変わった場合は書き込まない。
+      where: { id, ...((editingConditions || farmId !== undefined) && { farmId: existing.farmId }) },
       data: updateData,
     })
 
