@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { readUserIdCookie } from '@/lib/user-id-cookie'
 import { prisma } from '@/lib/prisma'
 import { parseCropOutcome } from '@/lib/crops/outcome'
 
@@ -14,8 +14,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const userId = await readUserIdCookie()
     if (!userId) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
     }

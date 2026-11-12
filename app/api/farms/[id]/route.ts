@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { readUserIdCookie } from '@/lib/user-id-cookie'
 import { prisma } from '@/lib/prisma'
 import { farmDeleteBlockMessage } from '@/lib/farms/delete-guard'
 import { parseFarmInput } from '@/lib/farms/input'
@@ -11,8 +11,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const userId = await readUserIdCookie()
 
     if (!userId) {
       return NextResponse.json(
@@ -58,8 +57,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const userId = await readUserIdCookie()
     if (!userId) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
     }

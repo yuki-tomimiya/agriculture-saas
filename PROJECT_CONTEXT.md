@@ -123,6 +123,7 @@ lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth
 ## 開発時の注意
 
 - 未ログイン: `getCurrentUser()` → `redirect('/auth/signin')`
+- 利用者IDのCookieの読み取り: `lib/user-id-cookie.ts` の `readUserIdCookie()`
 - 起動: `npm run dev` または `アプリを起動.bat`（`http://127.0.0.1:3000`）。LANから確認するときは `npm run dev:lan`
 - テスト: `npm test`（`tests/` 内の `.test.ts`・`.test.tsx`）。コードの確認: `npm run lint`（`.eslintrc.json`）
 - ビルド: `npm run build`。前に `scripts/check-build-port.mjs` が3000番ポートを確認する

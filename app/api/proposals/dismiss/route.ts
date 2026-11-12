@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { readUserIdCookie } from '@/lib/user-id-cookie'
 import { prisma } from '@/lib/prisma'
 import { proposalRemindAfter } from '@/lib/proposals/dismissal'
 import { PROPOSAL_DISMISS_DAYS, SEASON_FINISH_DISMISS_DAYS, SEASON_FINISH_TRIGGER } from '@/lib/proposals/constants'
@@ -8,8 +8,7 @@ import { isMilestoneTrigger } from '@/lib/proposals/milestones'
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const userId = await readUserIdCookie()
     if (!userId) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
     }

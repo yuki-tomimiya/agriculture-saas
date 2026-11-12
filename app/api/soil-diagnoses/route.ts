@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { readUserIdCookie } from '@/lib/user-id-cookie'
 import { prisma } from '@/lib/prisma'
 import { parseOptionalNumber, removeSoilPhoto, saveSoilPhoto } from '@/lib/soil-diagnosis'
 import { SOIL_TIMING_BEFORE, SOIL_TIMING_DURING } from '@/lib/benchmarks/soil-nutrients'
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const userId = await readUserIdCookie()
     if (!userId) {
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
     }

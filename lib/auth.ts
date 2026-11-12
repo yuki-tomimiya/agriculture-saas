@@ -1,11 +1,10 @@
-import { cookies } from 'next/headers'
 import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
+import { readUserIdCookie } from './user-id-cookie'
 
 export async function getCurrentUser() {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const userId = await readUserIdCookie()
 
     if (!userId) {
       return null

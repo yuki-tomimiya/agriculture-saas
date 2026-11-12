@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { readUserIdCookie } from '@/lib/user-id-cookie'
 import { readFile } from 'fs/promises'
 import { prisma } from '@/lib/prisma'
 import { removeSoilPhoto, soilPhotoAbsolutePath, soilPhotoContentType } from '@/lib/soil-diagnosis'
@@ -7,8 +7,7 @@ import { removeSoilPhoto, soilPhotoAbsolutePath, soilPhotoContentType } from '@/
 type RouteContext = { params: Promise<{ id: string }> }
 
 export async function GET(_request: NextRequest, context: RouteContext) {
-  const cookieStore = await cookies()
-  const userId = cookieStore.get('userId')?.value
+  const userId = await readUserIdCookie()
   if (!userId) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
   }
@@ -35,8 +34,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
 }
 
 export async function DELETE(_request: NextRequest, context: RouteContext) {
-  const cookieStore = await cookies()
-  const userId = cookieStore.get('userId')?.value
+  const userId = await readUserIdCookie()
   if (!userId) {
     return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
   }

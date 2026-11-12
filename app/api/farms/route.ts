@@ -1,13 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { readUserIdCookie } from '@/lib/user-id-cookie'
 import type { Farm } from '@prisma/client'
 import { parseFarmInput } from '@/lib/farms/input'
 import { farmSoilService } from '@/lib/farm-soil'
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies()
-    const userId = cookieStore.get('userId')?.value
+    const userId = await readUserIdCookie()
 
     if (!userId) {
       return NextResponse.json(

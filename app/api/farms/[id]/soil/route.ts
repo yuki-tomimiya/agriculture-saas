@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { readUserIdCookie } from '@/lib/user-id-cookie'
 import { farmSoilService } from '@/lib/farm-soil'
 import { FarmSoilError } from '@/lib/farm-soil/service'
 import { MANUAL_SOIL_OPTIONS, SOIL_OPTIONS_SOURCE } from '@/lib/farm-soil/options'
@@ -12,7 +12,7 @@ function failure(error: unknown) {
 }
 export async function GET(_request: NextRequest, { params }: Context) {
   try {
-    const userId = (await cookies()).get('userId')?.value
+    const userId = await readUserIdCookie()
     if (!userId) return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
     const { id } = await params
     const { farm, effective } = await farmSoilService.getOwned(userId, id)
@@ -21,7 +21,7 @@ export async function GET(_request: NextRequest, { params }: Context) {
 }
 export async function PATCH(request: NextRequest, { params }: Context) {
   try {
-    const userId = (await cookies()).get('userId')?.value
+    const userId = await readUserIdCookie()
     if (!userId) return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
     const { id } = await params
     const body = await request.json()

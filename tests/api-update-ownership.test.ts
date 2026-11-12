@@ -42,10 +42,10 @@ async function testDatabase(t: TestContext) {
 
 type Update = (request: NextRequest, context: { params: Promise<{ id: string }> }) => Promise<Response>
 
-function update(handler: Update, method: 'PATCH' | 'PUT', id: string, body: object) {
+function update(handler: Update, method: 'PATCH' | 'PUT', id: string, body: object, cookie = 'userId=owner') {
   const request = new NextRequest(`http://localhost/api/test/${id}`, {
     method,
-    headers: { cookie: 'userId=owner', 'content-type': 'application/json' },
+    headers: { cookie, 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
   return requestAsyncStorage.run({ cookies: request.cookies }, () => handler(request, { params: Promise.resolve({ id }) }))
@@ -92,6 +92,17 @@ test('更新APIは変更先の農場・作付けの持ち主を確かめる', as
   })
   const fertilizerLinks = () => db.fertilizerRecord.findUniqueOrThrow({
     where: { id: fertilizer.id }, select: { cropId: true, farmId: true },
+  })
+
+  await t.test('userIdのCookieが無ければ更新APIは従来の401を返す', async () => {
+    const results = await Promise.all([
+      update(patchCrop, 'PATCH', 'crop-a', {}, ''),
+      update(putFertilizer, 'PUT', fertilizer.id, {}, ''),
+    ])
+    for (const response of results) {
+      assert.equal(response.status, 401)
+      assert.deepEqual(await response.json(), { error: 'ログインが必要です' })
+    }
   })
 
   await t.test('品目を送らなくても別の利用者の農場に移せない', async () => {
