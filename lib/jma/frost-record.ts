@@ -114,11 +114,11 @@ async function stationRows(blockNo: string, today = new Date()) {
   })
 }
 
-export async function readFarmFrost(point?: Partial<WeatherPoint>): Promise<FrostOrigin | null> {
+export async function readFarmFrost(point?: Partial<WeatherPoint>, now = new Date()): Promise<FrostOrigin | null> {
   const pick = await chooseStation(point)
   if (pick?.usable) {
-    const rows = await stationRows(pick.station.blockNo)
-    const read = readStationFrost(rows)
+    const rows = await stationRows(pick.station.blockNo, now)
+    const read = readStationFrost(rows, now)
     if (read.kind === 'none') return null
     if (read.kind === 'station') {
       return {
@@ -131,7 +131,7 @@ export async function readFarmFrost(point?: Partial<WeatherPoint>): Promise<Fros
       }
     }
   }
-  const archive = await loadLocationArchive(point)
+  const archive = await loadLocationArchive(point, now)
   if (!archive?.tempMin) return null
   const summary = summarizeAutumnFirstFrost(archive.times, archive.tempMin)
   if (!summary) return null
@@ -359,7 +359,7 @@ export function stationArchive(rows: { date: string; tMin: number | null }[]): L
   }
 }
 
-export async function readCoolNight(point?: Partial<WeatherPoint>): Promise<{
+export async function readCoolNight(point?: Partial<WeatherPoint>, now = new Date()): Promise<{
   date: CoolNightDate | null
   source: 'station' | 'estimate'
   stationName: string | null
@@ -367,7 +367,7 @@ export async function readCoolNight(point?: Partial<WeatherPoint>): Promise<{
 }> {
   const pick = await chooseStation(point)
   if (pick?.usable) {
-    const rows = await stationRows(pick.station.blockNo)
+    const rows = await stationRows(pick.station.blockNo, now)
     if (rows.length > 0) {
       const date = firstMeanMinBelow(stationArchive(rows))
       return {
@@ -378,7 +378,7 @@ export async function readCoolNight(point?: Partial<WeatherPoint>): Promise<{
       }
     }
   }
-  const archive = await loadLocationArchive(point)
+  const archive = await loadLocationArchive(point, now)
   return {
     date: archive ? firstMeanMinBelow(archive) : null,
     source: 'estimate',

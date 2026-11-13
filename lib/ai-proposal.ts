@@ -10,6 +10,7 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed, listActiveDismissals } from '@/lib/proposals/dismissal'
 import { isFrostTrigger } from '@/lib/proposals/frost'
+import { liveProposalWeather, type ProposalWeather } from '@/lib/proposals/weather'
 import { scoreGrowingCrops, type ProposalCropLine, type ProposalMilestoneContext, type ProposalUrgency } from '@/lib/proposals/scoring'
 
 export type ProposalType = 'task_due' | 'schedule' | 'weather'
@@ -46,24 +47,16 @@ export type Proposal = {
   }
 }
 
-function getTodayStart(): Date {
-  const d = new Date()
+function getTodayStart(now: Date): Date {
+  const d = new Date(now)
   d.setHours(0, 0, 0, 0)
   return d
 }
 
-function getTomorrowStart(): Date {
-  const d = new Date()
-  d.setDate(d.getDate() + 1)
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
-function daysSince(date: Date | null): number | null {
+function daysSince(date: Date | null, today: Date): number | null {
   if (!date) return null
   const start = new Date(date)
   start.setHours(0, 0, 0, 0)
-  const today = getTodayStart()
   const diff = Math.floor((today.getTime() - start.getTime()) / (24 * 60 * 60 * 1000))
   return diff >= 0 ? diff : null
 }
@@ -81,10 +74,14 @@ function pushProposal(
 /**
  * 3層（あなた / 地域 / 一般）→ 結論 のルールベース「今日の提案」
  */
-export async function getTodayProposals(userId: string): Promise<Proposal[]> {
+export async function getTodayProposals(
+  userId: string,
+  { now = new Date(), weather = liveProposalWeather }: { now?: Date; weather?: ProposalWeather } = {},
+): Promise<Proposal[]> {
   const proposals: Proposal[] = []
-  const todayStart = getTodayStart()
-  const tomorrowStart = getTomorrowStart()
+  const todayStart = getTodayStart(now)
+  const tomorrowStart = new Date(todayStart)
+  tomorrowStart.setDate(tomorrowStart.getDate() + 1)
 
   const defaultFarm = await prisma.farm.findFirst({
     where: { userId, latitude: { not: null }, longitude: { not: null } },
@@ -133,11 +130,12 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
       farmName: task.farm.name,
     }
     const [regional, general, personal] = await Promise.all([
-      buildRegionalLayer(point.latitude != null ? point : defaultPoint),
+      buildRegionalLayer(point.latitude != null ? point : defaultPoint, now, weather),
       Promise.resolve(
         buildGeneralLayer(task.crop?.name, task.crop?.variety, {
-          daysSincePlanting: daysSince(task.crop?.plantingDate ?? null),
+          daysSincePlanting: daysSince(task.crop?.plantingDate ?? null, todayStart),
           milestones: task.cropId ? milestonesByCrop.get(task.cropId) : undefined,
+          today: todayStart,
         })
       ),
       buildPersonalLayerForTask({
@@ -148,6 +146,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
         cropName: task.crop?.name,
         cropId: task.cropId,
         isOverdue: !!isOverdue,
+        now,
       }),
     ])
     const conclusion = isOverdue
@@ -165,7 +164,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
       relatedFarmName: task.farm.name,
       relatedCropId: task.cropId ?? undefined,
       relatedCropName: task.crop?.name,
-      daysSincePlanting: daysSince(task.crop?.plantingDate ?? null) ?? undefined,
+      daysSincePlanting: daysSince(task.crop?.plantingDate ?? null, todayStart) ?? undefined,
       priority: isOverdue ? 'high' : 'medium',
       urgency: 'today',
       trigger: 'task-due',
@@ -174,8 +173,8 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
   }
 
   // --- 2. 栽培中の全作物を採点 ---
-  const dismissed = await listActiveDismissals(userId)
-  const scored = await scoreGrowingCrops(userId, todayStart, dismissed)
+  const dismissed = await listActiveDismissals(userId, now)
+  const scored = await scoreGrowingCrops(userId, todayStart, dismissed, { now, weather })
   for (const card of scored) {
     pushProposal(proposals, {
       id: card.id,
@@ -198,7 +197,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
     })
   }
 
-  const lastYear = await getLastYearSameDayWorkSummary(userId)
+  const lastYear = await getLastYearSameDayWorkSummary(userId, { now })
   if (lastYear.summaryLine && !proposals.some((item) => item.layers.personal?.includes('昨年同日'))) {
     pushProposal(proposals, {
       id: 'last-year-same-day',
@@ -206,7 +205,7 @@ export async function getTodayProposals(userId: string): Promise<Proposal[]> {
       title: '昨年同日の作業があります',
       layers: mergeLayers({
         personal: lastYear.summaryLine,
-        regional: await buildRegionalLayer(defaultPoint),
+        regional: await buildRegionalLayer(defaultPoint, now, weather),
         general: null,
         conclusion: 'カレンダーの昨年表示と照らし、今年も同じ作業が必要か判断しましょう。',
       }),

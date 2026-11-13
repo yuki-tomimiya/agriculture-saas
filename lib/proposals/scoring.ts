@@ -32,9 +32,10 @@ import { resolveCropStage } from '@/lib/proposals/stages'
 import { formatSoilPhRange, matchedSoilPh, soilPhSignal } from '@/lib/benchmarks/soil-ph'
 import { SOIL_TIMING_DURING, soilNutrientHits, soilNutrientAdvice } from '@/lib/benchmarks/soil-nutrients'
 import { soilClassificationForFarm, soilNutrientTrigger } from '@/lib/farm-soil/classification'
-import { getAccumulatedGDDFromApi, getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
-import { loadLocationArchive, type LocationArchive } from '@/lib/weather-normals'
-import { readCoolNight, readFarmFrost, type FrostOrigin } from '@/lib/jma/frost-record'
+import { hasWeatherCoordinates, type ForecastDay } from '@/lib/weather-forecast'
+import type { LocationArchive } from '@/lib/weather-normals'
+import type { FrostOrigin } from '@/lib/jma/frost-record'
+import { liveProposalWeather, type ProposalWeather } from '@/lib/proposals/weather'
 import { JMA_SEARCH_TOP } from '@/lib/jma/thresholds'
 import { formatKm } from '@/lib/jma/stations'
 import {
@@ -450,7 +451,8 @@ function pickHit(hits: Hit[]): Hit | null {
 export async function scoreGrowingCrops(
   userId: string,
   today: Date,
-  dismissed: { trigger: string; cropId: string | null }[] = []
+  dismissed: { trigger: string; cropId: string | null }[] = [],
+  { now = today, weather = liveProposalWeather }: { now?: Date; weather?: ProposalWeather } = {},
 ): Promise<ScoredProposal[]> {
   const crops = await prisma.crop.findMany({
     where: {
@@ -489,7 +491,7 @@ export async function scoreGrowingCrops(
       coolSource: 'station' | 'estimate'
       coolStationName: string | null
       coolDistanceKm: number | null
-      forecast: Awaited<ReturnType<typeof getForecastDays>>
+      forecast: ForecastDay[]
       archive: LocationArchive | null
     }
   >()
@@ -504,11 +506,11 @@ export async function scoreGrowingCrops(
           latitude: farm.latitude,
           longitude: farm.longitude,
           farmName: farm.name,
-        }),
-        readFarmFrost(point),
-        readCoolNight(point),
-        getForecastDays(point),
-        loadLocationArchive(point),
+        }, now, weather),
+        weather.frost(point, now),
+        weather.coolNight(point, now),
+        weather.forecast(point, now),
+        weather.archive(point, now),
       ])
       climateByFarm.set(farm.id, {
         frost,
@@ -524,9 +526,9 @@ export async function scoreGrowingCrops(
   )
   const regionalByFarm = new Map(regionalEntries)
   const needsFallback = crops.some((crop) => !crop.farm || !hasWeatherCoordinates(crop.farm))
-  const fallbackRegional = needsFallback ? await buildRegionalLayer(undefined) : null
+  const fallbackRegional = needsFallback ? await buildRegionalLayer(undefined, now, weather) : null
 
-  const harvestSamples = await loadHarvestSamples(userId)
+  const harvestSamples = await loadHarvestSamples(userId, weather.accumulatedGdd)
   const measured = await Promise.all(
     crops.map(async (crop) => {
       if (!crop.plantingDate || !crop.farm || !hasWeatherCoordinates(crop.farm)) {
@@ -536,7 +538,7 @@ export async function scoreGrowingCrops(
       const view = pickHarvestBasis(harvestSamples, crop).view
       const currentGDD = view.status === 'days'
         ? null
-        : await getAccumulatedGDDFromApi({
+        : await weather.accumulatedGdd({
             startDate: view.status === 'active'
               ? gddStartDate(view, new Date(crop.plantingDate))
               : new Date(crop.plantingDate),
@@ -912,6 +914,7 @@ export async function scoreGrowingCrops(
         growingSite: crop.growingSite,
         plantingDate: crop.plantingDate,
         farmName,
+        now,
       }),
       Promise.resolve(
         buildGeneralLayerDetails(matchName, matchVariety, {

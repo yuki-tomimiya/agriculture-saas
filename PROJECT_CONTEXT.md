@@ -60,6 +60,8 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 | 領域 | パス |
 |------|------|
 | 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。終了確認の日数は台帳 I2）, `lib/proposals/presentation.ts`（ダッシュボードと今日の提案の表示区分）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
+| 提案の日付と天気 | `getTodayProposals(userId, { now, weather })`（`lib/ai-proposal.ts`）、気象の取得口は `lib/proposals/weather.ts` |
+| 提案の答え合わせ | `tests/today-proposals.test.ts` と `tests/fixtures/today-proposals/`。3つの形は `scripts/proposal-check-scenarios.ts` |
 | 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`（台帳 B7）, `lib/proposals/frost.ts`（さつまいもの霜の締切・春の霜の終わり。台帳 D9） |
 | 天気の保存・出典 | 過去の天気の保存は `lib/open-meteo/archive.ts` → `OpenMeteoDaily`（取り直しは台帳 I14）。実績・予報の日平均は `lib/weather-forecast.ts`（台帳 A1・B7）。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。取り先の住所は `lib/open-meteo/url.ts`（`OPEN_METEO_API_KEY` で契約者用へ）、取得は `lib/open-meteo/fetch.ts`（台帳 I14）。出典の表示は `components/WeatherDataSource.tsx`（気象庁用も共通。出典の扱いは台帳 A3） |
 | 植える条件 | `lib/benchmarks/planting-conditions.ts`（台帳 D10。霜の注意の対象は同じ表の `lateFrostAdvice`、台帳 D11）。登録画面は `components/CropForm.tsx`、来年の計画は `lib/insights/next-year-plan.ts`、農場詳細は `components/FarmPlantingConditions.tsx`。遅霜のカードは `lib/proposals/scoring.ts` |

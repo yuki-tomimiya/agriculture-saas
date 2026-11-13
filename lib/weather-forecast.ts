@@ -35,13 +35,13 @@ function labelFromDateString(ymd: string): string {
 }
 
 /** Asia/Tokyo の今日（YYYY-MM-DD）。サーバーTZに依存しない */
-function tokyoTodayYmd(): string {
+function tokyoTodayYmd(now = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Tokyo',
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(new Date())
+  }).format(now)
 }
 
 function addDaysToYmd(ymd: string, days: number): string {
@@ -82,7 +82,7 @@ export function hasWeatherCoordinates(
   return Number.isFinite(latitude) && Number.isFinite(longitude)
 }
 
-export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<ForecastDay[]> {
+export async function getForecastDays(point?: Partial<WeatherPoint>, now = new Date()): Promise<ForecastDay[]> {
   if (!hasWeatherCoordinates(point)) {
     return []
   }
@@ -91,7 +91,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>): Promise<Fo
     longitude: Number(point!.longitude),
   }
   // 日付をURLに含め、日をまたいだ古いキャッシュを使わない
-  const todayYmd = tokyoTodayYmd()
+  const todayYmd = tokyoTodayYmd(now)
   const params = new URLSearchParams({
     latitude: String(p.latitude),
     longitude: String(p.longitude),

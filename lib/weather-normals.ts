@@ -37,9 +37,9 @@ const archiveInflight = new Map<string, Promise<LocationArchive | null>>()
  * 地点の過去10年（昨年まで）を1回で取る。平年値と初霜が同じ応答を使う。
  * 失敗したときは null。
  */
-export function loadLocationArchive(point?: Partial<WeatherPoint>): Promise<LocationArchive | null> {
+export function loadLocationArchive(point?: Partial<WeatherPoint>, now = new Date()): Promise<LocationArchive | null> {
   if (!hasWeatherCoordinates(point)) return Promise.resolve(null)
-  const endYear = new Date().getFullYear() - 1
+  const endYear = now.getFullYear() - 1
   const startYear = endYear - 9
   const latitude = Number(point!.latitude)
   const longitude = Number(point!.longitude)
@@ -77,7 +77,10 @@ async function fetchLocationArchive(
 export async function getLocationDailyNormals(
   point?: Partial<WeatherPoint>
 ): Promise<Map<string, DayNormal> | null> {
-  const archive = await loadLocationArchive(point)
+  return dailyNormalsFromArchive(await loadLocationArchive(point))
+}
+
+export function dailyNormalsFromArchive(archive: LocationArchive | null): Map<string, DayNormal> | null {
   if (!archive) return null
   const { times, precip, radiation, tempMean: temps, tempMax: maxes } = archive
 

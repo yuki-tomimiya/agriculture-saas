@@ -3,7 +3,7 @@ import {
   getHistoricalDailyPrecipitation,
   hasWeatherCoordinates,
 } from '@/lib/weather-forecast'
-import { getLocationDailyNormals, sumNormalPrecip, loadLocationArchive } from '@/lib/weather-normals'
+import { dailyNormalsFromArchive, sumNormalPrecip, loadLocationArchive } from '@/lib/weather-normals'
 import { annualPeriodTotals, tenYearClass } from '@/lib/insights/ten-year-classes'
 import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
 
@@ -158,10 +158,18 @@ export async function getRegionalRainSummary(args: {
   longitude?: number | null
   farmId?: string | null
   farmName?: string | null
-}): Promise<RegionalRainSummary | null> {
+}, {
+  now = new Date(),
+  precipitation = getHistoricalDailyPrecipitation,
+  archive: loadArchive = loadLocationArchive,
+}: {
+  now?: Date
+  precipitation?: typeof getHistoricalDailyPrecipitation
+  archive?: typeof loadLocationArchive
+} = {}): Promise<RegionalRainSummary | null> {
   if (!hasWeatherCoordinates(args)) return null
 
-  const { year, month, day } = tokyoParts()
+  const { year, month, day } = tokyoParts(now)
   const dayOfMonth = compareDayOfMonth(year, month, day)
 
   const thisStart = dateAtTokyo(year, month, 1)
@@ -174,12 +182,12 @@ export async function getRegionalRainSummary(args: {
     longitude: Number(args.longitude),
   }
 
-  const [thisRows, lastRows, normals, archive] = await Promise.all([
-    getHistoricalDailyPrecipitation({ startDate: thisStart, endDate: thisEnd, point }),
-    getHistoricalDailyPrecipitation({ startDate: lastStart, endDate: lastEnd, point }),
-    getLocationDailyNormals(point),
-    loadLocationArchive(point),
+  const [thisRows, lastRows, archive] = await Promise.all([
+    precipitation({ startDate: thisStart, endDate: thisEnd, point }),
+    precipitation({ startDate: lastStart, endDate: lastEnd, point }),
+    loadArchive(point, now),
   ])
+  const normals = dailyNormalsFromArchive(archive)
 
   const thisYearMm = thisRows.length > 0 ? sumMm(thisRows) : null
   const lastYearMm = lastRows.length > 0 ? sumMm(lastRows) : null
@@ -258,7 +266,7 @@ export async function getRegionalMonthlyLine(point?: {
   latitude?: number | null
   longitude?: number | null
   farmName?: string | null
-}): Promise<string | null> {
-  const summary = await getRegionalRainSummary(point ?? {})
+}, options?: Parameters<typeof getRegionalRainSummary>[1]): Promise<string | null> {
+  const summary = await getRegionalRainSummary(point ?? {}, options)
   return summary?.shortLine ?? null
 }

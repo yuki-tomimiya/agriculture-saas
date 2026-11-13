@@ -3,7 +3,8 @@ import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops
 import { getRegionalMonthlyLine } from '@/lib/insights/regional-context'
 import { milestoneGeneralAdvice } from '@/lib/proposals/milestones'
 import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/lib/proposals/stages'
-import { getForecastDays, hasWeatherCoordinates } from '@/lib/weather-forecast'
+import { hasWeatherCoordinates } from '@/lib/weather-forecast'
+import { liveProposalWeather, type ProposalWeather } from '@/lib/proposals/weather'
 import { LAST_YEAR_SAME_DAY_WINDOW_DAYS } from '@/lib/proposals/constants'
 import { FORECAST_RAIN_HIGHLIGHT_PCT, FORECAST_WIND_HIGHLIGHT_MS } from '@/lib/weather-thresholds'
 
@@ -20,12 +21,6 @@ export type LastYearSameDaySummary = {
   summaryLine: string | null
 }
 
-function getTodayStart(): Date {
-  const d = new Date()
-  d.setHours(0, 0, 0, 0)
-  return d
-}
-
 function addDays(date: Date, days: number): Date {
   const d = new Date(date)
   d.setDate(d.getDate() + days)
@@ -33,11 +28,11 @@ function addDays(date: Date, days: number): Date {
   return d
 }
 
-function daysSincePlanting(plantingDate: Date | null): number | null {
+function daysSincePlanting(plantingDate: Date | null, now: Date): number | null {
   if (!plantingDate) return null
   const start = new Date(plantingDate)
   start.setHours(0, 0, 0, 0)
-  const today = getTodayStart()
+  const today = addDays(now, 0)
   const diff = Math.floor((today.getTime() - start.getTime()) / (24 * 60 * 60 * 1000))
   return diff >= 0 ? diff : null
 }
@@ -53,10 +48,11 @@ export async function getLastYearSameDayWorkSummary(
     cropId?: string | null
     /** 前年同日の前後何日を含めるか */
     windowDays?: number
+    now?: Date
   }
 ): Promise<LastYearSameDaySummary> {
   const windowDays = options?.windowDays ?? LAST_YEAR_SAME_DAY_WINDOW_DAYS
-  const today = getTodayStart()
+  const today = addDays(options?.now ?? new Date(), 0)
   const lastYearAnchor = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate())
   // 2/29 → 非うるう年はスキップ（カレンダーと同趣旨）
   if (lastYearAnchor.getMonth() !== today.getMonth()) {
@@ -183,21 +179,21 @@ export async function buildRegionalLayer(point?: {
   latitude?: number | null
   longitude?: number | null
   farmName?: string | null
-}): Promise<string | null> {
+}, now = new Date(), weather: ProposalWeather = liveProposalWeather): Promise<string | null> {
   if (!hasWeatherCoordinates(point)) {
     return '農場に緯度・経度を登録すると、この地域の天候を根拠に提案できます。'
   }
 
   const [forecast, monthlyLine] = await Promise.all([
-    getForecastDays({
+    weather.forecast({
       latitude: Number(point!.latitude),
       longitude: Number(point!.longitude),
-    }),
+    }, now),
     getRegionalMonthlyLine({
       latitude: point!.latitude,
       longitude: point!.longitude,
       farmName: point!.farmName,
-    }),
+    }, { now, precipitation: weather.precipitation, archive: weather.archive }),
   ])
 
   let forecastLine: string | null = null
@@ -228,8 +224,9 @@ export async function buildPersonalLayerForCrop(args: {
   growingSite?: string | null
   plantingDate: Date | null
   farmName: string
+  now?: Date
 }): Promise<string | null> {
-  const days = daysSincePlanting(args.plantingDate)
+  const days = daysSincePlanting(args.plantingDate, args.now ?? new Date())
   const parts: string[] = []
 
   if (days !== null && args.plantingDate) {
@@ -290,6 +287,7 @@ export async function buildPersonalLayerForCrop(args: {
   const lastYear = await getLastYearSameDayWorkSummary(args.userId, {
     farmId: args.farmId,
     cropId: args.cropId,
+    now: args.now,
   })
   if (lastYear.summaryLine) {
     const phenologySet = new Set(phenologyLabels)
@@ -315,6 +313,7 @@ export async function buildPersonalLayerForTask(args: {
   cropName?: string | null
   cropId?: string | null
   isOverdue: boolean
+  now?: Date
 }): Promise<string> {
   const cropPart = args.cropName ? ` / ${args.cropName}` : ''
   const base = args.isOverdue
@@ -324,6 +323,7 @@ export async function buildPersonalLayerForTask(args: {
   const lastYear = await getLastYearSameDayWorkSummary(args.userId, {
     farmId: args.farmId,
     cropId: args.cropId,
+    now: args.now,
   })
   if (lastYear.summaryLine) {
     return `${base} ${lastYear.summaryLine}`

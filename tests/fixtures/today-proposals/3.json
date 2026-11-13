@@ -1,0 +1,42 @@
+[
+  {
+    "title": "今日が期限のタスクがあります",
+    "trigger": "task-due",
+    "urgency": "today",
+    "group": "今日やること",
+    "crop": "確認用 トマト",
+    "farm": "確認用 位置未登録の農場",
+    "layers": {
+      "personal": "「確認用 誘引の締切」（確認用 位置未登録の農場 / 確認用 トマト）が今日が期限です。 昨年同日（前後2日含む）は「誘引」を実施しています。",
+      "regional": "農場に緯度・経度を登録すると、この地域の天候を根拠に提案できます。",
+      "general": "第1花房が咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。",
+      "conclusion": "今日中に着手・完了を目指しましょう。"
+    }
+  },
+  {
+    "title": "1件の農場で、都道府県か市区町村が未入力です",
+    "trigger": "place-missing",
+    "urgency": "today",
+    "group": "確認したいこと",
+    "layers": {
+      "personal": null,
+      "regional": null,
+      "general": null,
+      "conclusion": "都道府県と市区町村を選んでください（県の発生予察や、これからの地域の情報に使います）"
+    }
+  },
+  {
+    "title": "いちばん下の花のかたまり（第1花房）が咲きましたか？",
+    "trigger": "milestone:flower-1st",
+    "urgency": "today",
+    "group": "確認したいこと",
+    "crop": "確認用 トマト",
+    "farm": "確認用 位置未登録の農場",
+    "layers": {
+      "personal": null,
+      "regional": null,
+      "general": "咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。",
+      "conclusion": "咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。"
+    }
+  }
+]
