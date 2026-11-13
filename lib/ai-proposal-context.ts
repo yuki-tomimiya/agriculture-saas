@@ -318,7 +318,7 @@ export async function buildPersonalLayerForTask(args: {
   const cropPart = args.cropName ? ` / ${args.cropName}` : ''
   const base = args.isOverdue
     ? `「${args.title}」（${args.farmName}${cropPart}）の期限を過ぎています。`
-    : `「${args.title}」（${args.farmName}${cropPart}）が今日が期限です。`
+    : `「${args.title}」（${args.farmName}${cropPart}）の期限は今日です。`
 
   const lastYear = await getLastYearSameDayWorkSummary(args.userId, {
     farmId: args.farmId,

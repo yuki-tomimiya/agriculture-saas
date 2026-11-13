@@ -56,6 +56,8 @@ export type SweetPotatoFrost = {
   trigger: typeof FROST_FORECAST_TRIGGER | typeof FROST_SEASON_TRIGGER
   urgency: 'today' | 'thisWeek'
   title: string
+  reason: string
+  deadline?: string
   conclusion: string
   harvestOutlook?: { text: string; windowText: string | null }
   /** 同じ作付けの別カードの【一般】に添える一文 */
@@ -133,6 +135,8 @@ export function assessSweetPotatoFrost(args: {
       trigger: FROST_FORECAST_TRIGGER,
       urgency: withinWeek ? 'today' : 'thisWeek',
       title: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です`,
+      reason: `${when}の最低気温は${temp}℃の計算です（数値予報モデル）。`,
+      deadline: upcoming.date,
       conclusion: forecastConclusion(args.hasSeenRoots),
       generalLine: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です。霜のおそれがあるので、${args.hasSeenRoots ? 'その前に掘り上げます' : 'まず試し掘りで太りを確かめて、その前に掘り上げます'}。${FORECAST_FROST_NOTE}`,
       sourceLine: baseSourceLine(),
@@ -144,6 +148,7 @@ export function assessSweetPotatoFrost(args: {
   const frost = origin.summary
   if (daysUntilMonthDay(args.today, frost.earliest) > SEASON_LEAD_DAYS) return null
   const when = frostWhen(origin)
+  const reason = `過去10年で、最低気温が最も早く4℃以下になったのは${formatMonthDay(frost.earliest)}です（${origin.source === 'station' ? '観測' : '推計'}）。`
   const note = origin.source === 'station' ? STATION_FROST_NOTE : FORECAST_FROST_NOTE
   const action = digLine(args.hasSeenRoots)
   const window = args.harvestWindow
@@ -159,6 +164,7 @@ export function assessSweetPotatoFrost(args: {
       trigger: FROST_SEASON_TRIGGER,
       urgency: 'thisWeek',
       title: '霜の前に収穫を考えましょう',
+      reason,
       conclusion: `${when}。${action}。`,
       harvestOutlook: { text: outlook, windowText },
       generalLine: `${outlook}${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。${note}`,
@@ -172,6 +178,7 @@ export function assessSweetPotatoFrost(args: {
     trigger: FROST_SEASON_TRIGGER,
     urgency: 'thisWeek',
     title: when,
+    reason,
     conclusion: `見込みの時期より先に霜が来る年があります。${action}。`,
     harvestOutlook: { text: outlook, windowText },
     generalLine: `${when}。${outlook}見込みの時期より先に霜が来る年があります。${after}。${note}`,
@@ -183,6 +190,8 @@ export type SpringLateFrost = {
   trigger: typeof SPRING_FROST_TRIGGER
   urgency: 'today' | 'thisWeek'
   title: string
+  reason: string
+  deadline: string
   conclusion: string
   generalLine: string
   sourceLine: string
@@ -209,6 +218,8 @@ export function assessSpringLateFrost(args: {
     trigger: SPRING_FROST_TRIGGER,
     urgency: withinWeek ? 'today' : 'thisWeek',
     title: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です`,
+    reason: `${when}の最低気温は${temp}℃の計算です（数値予報モデル）。`,
+    deadline: upcoming.date,
     conclusion,
     generalLine: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です。霜のおそれがあります。${LATE_FROST_COVER}${hill}${FORECAST_FROST_NOTE}`,
     sourceLine: `出典：${LATE_FROST_SOURCE}。`,

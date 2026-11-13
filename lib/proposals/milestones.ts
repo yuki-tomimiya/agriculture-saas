@@ -80,6 +80,8 @@ export type MilestoneAsk = {
   sourceLabel: string
   howTo: string[]
   yesLabel: string
+  windowNote: string
+  reason: string
 }
 
 export type MilestoneFaqRow = {
@@ -569,7 +571,7 @@ function recordedOf(records: MilestoneRecord[], key: string): MilestoneRecord | 
   return records.find((record) => record.key === key)
 }
 
-export function pickMilestoneAsk(input: {
+type MilestoneAskInput = {
   cropName: string
   plantingMethod?: string | null
   variety?: string | null
@@ -578,7 +580,9 @@ export function pickMilestoneAsk(input: {
   hasHarvest?: boolean
   records: { key: string }[]
   hiddenKeys?: string[]
-}): MilestoneAsk | null {
+}
+
+export function* eligibleMilestoneAsks(input: MilestoneAskInput): Generator<MilestoneAsk, void> {
   const hidden = new Set(input.hiddenKeys ?? [])
   const recorded = new Set(input.records.map((record) => record.key))
   for (const item of catalogFor(input.cropName, input.variety)) {
@@ -587,7 +591,7 @@ export function pickMilestoneAsk(input: {
     if (recorded.has(item.key) || hidden.has(item.key)) continue
     if (item.skipWhenHarvest && input.hasHarvest) continue
     if (windowPlace(item.window, input) !== 'inside') continue
-    return {
+    yield {
       key: item.key,
       trigger: milestoneTrigger(item.key),
       question: item.question,
@@ -596,9 +600,16 @@ export function pickMilestoneAsk(input: {
       sourceLabel: item.sourceLabel,
       howTo: item.howTo,
       yesLabel: item.yesLabel,
+      windowNote: item.windowNote,
+      reason: item.window.kind === 'days'
+        ? `植え付けから${input.daysSincePlanting}日で、${item.term}を確かめる時期に入っています。`
+        : `積算温度が、${item.term}を確かめる目安に届いています。`,
     }
   }
-  return null
+}
+
+export function pickMilestoneAsk(input: MilestoneAskInput): MilestoneAsk | null {
+  return eligibleMilestoneAsks(input).next().value ?? null
 }
 
 /**

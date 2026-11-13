@@ -26,7 +26,7 @@ export async function loadPestQuestions(userId: string, now = new Date()) {
         ...cropFields, plantingDate: true,
         pestChecks: { where: { createdAt: { gte: new Date(+now - 29 * 86_400_000) } }, orderBy: { createdAt: 'desc' } },
       },
-      orderBy: { name: 'asc' },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
     }),
     prisma.pestCheck.findMany({
       where: { present: true, observedAt: { gte: since }, crop: owner(userId) },

@@ -11,7 +11,11 @@ import {
 import { isProposalDismissed, listActiveDismissals } from '@/lib/proposals/dismissal'
 import { isFrostTrigger } from '@/lib/proposals/frost'
 import { liveProposalWeather, type ProposalWeather } from '@/lib/proposals/weather'
-import { scoreGrowingCrops, type ProposalCropLine, type ProposalMilestoneContext, type ProposalUrgency } from '@/lib/proposals/scoring'
+import {
+  scoreCrops, type ProposalCropLine, type ProposalMilestoneContext, type ProposalSignal, type ProposalUrgency,
+} from '@/lib/proposals/scoring'
+import type { MilestoneAsk } from '@/lib/proposals/milestones'
+import { formatLocalYmd } from '@/lib/proposals/links'
 
 export type ProposalType = 'task_due' | 'schedule' | 'weather'
 
@@ -36,16 +40,11 @@ export type Proposal = {
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
   lines?: ProposalCropLine[]
   milestoneContext?: ProposalMilestoneContext
-  milestone?: {
-    key: string
-    question: string
-    term: string
-    ifYes: string
-    sourceLabel: string
-    howTo: string[]
-    yesLabel: string
-  }
+  milestone?: MilestoneAsk
+  signal?: ProposalSignal
 }
+
+export type ProposalOptions = { now?: Date; weather?: ProposalWeather }
 
 function getTodayStart(now: Date): Date {
   const d = new Date(now)
@@ -76,14 +75,22 @@ function pushProposal(
  */
 export async function getTodayProposals(
   userId: string,
-  { now = new Date(), weather = liveProposalWeather }: { now?: Date; weather?: ProposalWeather } = {},
+  options: ProposalOptions = {},
 ): Promise<Proposal[]> {
+  return (await loadProposalCandidates(userId, options)).proposals
+}
+
+export async function loadProposalCandidates(
+  userId: string,
+  { now = new Date(), weather = liveProposalWeather }: ProposalOptions,
+  confirmations = false,
+) {
   const proposals: Proposal[] = []
   const todayStart = getTodayStart(now)
   const tomorrowStart = new Date(todayStart)
   tomorrowStart.setDate(tomorrowStart.getDate() + 1)
 
-  const defaultFarm = await prisma.farm.findFirst({
+  const defaultFarm = confirmations ? null : await prisma.farm.findFirst({
     where: { userId, latitude: { not: null }, longitude: { not: null } },
   })
   const defaultPoint = defaultFarm
@@ -99,11 +106,11 @@ export async function getTodayProposals(
     where: {
       farm: { userId },
       status: { in: ['pending', 'in_progress'] },
-      dueDate: { lte: tomorrowStart },
+      dueDate: confirmations ? { lt: tomorrowStart } : { lte: tomorrowStart },
     },
     include: { farm: true, crop: true },
-    orderBy: { dueDate: 'asc' },
-    take: 2,
+    orderBy: confirmations ? [{ dueDate: 'asc' }, { id: 'asc' }] : { dueDate: 'asc' },
+    ...(confirmations ? {} : { take: 2 }),
   })
 
   const taskCropIds = dueTasks
@@ -130,7 +137,7 @@ export async function getTodayProposals(
       farmName: task.farm.name,
     }
     const [regional, general, personal] = await Promise.all([
-      buildRegionalLayer(point.latitude != null ? point : defaultPoint, now, weather),
+      confirmations ? null : buildRegionalLayer(point.latitude != null ? point : defaultPoint, now, weather),
       Promise.resolve(
         buildGeneralLayer(task.crop?.name, task.crop?.variety, {
           daysSincePlanting: daysSince(task.crop?.plantingDate ?? null, todayStart),
@@ -153,12 +160,13 @@ export async function getTodayProposals(
       ? '今日中に対応するか、完了見込みを記録に残しましょう。'
       : '今日中に着手・完了を目指しましょう。'
 
+    const due = task.dueDate ?? todayStart
     pushProposal(proposals, {
       id: `task-${task.id}`,
       type: 'task_due',
       title: isOverdue ? '期限を過ぎたタスクがあります' : '今日が期限のタスクがあります',
       layers: mergeLayers({ personal, regional, general, conclusion }),
-      suggestedDate: task.dueDate ?? todayStart,
+      suggestedDate: due,
       relatedTaskId: task.id,
       relatedFarmId: task.farmId,
       relatedFarmName: task.farm.name,
@@ -168,13 +176,18 @@ export async function getTodayProposals(
       priority: isOverdue ? 'high' : 'medium',
       urgency: 'today',
       trigger: 'task-due',
+      signal: {
+        stage: 'deadline',
+        deadline: formatLocalYmd(due),
+        reason: isOverdue ? `登録した期限（${due.getMonth() + 1}月${due.getDate()}日）を過ぎています。` : '登録した期限は今日です。',
+      },
       action: { kind: 'work', title: task.title },
     })
   }
 
   // --- 2. 栽培中の全作物を採点 ---
   const dismissed = await listActiveDismissals(userId, now)
-  const scored = await scoreGrowingCrops(userId, todayStart, dismissed, { now, weather })
+  const { cards: scored, crops } = await scoreCrops(userId, todayStart, dismissed, { now, weather, confirmations })
   for (const card of scored) {
     pushProposal(proposals, {
       id: card.id,
@@ -190,6 +203,7 @@ export async function getTodayProposals(
       priority: card.urgency === 'today' ? 'high' : card.urgency === 'thisWeek' ? 'medium' : 'low',
       urgency: card.urgency,
       trigger: card.trigger,
+      signal: card.signal,
       action: card.action,
       lines: card.lines,
       milestone: card.milestone,
@@ -205,7 +219,7 @@ export async function getTodayProposals(
       title: '昨年同日の作業があります',
       layers: mergeLayers({
         personal: lastYear.summaryLine,
-        regional: await buildRegionalLayer(defaultPoint, now, weather),
+        regional: confirmations ? null : await buildRegionalLayer(defaultPoint, now, weather),
         general: null,
         conclusion: 'カレンダーの昨年表示と照らし、今年も同じ作業が必要か判断しましょう。',
       }),
@@ -225,7 +239,7 @@ export async function getTodayProposals(
 
   const rank = { today: 3, thisWeek: 2, watch: 1 }
   visible.sort((a, b) => rank[b.urgency] - rank[a.urgency])
-  return visible
+  return { proposals: visible, crops }
 }
 
 export type { ProposalLayers } from '@/lib/ai-proposal-context'

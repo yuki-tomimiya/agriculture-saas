@@ -12,7 +12,7 @@ import {
   type ProposalLayers,
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
-import { isMilestoneTrigger, pickMilestoneAsk } from '@/lib/proposals/milestones'
+import { eligibleMilestoneAsks, isMilestoneTrigger, MILESTONE_SOURCE_AKITA, MILESTONE_SOURCE_CHIBA, pickMilestoneAsk, type MilestoneAsk } from '@/lib/proposals/milestones'
 import { assessSpringLateFrost, assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
 import { LATE_FROST_COVER, LATE_FROST_POTATO, plantingConditionForKind, plantedThisSpring } from '@/lib/benchmarks/planting-conditions'
 import {
@@ -47,11 +47,23 @@ import {
 } from '@/lib/proposals/crop-kind'
 import { isOnOrAfterCoolNight } from '@/lib/weather-night'
 import { isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
-import { gddStartDate } from '@/lib/benchmarks/gdd-methods'
+import { gddStartDate, type GddSource } from '@/lib/benchmarks/gdd-methods'
+import { formatMonthDay } from '@/lib/weather-frost'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 
 export type ProposalMilestoneContext = { key: string; observedAt?: Date; afterHarvest?: boolean }
+
+export type ConfirmationStage = 'deadline' | 'season' | 'reached' | 'window'
+export type NoConfirmationReason = 'no-location' | 'no-weather' | 'record-only' | 'no-question'
+export type ConfirmationCrop = { cropId: string; cropName: string; farmName?: string; reason: NoConfirmationReason }
+export type ProposalSignal = {
+  stage: ConfirmationStage | 'organize'
+  reason?: string
+  deadline?: string
+  weatherSource?: 'forecast' | 'archive' | 'mixed'
+  sources?: GddSource[]
+}
 
 export type ProposalCropLine = {
   cropId: string
@@ -91,15 +103,8 @@ export type ScoredProposal = {
   action?: { kind: 'work' | 'task' | 'sale' | 'finish' | 'pesticide'; taskType?: string; title?: string }
   /** この作付けだけの霜の一文。農場が混ざるまとめカードには、全員同じときだけ載せる */
   frostNote?: string
-  milestone?: {
-    key: string
-    question: string
-    term: string
-    ifYes: string
-    sourceLabel: string
-    howTo: string[]
-    yesLabel: string
-  }
+  signal?: ProposalSignal
+  milestone?: MilestoneAsk
 }
 
 type Hit = {
@@ -108,6 +113,7 @@ type Hit = {
   score: number
   title: string
   conclusion: string
+  signal: ProposalSignal
   action?: ScoredProposal['action']
 }
 
@@ -444,6 +450,10 @@ function pickHit(hits: Hit[]): Hit | null {
   return [...hits].sort((a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency))[0]
 }
 
+function hasFarmLocation(farm?: { latitude: number | null; longitude: number | null } | null) {
+  return farm?.latitude != null && farm.longitude != null && hasWeatherCoordinates(farm)
+}
+
 /**
  * 栽培中の作物を毎日採点する。1作物につき最も強いシグナルを1枚。
  * 「今はしない」の除外は getTodayProposals 側で行う。
@@ -454,11 +464,20 @@ export async function scoreGrowingCrops(
   dismissed: { trigger: string; cropId: string | null }[] = [],
   { now = today, weather = liveProposalWeather }: { now?: Date; weather?: ProposalWeather } = {},
 ): Promise<ScoredProposal[]> {
+  return (await scoreCrops(userId, today, dismissed, { now, weather })).cards
+}
+
+export async function scoreCrops(
+  userId: string,
+  today: Date,
+  dismissed: { trigger: string; cropId: string | null }[],
+  { now, weather, confirmations = false }: { now: Date; weather: ProposalWeather; confirmations?: boolean },
+): Promise<{ cards: ScoredProposal[]; crops: ConfirmationCrop[] }> {
   const crops = await prisma.crop.findMany({
     where: {
       OR: [{ userId }, { farm: { userId } }],
       status: 'growing',
-      plantingDate: { not: null },
+      ...(confirmations ? {} : { plantingDate: { not: null } }),
     },
     include: {
       farm: true,
@@ -467,7 +486,7 @@ export async function scoreGrowingCrops(
       sales: { select: { id: true } },
       milestones: { select: { key: true, observedAt: true } },
     },
-    orderBy: { plantingDate: 'desc' },
+    orderBy: confirmations ? [{ plantingDate: 'desc' }, { id: 'asc' }] : { plantingDate: 'desc' },
   })
 
   const previousPool = await prisma.crop.findMany({
@@ -478,9 +497,12 @@ export async function scoreGrowingCrops(
     include: { workRecords: { select: { date: true } } },
   })
 
+  const locationAvailable = confirmations ? hasFarmLocation : hasWeatherCoordinates
   const farmsWithCoords = new Map<string, NonNullable<(typeof crops)[number]['farm']>>()
   for (const crop of crops) {
-    if (crop.farm && hasWeatherCoordinates(crop.farm)) farmsWithCoords.set(crop.farm.id, crop.farm)
+    if (crop.plantingDate && crop.farm && locationAvailable(crop.farm) && (!confirmations || !adviceNames(crop).recordOnly)) {
+      farmsWithCoords.set(crop.farm.id, crop.farm)
+    }
   }
   const farmList = [...farmsWithCoords.values()]
   const climateByFarm = new Map<
@@ -502,7 +524,7 @@ export async function scoreGrowingCrops(
         longitude: Number(farm.longitude),
       }
       const [text, frost, cool, forecast, archive] = await Promise.all([
-        buildRegionalLayer({
+        confirmations ? null : buildRegionalLayer({
           latitude: farm.latitude,
           longitude: farm.longitude,
           farmName: farm.name,
@@ -525,13 +547,13 @@ export async function scoreGrowingCrops(
     })
   )
   const regionalByFarm = new Map(regionalEntries)
-  const needsFallback = crops.some((crop) => !crop.farm || !hasWeatherCoordinates(crop.farm))
+  const needsFallback = !confirmations && crops.some((crop) => !locationAvailable(crop.farm))
   const fallbackRegional = needsFallback ? await buildRegionalLayer(undefined, now, weather) : null
 
-  const harvestSamples = await loadHarvestSamples(userId, weather.accumulatedGdd)
+  const harvestSamples = await loadHarvestSamples(userId, weather.accumulatedGdd, { requireLocation: confirmations })
   const measured = await Promise.all(
     crops.map(async (crop) => {
-      if (!crop.plantingDate || !crop.farm || !hasWeatherCoordinates(crop.farm)) {
+      if (!crop.plantingDate || !crop.farm || !locationAvailable(crop.farm) || (confirmations && adviceNames(crop).recordOnly)) {
         return { crop, currentGDD: null as number | null }
       }
       const heat = heatForCrop(crop)
@@ -559,10 +581,10 @@ export async function scoreGrowingCrops(
   const frostCards: FrostCard[] = []
   const springFrostCards: ScoredProposal[] = []
   const frostNoteByCrop = new Map<string, string>()
+  const confirmationCrops: ConfirmationCrop[] = []
 
   for (const { crop, currentGDD } of measured) {
     const days = daysSince(crop.plantingDate, today)
-    if (days === null) continue
     const advice = adviceNames(crop)
     const inHouse = crop.growingSite === 'house'
     const matchName = advice.recordOnly ? '' : advice.name
@@ -574,6 +596,14 @@ export async function scoreGrowingCrops(
     const ratioBase = basis.view.status === 'active' ? basis.view.low : 0
     const gddRatio = currentGDD != null && ratioBase > 0 ? currentGDD / ratioBase : null
     const climate = crop.farmId ? climateByFarm.get(crop.farmId) : undefined
+    if (confirmations) {
+      let reason: NoConfirmationReason = 'no-question'
+      if (advice.recordOnly) reason = 'record-only'
+      else if (!hasFarmLocation(crop.farm)) reason = 'no-location'
+      else if (days != null && (!climate?.forecast.length || (basis.view.status === 'active' && currentGDD == null))) reason = 'no-weather'
+      confirmationCrops.push({ cropId: crop.id, cropName: crop.name, farmName: crop.farm?.name, reason })
+    }
+    if (days === null) continue
     const harvestWindowReady = Boolean(
       basis.view.status === 'active' &&
       !basis.view.startDate &&
@@ -606,6 +636,11 @@ export async function scoreGrowingCrops(
         const pastWindow = elapsed > basis.view.highDays
         hits.push({
           trigger: 'harvest-window',
+          signal: {
+            stage: 'reached',
+            reason: `ひげ（絹糸）が出てから${elapsed}日で、収穫の目安（${basis.view.lowDays}〜${basis.view.highDays}日）${pastWindow ? 'を過ぎています' : 'に入っています'}。`,
+            sources: basis.view.sources,
+          },
           urgency: 'today',
           score: 100,
           title: pastWindow ? '目安の時期を過ぎています' : '収穫の目安の時期です',
@@ -636,6 +671,7 @@ export async function scoreGrowingCrops(
     ) {
       hits.push({
         trigger: 'season-finish',
+        signal: { stage: 'organize' },
         urgency: 'today',
         score: 110,
         title: 'この作付けは終了しましたか？',
@@ -649,6 +685,12 @@ export async function scoreGrowingCrops(
     if (coolNight && isOnOrAfterCoolNight(today, coolNight)) {
       hits.push({
         trigger: 'season-finish',
+        signal: {
+          stage: 'season',
+        reason: `過去の${climate?.coolSource === 'station' ? '観測' : '推計'}では、${formatMonthDay(coolNight)}ごろが夜${TOMATO_POLLEN_MIN_C}℃を下回り始める目安です。`,
+          weatherSource: climate?.coolSource === 'estimate' ? 'archive' : undefined,
+          sources: [{ label: TOMATO_NIGHT_SOURCE, url: MILESTONE_SOURCE_AKITA.url }],
+        },
         urgency: 'today',
         score: 112,
         title: `夜の気温が${TOMATO_POLLEN_MIN_C}℃を下回る時期に入りました`,
@@ -681,6 +723,12 @@ export async function scoreGrowingCrops(
       if (!sweetPotatoAsk) {
         hits.push({
           trigger: 'harvest-window',
+          signal: {
+            stage: 'reached',
+            reason: `${basis.view.originLabel ?? '植え付け'}からの積算温度（${currentGDD}℃日）が、資料の目安の下限（${basis.view.low}℃日）に届きました。`,
+            weatherSource: 'archive',
+            sources: basis.view.sources,
+          },
           urgency: 'today',
           score: 100,
           title: basis.view.reachTitle,
@@ -704,6 +752,7 @@ export async function scoreGrowingCrops(
       const early = stage.key === 'rooting' || stage.key === 'harvest'
       hits.push({
         trigger: 'stage-work-gap',
+        signal: { stage: 'organize' },
         urgency: early ? 'today' : 'thisWeek',
         score: early ? 70 : 55,
         title: `${stage.label}の作業がまだ記録されていません`,
@@ -715,6 +764,7 @@ export async function scoreGrowingCrops(
     if (hasHarvest && crop.sales.length === 0) {
       hits.push({
         trigger: 'sale-missing',
+        signal: { stage: 'organize' },
         urgency: 'thisWeek',
         score: 72,
         title: '売上を記録しましょう',
@@ -737,6 +787,7 @@ export async function scoreGrowingCrops(
     if (previousGap != null && sinceLastWork != null && sinceLastWork > previousGap) {
       hits.push({
         trigger: 'work-interval',
+        signal: { stage: 'organize' },
         urgency: 'thisWeek',
         score: 42,
         title: '前回より作業の間隔が空いています',
@@ -752,6 +803,7 @@ export async function scoreGrowingCrops(
       const severe = days >= 140
       hits.push({
         trigger: 'neglected-crop',
+        signal: { stage: 'organize' },
         urgency: severe ? 'thisWeek' : 'watch',
         score: severe ? 60 : 20,
         title: '栽培中のまま記録が止まっています',
@@ -760,14 +812,13 @@ export async function scoreGrowingCrops(
       })
     }
 
-    const best = pickHit(
-      hits.filter((hit) => !isProposalDismissed(dismissed, hit.trigger, crop.id))
-    )
+    const visibleHits = hits.filter((hit) => !isProposalDismissed(dismissed, hit.trigger, crop.id))
+    const selectedHits = confirmations ? visibleHits : [pickHit(visibleHits)].filter((hit): hit is Hit => hit !== null)
     const farmName = crop.farm?.name ?? '農場未設定'
     const hiddenKeys = dismissed
       .filter((row) => row.cropId === crop.id && isMilestoneTrigger(row.trigger))
       .map((row) => row.trigger.slice('milestone:'.length))
-    const ask = pickMilestoneAsk({
+    const askInput = {
       cropName: matchName,
       plantingMethod: crop.plantingMethod,
       variety: matchVariety,
@@ -776,7 +827,8 @@ export async function scoreGrowingCrops(
       hasHarvest,
       records: crop.milestones,
       hiddenKeys,
-    })
+    }
+    const asks = eligibleMilestoneAsks(askInput)
     const hasSeenRoots = hasHarvest || crop.milestones.some((row) => row.key === 'test-dig')
     const frost: SweetPotatoFrost | null =
       climate && !inHouse && isSweetPotatoCrop(matchName, matchVariety)
@@ -801,7 +853,14 @@ export async function scoreGrowingCrops(
         urgency: frost.urgency,
         score: withinWeek ? 96 : frost.trigger === 'frost-forecast' ? 88 : 84,
         trigger: frost.trigger,
-        title: frost.title,
+        title: confirmations ? '霜の前に収穫を考えましょう' : frost.title,
+        signal: {
+          stage: frost.deadline ? 'deadline' : 'season',
+          reason: frost.reason,
+          deadline: frost.deadline,
+          weatherSource: frost.deadline ? 'forecast' : 'mixed',
+          sources: [{ label: `${MILESTONE_SOURCE_CHIBA.publisher}「${MILESTONE_SOURCE_CHIBA.name}」`, url: MILESTONE_SOURCE_CHIBA.url }],
+        },
         harvestOutlook: frost.harvestOutlook,
         cropId: crop.id,
         cropName: crop.name,
@@ -816,8 +875,8 @@ export async function scoreGrowingCrops(
         action: { kind: 'work', taskType: '収穫', title: `${crop.name}を霜の前に掘り上げる` },
         layers: mergeLayers({
           personal: `${crop.name}は栽培中です（${farmName}）。`,
-          regional: null,
-          general: frost.sourceLine,
+          regional: confirmations ? (frost.deadline ? frost.generalLine : frost.reason) : null,
+          general: confirmations && !frost.deadline ? `${frost.generalLine} ${frost.sourceLine}` : frost.sourceLine,
           conclusion: frostConclusion,
         }),
       })
@@ -844,7 +903,8 @@ export async function scoreGrowingCrops(
         urgency: springFrost.urgency,
         score: withinWeek ? 96 : 88,
         trigger: springFrost.trigger,
-        title: springFrost.title,
+        title: confirmations ? '遅霜に備えましょう' : springFrost.title,
+        signal: { stage: 'deadline', reason: springFrost.reason, deadline: springFrost.deadline, weatherSource: 'forecast' },
         cropId: crop.id,
         cropName: crop.name,
         farmId: crop.farmId ?? undefined,
@@ -862,18 +922,23 @@ export async function scoreGrowingCrops(
         },
         layers: mergeLayers({
           personal: `${crop.name}は栽培中です（${farmName}）。`,
-          regional: null,
+          regional: confirmations ? springFrost.reason : null,
           general: `${springFrost.generalLine} ${springFrost.sourceLine}`,
           conclusion: springFrost.conclusion,
         }),
       })
     }
-    if (ask && !isProposalDismissed(dismissed, ask.trigger, crop.id)) {
+    for (const ask of confirmations ? asks : [asks.next().value]) {
+      if (!ask || isProposalDismissed(dismissed, ask.trigger, crop.id)) continue
       milestoneCards.push({
         id: `${ask.trigger}-${crop.id}`,
         urgency: 'today',
         score: 1,
         trigger: ask.trigger,
+        signal: {
+          stage: 'window', reason: ask.reason,
+          weatherSource: ask.key === 'test-dig' ? 'archive' : undefined,
+        },
         title: ask.question,
         cropId: crop.id,
         cropName: crop.name,
@@ -882,15 +947,7 @@ export async function scoreGrowingCrops(
         daysSincePlanting: days,
         variety: crop.variety,
         conclusion: ask.ifYes,
-        milestone: {
-          key: ask.key,
-          question: ask.question,
-          term: ask.term,
-          ifYes: ask.ifYes,
-          sourceLabel: ask.sourceLabel,
-          howTo: ask.howTo,
-          yesLabel: ask.yesLabel,
-        },
+        milestone: ask,
         layers: mergeLayers({
           personal: null,
           regional: null,
@@ -899,7 +956,7 @@ export async function scoreGrowingCrops(
         }),
       })
     }
-    if (!best) continue
+    if (!selectedHits.length) continue
 
     const regional =
       (crop.farmId ? regionalByFarm.get(crop.farmId) : undefined) ?? fallbackRegional
@@ -932,58 +989,61 @@ export async function scoreGrowingCrops(
         ? `${crop.name}は、ひげ（絹糸）が出てから${daysSince(basis.view.startDate, today) ?? 0}日目です（${basis.summary}）。`
         : currentGDD != null
           ? basis.view.status === 'active'
-            ? `${crop.name}の積算温度は ${currentGDD}℃日です（${basis.summary}、${basis.view.originLabel ? `${basis.view.originLabel}から${daysSince(basis.view.startDate ?? crop.plantingDate, today) ?? 0}日` : `植付から${days}日`}）。`
+            ? `${crop.name}の積算温度は ${currentGDD}℃日です。 ${basis.summary.replace(/。$/, '')}。 ${basis.view.originLabel ?? '植付'}から${daysSince(basis.view.startDate ?? crop.plantingDate, today) ?? days}日です。`
             : `${crop.name}の積算温度は ${currentGDD}℃日です（参考：植え付けから日平均気温をそのまま足したもの。植付から${days}日）。`
           : `${crop.name}は植付から${days}日目です（${farmName}）。`
-    const coolFinish = best.title.includes('下回る時期')
-    const finishReason = coolFinish
-      ? ''
-      : hasHarvest
-        ? `収穫を${crop.harvests.length}回記録しています。`
-        : harvestDatePast && crop.harvestDate
-          ? `収穫予定日 ${new Date(crop.harvestDate).toLocaleDateString('ja-JP')} を過ぎています。`
-          : ''
-    const personalText =
-      best.trigger === 'sale-missing'
-        ? personal
-        : best.trigger === 'season-finish'
-          ? `${personal ? `${personal} ` : ''}${measuredLine}${finishReason ? ` ${finishReason}` : ''}`
-          : personal
-            ? `${personal} ${measuredLine}`
-            : measuredLine
+    for (const hit of selectedHits) {
+      const coolFinish = hit.trigger === 'season-finish' && hit.signal.stage === 'season'
+      const finishReason = coolFinish
+        ? ''
+        : hasHarvest
+          ? `収穫を${crop.harvests.length}回記録しています。`
+          : harvestDatePast && crop.harvestDate
+            ? `収穫予定日 ${new Date(crop.harvestDate).toLocaleDateString('ja-JP')} を過ぎています。`
+            : ''
+      const personalText =
+        hit.trigger === 'sale-missing'
+          ? personal
+          : hit.trigger === 'season-finish'
+            ? `${personal ? `${personal} ` : ''}${measuredLine}${finishReason ? ` ${finishReason}` : ''}`
+            : personal
+              ? `${personal} ${measuredLine}`
+              : measuredLine
 
-    cards.push({
-      id: `${best.trigger}-${crop.id}`,
-      urgency: best.urgency,
-      score: best.score,
-      trigger: best.trigger,
-      title: `${crop.name}：${best.title}`,
-      cropId: crop.id,
-      cropName: crop.name,
-      farmId: crop.farmId ?? undefined,
-      farmName,
-      daysSincePlanting: days,
-      variety: crop.variety,
-      currentGDD,
-      targetGDD,
-      targetCaption: basis.summary,
-      conclusion: best.conclusion,
-      action: best.action,
-      milestoneContext: !advice.recordOnly && !coolFinish ? generalDetails.milestone : undefined,
-      frostNote: frostNoteByCrop.get(crop.id),
-      layers: mergeLayers({
-        personal: personalText,
-        regional,
-        general: advice.recordOnly
-          ? RECORD_ONLY_NOTE
-          : coolFinish
-            ? climate?.coolSource === 'station' && climate.coolStationName
-              ? `${TOMATO_NIGHT_SOURCE}。過去10年の観測では、${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。出典：気象庁ホームページ『過去の気象データ検索』（${JMA_SEARCH_TOP}）の日別値を加工して作成`
-              : TOMATO_NIGHT_SOURCE
-            : generalDetails.text,
-        conclusion: best.conclusion,
-      }),
-    })
+      cards.push({
+        id: `${coolFinish && confirmations ? 'tomato-cool-night' : hit.trigger}-${crop.id}`,
+        urgency: hit.urgency,
+        score: hit.score,
+        trigger: hit.trigger,
+        signal: hit.signal,
+        title: confirmations ? hit.title : `${crop.name}：${hit.title}`,
+        cropId: crop.id,
+        cropName: crop.name,
+        farmId: crop.farmId ?? undefined,
+        farmName,
+        daysSincePlanting: days,
+        variety: crop.variety,
+        currentGDD,
+        targetGDD,
+        targetCaption: basis.summary,
+        conclusion: hit.conclusion,
+        action: hit.action,
+        milestoneContext: !advice.recordOnly && !coolFinish ? generalDetails.milestone : undefined,
+        frostNote: confirmations ? undefined : frostNoteByCrop.get(crop.id),
+        layers: mergeLayers({
+          personal: personalText,
+          regional,
+          general: advice.recordOnly
+            ? RECORD_ONLY_NOTE
+            : coolFinish
+              ? climate?.coolSource === 'station' && climate.coolStationName
+                ? `${TOMATO_NIGHT_SOURCE}。過去10年の観測では、${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。出典：気象庁ホームページ『過去の気象データ検索』（${JMA_SEARCH_TOP}）の日別値を加工して作成`
+                : TOMATO_NIGHT_SOURCE
+              : generalDetails.text,
+          conclusion: hit.conclusion,
+        }),
+      })
+    }
   }
 
   const diagnoses = await prisma.soilDiagnosis.findMany({
@@ -1006,7 +1066,7 @@ export async function scoreGrowingCrops(
     }
   >()
   for (const crop of crops) {
-    if (!crop.farmId || !crop.farm) continue
+    if (!crop.plantingDate || !crop.farmId || !crop.farm) continue
     if (isProposalDismissed(dismissed, 'soil-ph', crop.id)) continue
     const diagnosis = latestByFarm.get(crop.farmId)
     if (!diagnosis || diagnosis.ph == null) continue
@@ -1154,6 +1214,7 @@ export async function scoreGrowingCrops(
       urgency: 'today',
       score: 48,
       trigger: 'result-missing',
+      signal: { stage: 'organize' },
       title: `${missingResults}件の終わった作付けで、結果が未入力です`,
       conclusion: RESULT_PROMPT,
       layers: mergeLayers({
@@ -1170,6 +1231,7 @@ export async function scoreGrowingCrops(
       urgency: 'today',
       score: 50,
       trigger: 'conditions-missing',
+      signal: { stage: 'organize' },
       title: `${missingCount}件の作付けで、育て方の型などが未入力です`,
       conclusion: CONDITIONS_PROMPT,
       layers: mergeLayers({
@@ -1193,6 +1255,7 @@ export async function scoreGrowingCrops(
       urgency: 'today',
       score: 46,
       trigger: 'place-missing',
+      signal: { stage: 'organize' },
       title: `${missingPlaces}件の農場で、都道府県か市区町村が未入力です`,
       conclusion: PLACE_PROMPT,
       layers: mergeLayers({
@@ -1204,8 +1267,11 @@ export async function scoreGrowingCrops(
     })
   }
 
-  const otherCards = cards.filter((card) => card.trigger !== 'soil-ph')
-  return [...groupSameSignal(otherCards), ...groupMilestoneCards(milestoneCards), ...groupFrostCards(frostCards), ...groupSpringFrostCards(springFrostCards), ...soilCards].sort(
+  if (confirmations) {
+    return { cards: [...cards, ...milestoneCards, ...frostCards, ...springFrostCards, ...soilCards], crops: confirmationCrops }
+  }
+  const legacyCards = [...groupSameSignal(cards), ...groupMilestoneCards(milestoneCards), ...groupFrostCards(frostCards), ...groupSpringFrostCards(springFrostCards), ...soilCards].sort(
     (a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency)
   )
+  return { cards: legacyCards, crops: confirmationCrops }
 }

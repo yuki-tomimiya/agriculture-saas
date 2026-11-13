@@ -57,7 +57,11 @@ function seasonLabel(name: string, variety: string | null, plantingDate: Date): 
   return parts[1] ?? full
 }
 
-export async function loadHarvestSamples(userId: string, accumulatedGdd = getAccumulatedGDDFromApi): Promise<HarvestSample[]> {
+export async function loadHarvestSamples(
+  userId: string,
+  accumulatedGdd = getAccumulatedGDDFromApi,
+  { requireLocation = false } = {},
+): Promise<HarvestSample[]> {
   const { where, whereFallback } = getCropWhere(userId)
   const include = {
     farm: true,
@@ -98,7 +102,8 @@ export async function loadHarvestSamples(userId: string, accumulatedGdd = getAcc
         : gddStartDate(view, crop.plantingDate)
       if (end.getTime() < start.getTime()) return null
       const dayCount = view.status === 'days' ? daysBetween(start, end) : null
-      if (view.status === 'active' && !hasWeatherCoordinates(point)) return null
+      const located = hasWeatherCoordinates(point) && (!requireLocation || (point.latitude != null && point.longitude != null))
+      if (view.status === 'active' && !located) return null
       const gdd = view.status === 'active'
         ? await accumulatedGdd({
             startDate: start,
@@ -129,8 +134,8 @@ export async function loadHarvestSamples(userId: string, accumulatedGdd = getAcc
         endDate: end,
         count: view.status === 'active' ? view.count : 'simple',
         baseTemp: view.status === 'active' ? view.baseTemp : 0,
-        latitude: hasWeatherCoordinates(point) ? Number(point.latitude) : null,
-        longitude: hasWeatherCoordinates(point) ? Number(point.longitude) : null,
+        latitude: located ? Number(point.latitude) : null,
+        longitude: located ? Number(point.longitude) : null,
       } satisfies HarvestSample
     })
   )
