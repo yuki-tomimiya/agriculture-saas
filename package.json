@@ -11,6 +11,7 @@
     "soil:nutrient-test": "tsx --test tests/soil-nutrients.test.tsx",
     "soil:ui-test": "tsx --test tests/soil-ui.test.tsx",
     "test": "node --import tsx --test \"tests/**/*.test.ts\" \"tests/**/*.test.tsx\"",
+    "check-data": "tsx scripts/proposal-check-data.ts",
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "dev:lan": "next dev -H 0.0.0.0 -p 3000",
     "prebuild": "node scripts/check-build-port.mjs",

@@ -31,5 +31,5 @@ export async function temporarySqlite(t: TestContext) {
   } finally {
     sqlite.close()
   }
-  return { db, url }
+  return { db, file }
 }

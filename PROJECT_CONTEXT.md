@@ -128,6 +128,7 @@ lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth
 - 利用者IDのCookieの読み取り: `lib/user-id-cookie.ts` の `readUserIdCookie()`
 - 起動: `npm run dev` または `アプリを起動.bat`（`http://127.0.0.1:3000`）。LANから確認するときは `npm run dev:lan`
 - テスト: `npm test`（`tests/` 内の `.test.ts`・`.test.tsx`）。コードの確認: `npm run lint`（`.eslintrc.json`）
+- 提案の確認用データ: `scripts/proposal-check-data.ts`（`npm run check-data -- --help`。指定利用者に3つの形を追加・削除）
 - ビルド: `npm run build`。前に `scripts/check-build-port.mjs` が3000番ポートを確認する
 - UI 確認は本番アプリのみ（静的 `ui-preview-*.html` は廃止済み）
 - `.env` / `node_modules` はコミットしない
