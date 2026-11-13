@@ -2,10 +2,8 @@
 
 import { useState } from 'react'
 import { pestTrigger } from '@/lib/pests/catalog'
-import type { loadPestQuestions } from '@/lib/pests/service'
+import type { PestQuestion as Question } from '@/lib/proposals/presentation'
 import PestAdvice, { type PestAdviceData } from '@/components/PestAdvice'
-
-type Question = Awaited<ReturnType<typeof loadPestQuestions>>[number]
 
 function PestQuestionRow({ question }: { question: Question }) {
   const { cropId, cropName, farmName, pest, timing, timingSource, today } = question
@@ -60,20 +58,19 @@ function PestQuestionRow({ question }: { question: Question }) {
   </li>
 }
 
-export default function PestQuestion({ questions }: { questions: Question[] }) {
+export default function PestQuestion({ id, questions }: { id: string; questions: Question[] }) {
   const { pest } = questions[0]
-  return <li className="ai-proposal-card ai-proposal-card--low">
-    <div className="ai-proposal-card-inner">
+  return <li>
+    <details id={id} className="morning-disclosure morning-question">
+      <summary>{pest.question}（{questions.length}件）</summary>
       <div className="ai-proposal-card-body">
         <div className="ai-proposal-card-action-column space-y-2">
-          <span className="ai-proposal-card-type">病害虫の見回り</span>
-          <h3 className="ai-proposal-card-title">{pest.question}</h3>
           <ul>{questions.map(question => <PestQuestionRow key={question.cropId} question={question} />)}</ul>
         </div>
         <div className="ai-proposal-evidence space-y-2">
           <p>{pest.marker} {pest.appearance && <a className="underline" href={pest.appearance.url}>見た目の資料</a>}</p>
         </div>
       </div>
-    </div>
+    </details>
   </li>
 }

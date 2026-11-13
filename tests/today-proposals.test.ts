@@ -86,7 +86,10 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       await db.$transaction(tx => addProposalCheckData(tx, proposalCheckData(scenario, user.id, now)))
       const weather = fixedWeather(scenario)
       const legacy = await getTodayProposals(user.id, { now, weather })
-      const result = await loadTodayConfirmations(user.id, { now, weather })
+      const result = await loadTodayConfirmations(user.id, { now, weather: {
+        ...weather,
+        async precipitation() { throw new Error('確認事項の判断に降水量を使わない') },
+      } })
       const answer = readableAnswer(result)
       if (scenario === '1') {
         assert.equal(answer.confirmations[0].selected.trigger, 'frost-season')
@@ -125,7 +128,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
     const corn = await db.crop.findFirstOrThrow({ where: { name: '絹糸の記録あり', farmId: noPlace.id } })
     await db.cropMilestone.create({ data: { cropId: corn.id, key: 'silk', source: 'manual', observedAt: new Date(2026, 9, 22) } })
     await db.task.createMany({ data: [
-      { farmId: noPlace.id, title: '誘引', dueDate: new Date(2026, 10, 13) },
+      { farmId: noPlace.id, cropId: corn.id, title: '誘引', dueDate: new Date(2026, 10, 13) },
       { farmId: place.id, title: '誘引', dueDate: new Date(2026, 10, 13) },
       { farmId: place.id, title: '片づけ', dueDate: new Date(2026, 10, 12) },
       { farmId: place.id, title: '明日', dueDate: new Date(2026, 10, 14) },
@@ -145,6 +148,12 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       'no-location': ['位置なし'], 'no-weather': ['気象データなし'],
       'record-only': ['記録だけ'], 'no-question': ['今は聞くことがない'],
     })
+    await db.proposalDismissal.create({ data: {
+      userId: user.id, cropId: corn.id, trigger: 'harvest-window', remindAfter: new Date(2026, 10, 14),
+    } })
+    const afterDismissal = await loadTodayConfirmations(user.id, { now, weather })
+    assert.equal(afterDismissal.deadlineCount, 3)
+    assert.ok(!afterDismissal.confirmations.some(row => row.selected.trigger === 'harvest-window'))
   })
   await t.test('トマトの例年の冷え込みは、整理ではなく季節の確認事項', async () => {
     const user = await db.user.create({ data: { email: 'cool-night@example.invalid', password: 'unused' } })
@@ -163,6 +172,12 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       assert.deepEqual(row.others.map(item => item.trigger), ['milestone:flower-1st', 'pest:tomato:yellow-leaf-curl'])
     }
     assert.ok(result.organization.every(proposal => proposal.trigger !== 'season-finish'))
+    const potatoes = await db.crop.findMany({ where: { cropKind: 'sweet-potato', farm: { userId: user.id } } })
+    await db.proposalDismissal.createMany({ data: potatoes.map(crop => ({
+      userId: user.id, cropId: crop.id, trigger: 'neglected-crop', remindAfter: new Date(2026, 10, 14),
+    })) })
+    const afterDismissal = await loadTodayConfirmations(user.id, { now, weather: fixedWeather('2') })
+    assert.deepEqual(afterDismissal.deadlineGroups.map(group => group.length), [2])
   })
   assert.equal(fetch.mock.callCount(), 0)
 })

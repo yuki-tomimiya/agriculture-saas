@@ -234,7 +234,8 @@ export async function loadProposalCandidates(
   }
 
   const visible = proposals.filter(
-    (item) => !isProposalDismissed(dismissed, item.trigger, item.relatedCropId)
+    (item) => (confirmations && item.signal?.stage === 'deadline') ||
+      !isProposalDismissed(dismissed, item.trigger, item.relatedCropId)
   )
 
   const rank = { today: 3, thisWeek: 2, watch: 1 }

@@ -1,7 +1,7 @@
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { getCropWhere, getHarvestWhere, getPesticideWhere, getFertilizerWhere, getWorkRecordWhere } from '@/lib/queries'
-import { loadTodayProposalGroups } from '@/lib/proposals/presentation'
+import { loadTodayConfirmations } from '@/lib/proposals/presentation'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
@@ -19,7 +19,7 @@ function DashboardKpi({
   prominent,
 }: {
   title: string
-  value: number
+  value: number | null
   unit?: string
   tone: 'green' | 'blue' | 'orange' | 'purple'
   href: string
@@ -36,7 +36,7 @@ function DashboardKpi({
     >
       <h3 className="dashboard-kpi-title">{title}</h3>
       <p className={`dashboard-kpi-value dashboard-kpi-value--${tone}`}>
-        {unit === '円' ? value.toLocaleString() : value}
+        {value == null ? '—' : unit === '円' ? value.toLocaleString() : value}
         {unit && <span className="dashboard-kpi-unit">{unit}</span>}
       </p>
       {empty ? (
@@ -102,15 +102,11 @@ export default async function DashboardPage() {
   const recentHarvestWhere = { AND: [harvestWhere, { date: { gte: recentSince } }] }
   const recentHarvestWhereFallback = { AND: [harvestWhereFallback, { date: { gte: recentSince } }] }
 
-  const proposalGroups = await loadTodayProposalGroups(user.id).catch(() => null)
-  const proposalNote = proposalGroups
-    ? [
-        '今日やること',
-        `今週中に${proposalGroups.weekItems.length}`,
-        `確認${proposalGroups.confirmItems.length}`,
-        ...(proposalGroups.pestGroups.length ? [`病害虫の見回り${proposalGroups.pestGroups.length}`] : []),
-        ...(proposalGroups.watchCount ? [`様子見${proposalGroups.watchCount}`] : []),
-      ].join('・')
+  const proposals = await loadTodayConfirmations(user.id).catch(() => null)
+  const proposalNote = proposals
+    ? proposals.count === 0
+      ? '表示する締切・確認事項はありません'
+      : `締切 ${proposals.deadlineCount}件・作付けごとの確認 ${proposals.confirmations.length}件`
     : '提案の件数を取得できませんでした'
 
   let recentCrops = await prisma.crop.findMany({
@@ -193,7 +189,7 @@ export default async function DashboardPage() {
         <div className="dashboard-kpi-grid">
           <DashboardKpi
             title="今日の提案"
-            value={proposalGroups?.todayItems.length ?? 0}
+            value={proposals?.count ?? null}
             tone="purple"
             href="/dashboard/ai-proposal"
             note={proposalNote}

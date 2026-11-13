@@ -844,7 +844,7 @@ export async function scoreCrops(
             harvestWindowReady,
           })
         : null
-    if (frost && !isProposalDismissed(dismissed, frost.trigger, crop.id)) {
+    if (frost && ((confirmations && frost.deadline) || !isProposalDismissed(dismissed, frost.trigger, crop.id))) {
       const frostConclusion = frost.conclusion
       frostNoteByCrop.set(crop.id, frost.generalLine)
       const withinWeek = frost.urgency === 'today'
@@ -896,7 +896,7 @@ export async function scoreCrops(
             potato: cropKind?.key === 'potato',
           })
         : null
-    if (springFrost && !isProposalDismissed(dismissed, springFrost.trigger, crop.id)) {
+    if (springFrost && (confirmations || !isProposalDismissed(dismissed, springFrost.trigger, crop.id))) {
       const withinWeek = springFrost.urgency === 'today'
       springFrostCards.push({
         id: `${springFrost.trigger}-${crop.id}`,

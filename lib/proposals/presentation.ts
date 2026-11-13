@@ -1,40 +1,8 @@
-import { getTodayProposals, type Proposal } from '@/lib/ai-proposal'
+import { loadProposalCandidates, type Proposal, type ProposalOptions } from '@/lib/ai-proposal'
 import { loadPestQuestions } from '@/lib/pests/service'
 import { groupPestQuestions } from '@/lib/pests/presentation'
-import { isMilestoneTrigger } from '@/lib/proposals/milestones'
-import { loadProposalCandidates, type ProposalOptions } from '@/lib/ai-proposal'
 import type { ConfirmationCrop, ConfirmationStage, NoConfirmationReason } from '@/lib/proposals/scoring'
 import { pestTrigger } from '@/lib/pests/catalog'
-
-function isConfirm(trigger?: string): boolean {
-  return trigger === 'season-finish' ||
-    trigger === 'conditions-missing' ||
-    trigger === 'result-missing' ||
-    trigger === 'place-missing' ||
-    isMilestoneTrigger(trigger)
-}
-
-export function groupTodayProposals<
-  P extends Pick<Proposal, 'urgency' | 'trigger'>,
-  Q extends { pest: { key: string } },
->(proposals: P[], pestQuestions: Q[]) {
-  return {
-    todayItems: proposals.filter(item => item.urgency === 'today' && !isConfirm(item.trigger)),
-    weekItems: proposals.filter(item => item.urgency === 'thisWeek' && !isConfirm(item.trigger)),
-    confirmItems: proposals.filter(item => isConfirm(item.trigger)),
-    pestGroups: groupPestQuestions(pestQuestions),
-    watchCount: proposals.filter(item => item.urgency === 'watch').length,
-  }
-}
-
-export async function loadTodayProposalGroups(userId: string) {
-  // どちらも「今はしない」などで閉じたカードを除いて返す。
-  const [proposals, pestQuestions] = await Promise.all([
-    getTodayProposals(userId),
-    loadPestQuestions(userId),
-  ])
-  return groupTodayProposals(proposals, pestQuestions)
-}
 
 export type PestQuestion = Awaited<ReturnType<typeof loadPestQuestions>>[number]
 
@@ -111,7 +79,7 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
     const row = { crop, selected, others }
     if (selected.stage === 'deadline' && selected.kind === 'proposal') {
       const { proposal } = selected
-      const key = JSON.stringify([proposal.signal?.deadline, selected.reason, proposal.layers.conclusion])
+      const key = JSON.stringify([proposal.signal?.deadline, proposal.layers.conclusion])
       const group = deadlines.get(key) ?? []
       group.push(row)
       deadlines.set(key, group)

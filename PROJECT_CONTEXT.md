@@ -30,7 +30,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | パス | 役割 |
 |------|------|
-| `/dashboard/ai-proposal` | 今日の一手（3層提案） |
+| `/dashboard/ai-proposal` | 今日の提案。締切、作付けごとの確認、確認事項なしの理由、記録の整理、補足、節目・病害虫の回答 |
 | `/gdd` | 生育ナビの入口（栽培中を選ぶ。1件だけならその作付けへ） |
 | `/gdd/[cropId]` | その作付けの積算温度・雨量・日射。過去の作付けも開ける |
 | `/gdd/past` | 過去の生育データ（2階層目） |
@@ -59,7 +59,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | 領域 | パス |
 |------|------|
-| 今日の提案 | `lib/ai-proposal.ts`, `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。終了確認の日数は台帳 I2）, `lib/proposals/presentation.ts`（ダッシュボードと今日の提案の表示区分）, `app/dashboard/ai-proposal/`, `app/api/proposals/dismiss/` |
+| 今日の提案 | `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。終了確認の日数は台帳 I2）、`app/dashboard/ai-proposal/page.tsx`（表示と節目の回答）、`app/dashboard/page.tsx`（件数）、`app/api/proposals/dismiss/` |
 | 提案の組み立て | `lib/proposals/scoring.ts` が候補に意味の段を付け、`lib/proposals/presentation.ts` の `loadTodayConfirmations(userId, { now, weather })` が確認事項を選ぶ。気象の取得口は `lib/proposals/weather.ts`。カレンダーは `lib/ai-proposal.ts` の `getTodayProposals` |
 | 提案の答え合わせ | `tests/today-proposals.test.ts` と `tests/fixtures/today-proposals/`。3つの形は `scripts/proposal-check-scenarios.ts` |
 | 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`（台帳 B7）, `lib/proposals/frost.ts`（さつまいもの霜の締切・春の霜の終わり。台帳 D9） |
