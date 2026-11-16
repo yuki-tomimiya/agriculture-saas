@@ -137,7 +137,7 @@ export async function loadProposalCandidates(
       farmName: task.farm.name,
     }
     const [regional, general, personal] = await Promise.all([
-      confirmations ? null : buildRegionalLayer(point.latitude != null ? point : defaultPoint, now, weather),
+      confirmations ? null : buildRegionalLayer(point, now, weather),
       Promise.resolve(
         buildGeneralLayer(task.crop?.name, task.crop?.variety, {
           daysSincePlanting: daysSince(task.crop?.plantingDate ?? null, todayStart),

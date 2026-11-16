@@ -75,11 +75,12 @@ function toYmd(d: Date): string {
 
 /** 農場などに緯度・経度が登録されているか（未登録のときは気象APIを呼ばない） */
 export function hasWeatherCoordinates(
-  point?: { latitude?: number | null; longitude?: number | null } | null
+  point?: { latitude?: number | string | null; longitude?: number | string | null } | null
 ): boolean {
-  const latitude = Number(point?.latitude)
-  const longitude = Number(point?.longitude)
-  return Number.isFinite(latitude) && Number.isFinite(longitude)
+  return [point?.latitude, point?.longitude].every(value =>
+    typeof value === 'number' ? Number.isFinite(value) :
+      typeof value === 'string' && value.trim() !== '' && Number.isFinite(Number(value)),
+  )
 }
 
 export async function getForecastDays(point?: Partial<WeatherPoint>, now = new Date()): Promise<ForecastDay[]> {

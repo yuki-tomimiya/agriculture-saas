@@ -227,6 +227,7 @@ export async function buildPersonalLayerForCrop(args: {
   now?: Date
 }): Promise<string | null> {
   const days = daysSincePlanting(args.plantingDate, args.now ?? new Date())
+  const { userId } = args
   const parts: string[] = []
 
   if (days !== null && args.plantingDate) {
@@ -234,7 +235,10 @@ export async function buildPersonalLayerForCrop(args: {
   }
 
   const siblings = await prisma.crop.findMany({
-    where: args.farmId ? { farmId: args.farmId } : { name: args.cropName, farmId: null },
+    where: {
+      ...(args.farmId ? { farmId: args.farmId } : { name: args.cropName, farmId: null }),
+      OR: [{ userId }, { farm: { userId } }],
+    },
     orderBy: { plantingDate: 'desc' },
   })
 
@@ -250,6 +254,7 @@ export async function buildPersonalLayerForCrop(args: {
     const prevWorks = await prisma.workRecord.findMany({
       where: {
         cropId: previous.id,
+        farm: { userId },
         date: { gte: windowStart, lte: windowEnd },
       },
       orderBy: { date: 'asc' },
@@ -264,11 +269,11 @@ export async function buildPersonalLayerForCrop(args: {
 
     const [curHarvest, prevHarvest] = await Promise.all([
       prisma.harvest.aggregate({
-        where: { cropId: args.cropId },
+        where: { cropId: args.cropId, crop: { OR: [{ userId }, { farm: { userId } }] } },
         _sum: { quantity: true },
       }),
       prisma.harvest.aggregate({
-        where: { cropId: previous.id },
+        where: { cropId: previous.id, crop: { OR: [{ userId }, { farm: { userId } }] } },
         _sum: { quantity: true },
       }),
     ])

@@ -450,10 +450,6 @@ function pickHit(hits: Hit[]): Hit | null {
   return [...hits].sort((a, b) => b.score - a.score || urgencyRank(b.urgency) - urgencyRank(a.urgency))[0]
 }
 
-function hasFarmLocation(farm?: { latitude: number | null; longitude: number | null } | null) {
-  return farm?.latitude != null && farm.longitude != null && hasWeatherCoordinates(farm)
-}
-
 /**
  * 栽培中の作物を毎日採点する。1作物につき最も強いシグナルを1枚。
  * 「今はしない」の除外は getTodayProposals 側で行う。
@@ -481,7 +477,7 @@ export async function scoreCrops(
     },
     include: {
       farm: true,
-      workRecords: { select: { date: true, taskType: true } },
+      workRecords: { where: { farm: { userId } }, select: { date: true, taskType: true } },
       harvests: { select: { id: true } },
       sales: { select: { id: true } },
       milestones: { select: { key: true, observedAt: true } },
@@ -494,13 +490,12 @@ export async function scoreCrops(
       OR: [{ userId }, { farm: { userId } }],
       plantingDate: { not: null },
     },
-    include: { workRecords: { select: { date: true } } },
+    include: { workRecords: { where: { farm: { userId } }, select: { date: true } } },
   })
 
-  const locationAvailable = confirmations ? hasFarmLocation : hasWeatherCoordinates
   const farmsWithCoords = new Map<string, NonNullable<(typeof crops)[number]['farm']>>()
   for (const crop of crops) {
-    if (crop.plantingDate && crop.farm && locationAvailable(crop.farm) && (!confirmations || !adviceNames(crop).recordOnly)) {
+    if (crop.plantingDate && crop.farm && hasWeatherCoordinates(crop.farm) && (!confirmations || !adviceNames(crop).recordOnly)) {
       farmsWithCoords.set(crop.farm.id, crop.farm)
     }
   }
@@ -547,13 +542,13 @@ export async function scoreCrops(
     })
   )
   const regionalByFarm = new Map(regionalEntries)
-  const needsFallback = !confirmations && crops.some((crop) => !locationAvailable(crop.farm))
+  const needsFallback = !confirmations && crops.some((crop) => !hasWeatherCoordinates(crop.farm))
   const fallbackRegional = needsFallback ? await buildRegionalLayer(undefined, now, weather) : null
 
-  const harvestSamples = await loadHarvestSamples(userId, weather.accumulatedGdd, { requireLocation: confirmations })
+  const harvestSamples = await loadHarvestSamples(userId, weather.accumulatedGdd)
   const measured = await Promise.all(
     crops.map(async (crop) => {
-      if (!crop.plantingDate || !crop.farm || !locationAvailable(crop.farm) || (confirmations && adviceNames(crop).recordOnly)) {
+      if (!crop.plantingDate || !crop.farm || !hasWeatherCoordinates(crop.farm) || (confirmations && adviceNames(crop).recordOnly)) {
         return { crop, currentGDD: null as number | null }
       }
       const heat = heatForCrop(crop)
@@ -599,7 +594,7 @@ export async function scoreCrops(
     if (confirmations) {
       let reason: NoConfirmationReason = 'no-question'
       if (advice.recordOnly) reason = 'record-only'
-      else if (!hasFarmLocation(crop.farm)) reason = 'no-location'
+      else if (!hasWeatherCoordinates(crop.farm)) reason = 'no-location'
       else if (days != null && (!climate?.forecast.length || (basis.view.status === 'active' && currentGDD == null))) reason = 'no-weather'
       confirmationCrops.push({ cropId: crop.id, cropName: crop.name, farmName: crop.farm?.name, reason })
     }

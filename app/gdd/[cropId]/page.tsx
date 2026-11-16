@@ -210,6 +210,7 @@ export default async function GddCropPage({
     : null
   const heavyRainDays = forecastRainfall.filter((d) => d.precipitationMm >= FORECAST_HEAVY_RAIN_MM)
   const previousSeason = await getPreviousSeasonWeather({
+    userId: user.id,
     cropId: selectedCrop.id,
     name: selectedCrop.name,
     cropKind: selectedCrop.cropKind,
@@ -223,7 +224,7 @@ export default async function GddCropPage({
     baseTemp: heat.baseTemp,
   })
   const lastYearShortLabel = previousSeason
-    ? `${previousSeason.plantingDate.getFullYear()}年作${previousSeason.source === 'demo' ? '・仮' : ''}`
+    ? `${previousSeason.plantingDate.getFullYear()}年作`
     : null
   const title = cropLabel(selectedCrop.name, selectedCrop.variety)
 

@@ -20,51 +20,12 @@ function addDays(date: Date, days: number): Date {
   return d
 }
 
-/** 決定論的な仮データ（地点の座標が無いとき用） */
-export function buildDemoSeasonSeries(args: {
-  days: number
-  dailyGddMean: number
-  dailyRainMean: number
-  dailyRadiationMean: number
-  seed?: number
-}): {
-  gdd: DaySeriesPoint[]
-  rain: DaySeriesPoint[]
-  radiation: DaySeriesPoint[]
-} {
-  let s = args.seed ?? 42
-  const rand = () => {
-    s = (s * 1664525 + 1013904223) % 4294967296
-    return s / 4294967296
-  }
-
-  let gdd = 0
-  let rain = 0
-  let rad = 0
-  const gddPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-  const rainPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-  const radPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-
-  for (let day = 1; day <= args.days; day++) {
-    const season = Math.sin((day / args.days) * Math.PI) // 中盤やや高め
-    gdd += Math.max(0, args.dailyGddMean * (0.7 + 0.6 * season) + (rand() - 0.5) * 3)
-    rain += Math.max(0, args.dailyRainMean * (0.5 + rand()) + (rand() > 0.85 ? 15 * rand() : 0))
-    rad += Math.max(0, args.dailyRadiationMean * (0.75 + 0.5 * season) + (rand() - 0.5) * 2)
-    gddPts.push({ dayFromPlanting: day, value: Math.round(gdd * 10) / 10 })
-    rainPts.push({ dayFromPlanting: day, value: Math.round(rain * 10) / 10 })
-    radPts.push({ dayFromPlanting: day, value: Math.round(rad * 10) / 10 })
-  }
-
-  return { gdd: gddPts, rain: rainPts, radiation: radPts }
-}
-
 export type PreviousSeasonWeather = {
   previousCropId: string
   previousLabel: string
   plantingDate: Date
   endDate: Date
   plantingGapNote: string | null
-  source: 'open-meteo' | 'demo'
   gdd: DaySeriesPoint[]
   rain: DaySeriesPoint[]
   radiation: DaySeriesPoint[]
@@ -74,6 +35,7 @@ export type PreviousSeasonWeather = {
  * 選択中作物と同じまとまりの、前の年で月日がいちばん近い作付けの気象系列を返す
  */
 export async function getPreviousSeasonWeather(args: {
+  userId: string
   cropId: string
   name: string
   cropKind?: string | null
@@ -86,8 +48,15 @@ export async function getPreviousSeasonWeather(args: {
   count: HeatCount
   baseTemp: number
 }): Promise<PreviousSeasonWeather | null> {
+  const point = { latitude: args.latitude, longitude: args.longitude }
+  if (!hasWeatherCoordinates(point)) return null
+  const coordinates = { latitude: Number(point.latitude), longitude: Number(point.longitude) }
+
   const siblings = await prisma.crop.findMany({
-    where: args.farmId ? { farmId: args.farmId } : { name: args.name, farmId: null },
+    where: {
+      ...(args.farmId ? { farmId: args.farmId } : { name: args.name, farmId: null }),
+      OR: [{ userId: args.userId }, { farm: { userId: args.userId } }],
+    },
     orderBy: { plantingDate: 'desc' },
   })
 
@@ -107,100 +76,69 @@ export async function getPreviousSeasonWeather(args: {
     : addDays(plant, 163)
   end.setHours(0, 0, 0, 0)
 
-  const daySpan = Math.max(
-    1,
-    Math.floor((end.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000))
-  )
+  try {
+    const [temps, rains, rads] = await Promise.all([
+      getHistoricalDailyTemps({
+        startDate: plant,
+        endDate: end,
+        point: coordinates,
+      }),
+      getHistoricalDailyPrecipitation({
+        startDate: plant,
+        endDate: end,
+        point: coordinates,
+      }),
+      getHistoricalDailyRadiation({
+        startDate: plant,
+        endDate: end,
+        point: coordinates,
+      }),
+    ])
 
-  const point = { latitude: args.latitude, longitude: args.longitude }
-  const canFetch = hasWeatherCoordinates(point)
-
-  if (canFetch) {
-    try {
-      const [temps, rains, rads] = await Promise.all([
-        getHistoricalDailyTemps({
-          startDate: plant,
-          endDate: end,
-          point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
-        }),
-        getHistoricalDailyPrecipitation({
-          startDate: plant,
-          endDate: end,
-          point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
-        }),
-        getHistoricalDailyRadiation({
-          startDate: plant,
-          endDate: end,
-          point: { latitude: Number(point.latitude), longitude: Number(point.longitude) },
-        }),
-      ])
-
-      if (temps.length > 10) {
-        let gdd = 0
-        const gddPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-        temps.forEach((t) => {
-          gdd += dailyHeat(t.avgTemp, args.count, args.baseTemp)
-          gddPts.push({
-            dayFromPlanting: Math.floor((t.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
-            value: Math.round(gdd * 10) / 10,
-          })
+    if (temps.length > 10) {
+      let gdd = 0
+      const gddPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
+      temps.forEach((t) => {
+        gdd += dailyHeat(t.avgTemp, args.count, args.baseTemp)
+        gddPts.push({
+          dayFromPlanting: Math.floor((t.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
+          value: Math.round(gdd * 10) / 10,
         })
+      })
 
-        let rain = 0
-        const rainPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-        rains.forEach((r) => {
-          rain += r.precipitationMm
-          rainPts.push({
-            dayFromPlanting: Math.floor((r.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
-            value: Math.round(rain * 10) / 10,
-          })
+      let rain = 0
+      const rainPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
+      rains.forEach((r) => {
+        rain += r.precipitationMm
+        rainPts.push({
+          dayFromPlanting: Math.floor((r.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
+          value: Math.round(rain * 10) / 10,
         })
+      })
 
-        let rad = 0
-        const radPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
-        rads.forEach((r) => {
-          rad += r.radiationMj
-          radPts.push({
-            dayFromPlanting: Math.floor((r.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
-            value: Math.round(rad * 10) / 10,
-          })
+      let rad = 0
+      const radPts: DaySeriesPoint[] = [{ dayFromPlanting: 0, value: 0 }]
+      rads.forEach((r) => {
+        rad += r.radiationMj
+        radPts.push({
+          dayFromPlanting: Math.floor((r.date.getTime() - plant.getTime()) / (24 * 60 * 60 * 1000)) + 1,
+          value: Math.round(rad * 10) / 10,
         })
+      })
 
-        return {
-          previousCropId: previous.id,
-          previousLabel: `${previous.name}${previous.variety ? `（${previous.variety}）` : ''} · ${plant.getFullYear()}年作`,
-          plantingDate: plant,
-          endDate: end,
-          plantingGapNote: gapNote,
-          source: 'open-meteo',
-          gdd: gddPts,
-          rain: rainPts.length > 1 ? rainPts : [],
-          radiation: radPts.length > 1 ? radPts : [],
-        }
+      return {
+        previousCropId: previous.id,
+        previousLabel: `${previous.name}${previous.variety ? `（${previous.variety}）` : ''} · ${plant.getFullYear()}年作`,
+        plantingDate: plant,
+        endDate: end,
+        plantingGapNote: gapNote,
+        gdd: gddPts,
+        rain: rainPts.length > 1 ? rainPts : [],
+        radiation: radPts.length > 1 ? radPts : [],
       }
-    } catch {
-      // 地点の気象を取得できなければ、仮の気象で埋めない。
     }
-    return null
+  } catch {
+    // 地点の気象を取得できなければ、仮の気象で埋めない。
   }
-
-  const demo = buildDemoSeasonSeries({
-    days: daySpan,
-    dailyGddMean: 8.5,
-    dailyRainMean: 2.8,
-    dailyRadiationMean: 13.5,
-    seed: previous.id.split('').reduce((a, c) => a + c.charCodeAt(0), 0),
-  })
-
-  return {
-    previousCropId: previous.id,
-    previousLabel: `${previous.name}${previous.variety ? `（${previous.variety}）` : ''} · ${plant.getFullYear()}年作（仮データ）`,
-    plantingDate: plant,
-    endDate: end,
-    plantingGapNote: gapNote,
-    source: 'demo',
-    gdd: demo.gdd,
-    rain: demo.rain,
-    radiation: demo.radiation,
-  }
+  return null
 }

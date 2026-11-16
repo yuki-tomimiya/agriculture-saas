@@ -15,7 +15,7 @@ import {
 import { loadLocationArchive } from '@/lib/weather-normals'
 import { firstMeanMinBelow, type CoolNightDate } from '@/lib/weather-night'
 import type { LocationArchive } from '@/lib/weather-normals'
-import type { WeatherPoint } from '@/lib/weather-forecast'
+import { hasWeatherCoordinates, type WeatherPoint } from '@/lib/weather-forecast'
 
 /** 昨年までの10年。Open-Meteo の平年値と同じ決め方 */
 export function archiveYears(today = new Date()): { fromYear: number; toYear: number } {
@@ -98,10 +98,9 @@ export function readStationFrost(
 }
 
 export async function chooseStation(point?: Partial<WeatherPoint>): Promise<StationPick | null> {
-  if (point?.latitude == null || point.longitude == null) return null
+  if (!point || !hasWeatherCoordinates(point)) return null
   const lat = Number(point.latitude)
   const lon = Number(point.longitude)
-  if (Number.isNaN(lat) || Number.isNaN(lon)) return null
   const elevation = await farmElevationM(lat, lon)
   return pickNearestStation(lat, lon, elevation)
 }

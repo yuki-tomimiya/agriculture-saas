@@ -42,7 +42,7 @@ export const FAQ_ENTRIES: FaqEntry[] = [
   {
     slug: 'harvest-window',
     title: '収穫の見込みの幅とは？',
-    summary: '過去10年それぞれの気温で届く日を出し、早い年と遅い年を除いた範囲です。',
+    summary: '過去10年それぞれの気温で届く日を出し、年内に届いた年が4年以上なら早い年と遅い年を除きます。',
     related: ['gdd', 'normals', 'gdd-reference'],
   },
   {
