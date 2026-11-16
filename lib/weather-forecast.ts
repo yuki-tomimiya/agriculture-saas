@@ -5,18 +5,19 @@ import { fetchOpenMeteo } from '@/lib/open-meteo/fetch'
  * Open-Meteo APIから取得。失敗時はフォールバックを返す。
  */
 import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
+import { FORECAST_LEAD_DAYS } from '@/lib/weather-thresholds'
 export type ForecastDay = {
   /** Asia/Tokyo の YYYY-MM-DD。最低気温の日付を提案に使う */
   date: string
   dayLabel: string
   weather: string
   weatherCode: number
-  maxTemp: number
-  minTemp: number
+  maxTemp: number | null
+  minTemp: number | null
   /** Open-Meteoの日平均。欠測時はnullで、最高・最低から補わない。 */
   avgTemp: number | null
-  precipitation: number
-  wind: number
+  precipitation: number | null
+  wind: number | null
 }
 
 export type WeatherPoint = {
@@ -73,6 +74,10 @@ function toYmd(d: Date): string {
   return `${y}-${m}-${day}`
 }
 
+function forecastValue(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? value : null
+}
+
 /** 農場などに緯度・経度が登録されているか（未登録のときは気象APIを呼ばない） */
 export function hasWeatherCoordinates(
   point?: { latitude?: number | string | null; longitude?: number | string | null } | null
@@ -93,6 +98,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>, now = new D
   }
   // 日付をURLに含め、日をまたいだ古いキャッシュを使わない
   const todayYmd = tokyoTodayYmd(now)
+  const lastYmd = addDaysToYmd(todayYmd, FORECAST_LEAD_DAYS)
   const params = new URLSearchParams({
     latitude: String(p.latitude),
     longitude: String(p.longitude),
@@ -100,7 +106,7 @@ export async function getForecastDays(point?: Partial<WeatherPoint>, now = new D
     wind_speed_unit: 'ms',
     timezone: 'Asia/Tokyo',
     start_date: todayYmd,
-    end_date: addDaysToYmd(todayYmd, 13),
+    end_date: lastYmd,
   })
 
   try {
@@ -111,39 +117,31 @@ export async function getForecastDays(point?: Partial<WeatherPoint>, now = new D
     const json = await res.json() as {
       daily?: {
         time?: string[]
-        weathercode?: number[]
-        temperature_2m_max?: number[]
-        temperature_2m_min?: number[]
-        temperature_2m_mean?: Array<number | null>
-        precipitation_probability_max?: number[]
-        windspeed_10m_max?: number[]
+        weathercode?: unknown[]
+        temperature_2m_max?: unknown[]
+        temperature_2m_min?: unknown[]
+        temperature_2m_mean?: unknown[]
+        precipitation_probability_max?: unknown[]
+        windspeed_10m_max?: unknown[]
       }
     }
     const d = json.daily
-    if (
-      !d?.weathercode ||
-      !d.time ||
-      !d.temperature_2m_max ||
-      !d.temperature_2m_min ||
-      !d.precipitation_probability_max ||
-      !d.windspeed_10m_max
-    ) {
-      throw new Error('Invalid Open-Meteo payload')
-    }
-
-    return d.weathercode.slice(0, 14).map((code, i) => ({
-      date: d.time![i],
-      dayLabel: labelFromDateString(d.time![i]),
-      weather: weatherCodeToJa(code),
-      weatherCode: code,
-      maxTemp: Math.round(d.temperature_2m_max![i] * 10) / 10,
-      minTemp: Math.round(d.temperature_2m_min![i] * 10) / 10,
-      avgTemp: d.temperature_2m_mean?.[i] != null && Number.isFinite(d.temperature_2m_mean[i])
-        ? Math.round(d.temperature_2m_mean[i]! * 10) / 10
-        : null,
-      precipitation: Math.round(d.precipitation_probability_max![i] ?? 0),
-      wind: Math.round((d.windspeed_10m_max![i] ?? 0) * 10) / 10,
-    }))
+    if (!Array.isArray(d?.time)) return []
+    return d.time.flatMap((date, i) => {
+      if (typeof date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(date) || date < todayYmd || date > lastYmd) return []
+      const code = forecastValue(d.weathercode?.[i]) ?? -1
+      return [{
+        date,
+        dayLabel: labelFromDateString(date),
+        weather: weatherCodeToJa(code),
+        weatherCode: code,
+        maxTemp: forecastValue(d.temperature_2m_max?.[i]),
+        minTemp: forecastValue(d.temperature_2m_min?.[i]),
+        avgTemp: forecastValue(d.temperature_2m_mean?.[i]),
+        precipitation: forecastValue(d.precipitation_probability_max?.[i]),
+        wind: forecastValue(d.windspeed_10m_max?.[i]),
+      }]
+    }).sort((a, b) => a.date.localeCompare(b.date))
   } catch {
     // 誤った日付のダミー予報を出さない（空配列 → UIで取得失敗を表示）
     console.error('getForecastDays failed')
@@ -151,18 +149,18 @@ export async function getForecastDays(point?: Partial<WeatherPoint>, now = new D
   }
 }
 
-/** 日付付きの予報（本日から14日分）。日平均の欠測日はGDD計算に使わない。 */
+/** 明日から14日先までの日平均。欠測日はGDD計算に使わない。 */
 export async function getForecastDailyTemps(
-  // 呼び出し側の引数の形は維持。日付は常にAPIのAsia/Tokyoの日付を使う。
-  _baseDate: Date = new Date(),
+  baseDate: Date = new Date(),
   point?: Partial<WeatherPoint>
-): Promise<{ date: Date; avgTemp: number; maxTemp: number; minTemp: number }[]> {
-  const days = await getForecastDays(point)
+): Promise<{ date: Date; avgTemp: number }[]> {
+  const today = tokyoTodayYmd(baseDate)
+  const days = await getForecastDays(point, baseDate)
   return days.flatMap((d) => {
-    if (d.avgTemp == null) return []
+    if (d.date <= today || d.avgTemp == null) return []
     // 欠測日を省いても後の日付を詰めない。APIのAsia/Tokyoの日付を使う。
     const date = new Date(`${d.date}T00:00:00`)
-    return [{ date, avgTemp: d.avgTemp, maxTemp: d.maxTemp, minTemp: d.minTemp }]
+    return [{ date, avgTemp: d.avgTemp }]
   })
 }
 
@@ -202,7 +200,7 @@ export async function getHistoricalDailyPrecipitation(args: { startDate: Date; e
   const rows = await historicalRows(args)
   return rows?.flatMap(row => row.precip == null ? [] : [{ date: new Date(`${row.date}T00:00:00`), precipitationMm: Math.round(row.precip * 10) / 10 }]) ?? []
 }
-export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint>): Promise<{
+export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint>, now = new Date()): Promise<{
   date: Date
   dayLabel: string
   precipitationMm: number
@@ -212,14 +210,15 @@ export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint
     latitude: Number(point!.latitude),
     longitude: Number(point!.longitude),
   }
-  const todayYmd = tokyoTodayYmd()
+  const todayYmd = tokyoTodayYmd(now)
+  const lastYmd = addDaysToYmd(todayYmd, FORECAST_LEAD_DAYS)
   const params = new URLSearchParams({
     latitude: String(p.latitude),
     longitude: String(p.longitude),
     daily: 'precipitation_sum',
     timezone: 'Asia/Tokyo',
     start_date: todayYmd,
-    end_date: addDaysToYmd(todayYmd, 13),
+    end_date: lastYmd,
   })
 
   try {
@@ -230,23 +229,25 @@ export async function getForecastDailyPrecipitation(point?: Partial<WeatherPoint
     const json = await res.json() as {
       daily?: {
         time?: string[]
-        precipitation_sum?: number[]
+        precipitation_sum?: unknown[]
       }
     }
     const times = json.daily?.time
     const rain = json.daily?.precipitation_sum
-    if (!times || !rain || times.length !== rain.length) return []
+    if (!Array.isArray(times)) return []
 
-    return times.slice(0, 14).map((day, i) => {
+    return times.flatMap((day, i) => {
+      const precipitationMm = forecastValue(rain?.[i])
+      if (precipitationMm == null || typeof day !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(day) || day < todayYmd || day > lastYmd) return []
       const [y, m, d] = day.slice(0, 10).split('-').map(Number)
       const date = new Date(y, m - 1, d)
       date.setHours(0, 0, 0, 0)
-      return {
+      return [{
         date,
         dayLabel: labelFromDateString(day),
-        precipitationMm: Math.round((rain[i] ?? 0) * 10) / 10,
-      }
-    })
+        precipitationMm,
+      }]
+    }).sort((a, b) => +a.date - +b.date)
   } catch {
     console.error('getForecastDailyPrecipitation failed')
     return []

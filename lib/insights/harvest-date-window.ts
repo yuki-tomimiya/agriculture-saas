@@ -1,8 +1,6 @@
 import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import type { LocationArchive } from '@/lib/weather-normals'
-
-/** 明日からこの日数までは、有効な予報の日平均があれば優先する（根拠台帳B7） */
-export const HARVEST_FORECAST_LEAD_DAYS = 14
+import { FORECAST_LEAD_DAYS } from '@/lib/weather-thresholds'
 
 export type HarvestDateWindow = {
   /** アーカイブに入っている年の数（ふつう10） */
@@ -131,7 +129,7 @@ export function projectHarvestWindow(args: {
   const seasonEnd = new Date(today.getFullYear(), 11, 31, 12, 0, 0, 0)
   const byYear = indexTemps(args.archive)
   if (byYear.size === 0) return null
-  const forecastUntil = addDays(today, HARVEST_FORECAST_LEAD_DAYS)
+  const forecastUntil = addDays(today, FORECAST_LEAD_DAYS)
   const arrivals: Date[] = []
 
   if (args.currentGdd >= args.targetGdd) {

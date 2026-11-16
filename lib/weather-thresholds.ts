@@ -5,6 +5,8 @@
 export const FORECAST_RAIN_HIGHLIGHT_PCT = 55
 export const FORECAST_WIND_HIGHLIGHT_MS = 10
 export const FORECAST_HEAVY_RAIN_MM = 20
+/** 明日からの予報の日数。取得には今日の分も含める（台帳 B7・D11）。 */
+export const FORECAST_LEAD_DAYS = 14
 
 /**
  * 直近の最高気温の平均と、同じ暦日の10年平均との差がこれ未満なら「10年平均並み」。

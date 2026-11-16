@@ -37,7 +37,8 @@ function monthDayOrder(value: MonthDay): number {
 }
 
 function averageMonthDay(dates: MonthDay[]): MonthDay {
-  const total = dates.reduce((sum, value) => sum + Date.UTC(2001, value.month - 1, value.day), 0)
+  // うるう年に揃え、2月29日も独立した暦日として平均する。
+  const total = dates.reduce((sum, value) => sum + Date.UTC(2000, value.month - 1, value.day), 0)
   const rounded = new Date(Math.round(total / dates.length))
   return { month: rounded.getUTCMonth() + 1, day: rounded.getUTCDate() }
 }

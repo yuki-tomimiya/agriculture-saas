@@ -8,7 +8,7 @@ import GDDChart from '@/components/GDDChart'
 import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
 import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDailyPrecipitation, getHistoricalDailyRadiation, getHistoricalDailyTemps, hasWeatherCoordinates } from '@/lib/weather-forecast'
-import { computeGDDProjection, formatHarvestGddOutlook } from '@/lib/gdd'
+import { computeGDDProjection, describeForecastCoverage, formatHarvestGddOutlook } from '@/lib/gdd'
 import { dailyHeat, displayHeat, gddStartDate, type ActiveDayMethod, type ActiveGddMethod } from '@/lib/benchmarks/gdd-methods'
 import { loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
@@ -79,10 +79,12 @@ export default async function GddCropPage({
     longitude: selectedCrop.farm?.longitude ?? null,
   }
   const canFetchWeather = hasWeatherCoordinates(point)
-  const forecastTempsRaw = canFetchWeather
+  const forecastTemps = canFetchWeather
     ? await getForecastDailyTemps(today, { latitude: Number(point.latitude), longitude: Number(point.longitude) })
     : []
-  const forecastTemps = forecastTempsRaw.filter((d) => d.date.getTime() > today.getTime())
+  const coverage = describeForecastCoverage(today, forecastTemps)
+  const projectionLabel = coverage.complete ? '14日後見込み' :
+    coverage.lastLabel ? `${coverage.lastLabel}までの取得できた日分` : undefined
   const harvestSamples = await loadHarvestSamples(user.id)
   const harvestBasis = pickHarvestBasis(harvestSamples, selectedCrop)
   const heat = displayHeat(harvestBasis.view)
@@ -118,7 +120,7 @@ export default async function GddCropPage({
     ? await getForecastDailyPrecipitation({
         latitude: Number(point.latitude),
         longitude: Number(point.longitude),
-      })
+      }, today)
     : []
   let cumulativeGDD = 0
   const historicalCumulative = historicalTemps.map((day) => {
@@ -206,6 +208,7 @@ export default async function GddCropPage({
         harvestWindowText,
         seasonUnreachable,
         reference,
+        today,
       })
     : null
   const heavyRainDays = forecastRainfall.filter((d) => d.precipitationMm >= FORECAST_HEAVY_RAIN_MM)
@@ -311,6 +314,7 @@ export default async function GddCropPage({
             originLabel={activeMethod?.originLabel}
             historicalPoints={historicalCumulative}
             dailyProjections={projection?.dailyProjections.map((p) => ({ date: p.date, cumulativeGDD: p.cumulativeGDD })) ?? []}
+            projectionLabel={projectionLabel}
             lastYearPoints={activeMethod?.startDate ? [] : previousSeason?.gdd ?? []}
             lastYearLabel={lastYearShortLabel}
             normalGddByDay={canFetchWeather ? gddNormalSeries?.gdd ?? null : undefined}

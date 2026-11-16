@@ -11,6 +11,10 @@ type Props = {
   emptyState?: 'no-farms'
 }
 
+function formatForecastValue(value: number | null, unit: string, digits = 1) {
+  return value == null ? '—' : `${Number(value.toFixed(digits))}${unit}`
+}
+
 export default async function WeatherForecast({
   farmName,
   latitude,
@@ -59,7 +63,7 @@ export default async function WeatherForecast({
     <section className="dashboard-card">
       <h2 className="dashboard-section-title">今後2週間の気象情報</h2>
       <p className="dashboard-section-sub">
-        拠点：{farmName ?? '未選択'}（北緯 {Number(latitude).toFixed(4)} / 東経 {Number(longitude).toFixed(4)}） ／ 本日から14日先までの日ごとの計算結果
+        拠点：{farmName ?? '未選択'}（北緯 {Number(latitude).toFixed(4)} / 東経 {Number(longitude).toFixed(4)}） ／ 本日からの日ごとの計算結果（最大14日分）
       </p>
       {forecastData.length === 0 ? (
         <div className="dashboard-empty" style={{ padding: '1rem 0' }}>
@@ -78,12 +82,12 @@ export default async function WeatherForecast({
                 <p className="dashboard-forecast-weather">{item.weather}</p>
               </div>
               <div className="dashboard-forecast-meta">
-                <p>{item.maxTemp}℃ / {item.minTemp}℃</p>
-                <p className={item.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT ? 'dashboard-forecast-alert' : ''}>
-                  降水 {item.precipitation}%
+                <p>{formatForecastValue(item.maxTemp, '℃')} / {formatForecastValue(item.minTemp, '℃')}</p>
+                <p className={item.precipitation != null && item.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT ? 'dashboard-forecast-alert' : ''}>
+                  降水 {formatForecastValue(item.precipitation, '%', 0)}
                 </p>
-                {item.wind >= FORECAST_WIND_HIGHLIGHT_MS && (
-                  <p className="dashboard-forecast-alert">風速 {item.wind}m/s</p>
+                {(item.wind == null || item.wind >= FORECAST_WIND_HIGHLIGHT_MS) && (
+                  <p className={item.wind == null ? undefined : 'dashboard-forecast-alert'}>風速 {formatForecastValue(item.wind, 'm/s')}</p>
                 )}
               </div>
             </li>

@@ -4,6 +4,18 @@
  */
 
 import { dailyHeat, type ActiveGddMethod, type HeatCount } from '@/lib/benchmarks/gdd-methods'
+import { FORECAST_LEAD_DAYS } from '@/lib/weather-thresholds'
+
+export function describeForecastCoverage(today: Date, points: { date: Date }[]) {
+  const calendarDay = (date: Date) => Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000
+  const offsets = new Set(points.map(point => calendarDay(point.date) - calendarDay(today)))
+  const complete = Array.from({ length: FORECAST_LEAD_DAYS }, (_, i) => i + 1).every(day => offsets.has(day))
+  const last = points.at(-1)?.date
+  return {
+    complete,
+    lastLabel: last ? `${last.getMonth() + 1}月${last.getDate()}日` : null,
+  }
+}
 
 export type HarvestGddReference = {
   sampleCount: number
@@ -78,7 +90,7 @@ export function computeGDDProjection(
   baseTemp: number,
   forecastDailyTemps: { date: Date; avgTemp: number }[],
   targetGDD: number,
-  options?: { harvestWindowText?: string | null; seasonUnreachable?: boolean; reference?: HarvestGddReference }
+  options?: { harvestWindowText?: string | null; seasonUnreachable?: boolean; reference?: HarvestGddReference; today?: Date }
 ): GDDProjectionResult {
   let cumulative = currentGDD
   const dailyProjections: GDDProjectionResult['dailyProjections'] = []
@@ -110,6 +122,7 @@ export function computeGDDProjection(
     harvestWindowText: options?.harvestWindowText,
     seasonUnreachable: options?.seasonUnreachable,
     reference: options?.reference,
+    coverage: options?.today ? describeForecastCoverage(options.today, forecastDailyTemps) : undefined,
   })
 
   return {
@@ -130,6 +143,7 @@ function buildSuggestions(args: {
   harvestWindowText?: string | null
   seasonUnreachable?: boolean
   reference?: HarvestGddReference
+  coverage?: ReturnType<typeof describeForecastCoverage>
 }): string[] {
   const { currentGDD, targetGDD, targetReachDate, daysToTarget, endCumulativeGDD, harvestWindowText, seasonUnreachable, reference } = args
   const list: string[] = []
@@ -149,11 +163,13 @@ function buildSuggestions(args: {
 
   if (targetReachDate && daysToTarget != null) {
     list.push('過去の気温が取れないため、収穫の見込みは日付で出していません。')
-  } else if (endCumulativeGDD < targetGDD) {
+  } else if (args.coverage?.complete && endCumulativeGDD < targetGDD) {
     const target = formatHarvestGddTarget(targetGDD, reference)
     const passedMethod = passedMethodTarget(currentGDD, reference)
     const prefix = passedMethod ? `${passedMethod}は超えました。` : ''
     list.push(`${prefix}今後2週間の計算では、まだ${target}に届きません（見込み：約${Math.round(endCumulativeGDD).toLocaleString('ja-JP')}℃日）。`)
+  } else if (args.coverage?.lastLabel) {
+    list.push(`${args.coverage.lastLabel}までの取得できた日分を足しています。`)
   }
 
   if (list.length === 0) {

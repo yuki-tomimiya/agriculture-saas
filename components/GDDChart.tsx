@@ -27,6 +27,7 @@ type GDDChartProps = {
   daysFromPlanting?: number
   historicalPoints?: ProjectionPoint[]
   dailyProjections?: ProjectionPoint[]
+  projectionLabel?: string
   /** 前回作付けの累積GDD（植付けからの日数で揃える） */
   lastYearPoints?: LastYearPoint[]
   lastYearLabel?: string | null
@@ -57,11 +58,8 @@ function toPoints(pairs: [number, number][], maxGDD: number, maxDays: number): s
 }
 
 function daysFromBase(base: Date, date: Date): number {
-  const b = new Date(base)
-  b.setHours(0, 0, 0, 0)
-  const d = new Date(date)
-  d.setHours(0, 0, 0, 0)
-  return Math.max(0, Math.floor((d.getTime() - b.getTime()) / (24 * 60 * 60 * 1000)))
+  const day = (value: Date) => Date.UTC(value.getFullYear(), value.getMonth(), value.getDate())
+  return Math.max(0, (day(date) - day(base)) / 86_400_000)
 }
 
 /** 同じXに複数点がある場合は最後の値だけ残し、縦線化を防ぐ */
@@ -102,6 +100,7 @@ export default function GDDChart({
   daysFromPlanting = 0,
   historicalPoints = [],
   dailyProjections = [],
+  projectionLabel = '数値予報モデルの計算',
   lastYearPoints = [],
   lastYearLabel = null,
   normalGddByDay,
@@ -125,10 +124,11 @@ export default function GDDChart({
   const lastYearMaxDay = hasLastYear
     ? Math.max(...lastYearPoints.map((p) => p.dayFromPlanting))
     : 0
-  const projectionDays = hasProjection ? dailyProjections.length : 0
-  // 実データの最終日＋予報分までX軸を伸ばす（90日固定で末尾を潰さない）
-  const dataEndDay = Math.max(historyMaxDay + projectionDays, lastYearMaxDay)
-  const displayDays = Math.max(10, Math.min(MAX_DAYS, dataEndDay || 10))
+  const forecastPoints = plantingStart
+    ? dailyProjections.map((p): [number, number] => [daysFromBase(plantingStart, p.date), p.cumulativeGDD])
+    : []
+  const forecastEndDay = Math.max(0, ...forecastPoints.map(([day]) => day))
+  const displayDays = Math.max(10, Math.min(MAX_DAYS, Math.max(historyMaxDay, lastYearMaxDay)), forecastEndDay)
   const normalPoints: [number, number][] =
     normalGddByDay && normalGddByDay.length > 0
       ? Array.from({ length: displayDays + 1 }, (_, d) => [
@@ -159,7 +159,6 @@ export default function GDDChart({
 
   let thisYearPoints: [number, number][] = [[0, 0]]
   let projectionPoints: [number, number][] = []
-  let lastHistoryDay = 0
   if (hasHistory && plantingStart) {
     const historySeries = historicalPoints.map((p) => {
       const day = Math.min(displayDays, daysFromBase(plantingStart, p.date))
@@ -167,15 +166,9 @@ export default function GDDChart({
     })
     thisYearPoints = dedupeByDay([[0, 0], ...historySeries])
   }
-  lastHistoryDay = Math.max(0, Math.floor(thisYearPoints[thisYearPoints.length - 1]?.[0] ?? 0))
-  if (hasProjection) {
+  if (forecastPoints.length > 0) {
     const anchor = thisYearPoints[thisYearPoints.length - 1] ?? [0, 0]
-    const projected: [number, number][] = [anchor]
-    dailyProjections.forEach((p, i) => {
-      const day = lastHistoryDay + i + 1
-      if (day <= displayDays) projected.push([day, p.cumulativeGDD])
-    })
-    projectionPoints = dedupeByDay(projected)
+    projectionPoints = dedupeByDay([anchor, ...forecastPoints])
   }
 
   const normalPath = normalPoints.length > 1 ? toPoints(normalPoints, maxGDDRounded, displayDays) : ''
@@ -406,7 +399,7 @@ export default function GDDChart({
             {projectedGDD != null && (
               <div className="dashboard-gdd-graph-marker-row">
                 <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#60A5FA' }} />
-                <span className="dashboard-gdd-graph-marker-text">14日後見込み：{Math.round(projectedGDD)} ℃日</span>
+                <span className="dashboard-gdd-graph-marker-text">{projectionLabel}：{Math.round(projectedGDD)} ℃日</span>
               </div>
             )}
           </div>
@@ -428,7 +421,7 @@ export default function GDDChart({
           進捗（現在）：<span className="font-semibold">{currentProgressPct.toFixed(1)}%</span>
           {projectedProgressPct != null && (
             <>
-              {' '}／ 14日後見込み：<span className="font-semibold">{projectedProgressPct.toFixed(1)}%</span>
+              {' '}／ {projectionLabel}：<span className="font-semibold">{projectedProgressPct.toFixed(1)}%</span>
             </>
           )}
         </p>

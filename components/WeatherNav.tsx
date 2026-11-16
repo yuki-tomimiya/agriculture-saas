@@ -18,9 +18,9 @@ type Props = {
   emptyState?: 'no-farms'
 }
 
-function mean(values: number[]): number {
-  if (values.length === 0) return 0
-  return values.reduce((a, b) => a + b, 0) / values.length
+function mean(values: (number | null)[]): number | null {
+  const available = values.filter(value => value != null)
+  return available.length ? available.reduce((a, b) => a + b, 0) / available.length : null
 }
 
 export default async function WeatherNav({
@@ -106,15 +106,16 @@ export default async function WeatherNav({
     latitude: latitude ?? undefined,
     longitude: longitude ?? undefined,
   })
-  const normalMax = normals ? meanNormalMaxTemp(normals, week.map((d) => d.date)) : null
-  const tempLabel = tempCompareLabel(avgMax, normalMax)
+  const normalMax = normals ? meanNormalMaxTemp(normals, week.filter(d => d.maxTemp != null).map(d => d.date)) : null
+  const tempLabel = avgMax == null ? null : tempCompareLabel(avgMax, normalMax)
   // 週内で最も風が強い日（＝週内の最大風速）を注意日にも使う
-  const windiestDay = week.reduce((best, d) => (d.wind > best.wind ? d : best), week[0])
-  const maxWind = windiestDay.wind
-  const heavyRainDay = week
-    .filter((d) => d.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT)
+  const windiestDay = week.flatMap(d => d.wind == null ? [] : [{ ...d, wind: d.wind }])
+    .sort((a, b) => b.wind - a.wind)[0]
+  const maxWind = windiestDay?.wind
+  const rainDays = week.flatMap(d => d.precipitation == null ? [] : [{ ...d, precipitation: d.precipitation }])
+  const heavyRainDay = rainDays.filter(d => d.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT)
     .sort((a, b) => b.precipitation - a.precipitation)[0]
-  const strongWindDay = maxWind >= FORECAST_WIND_HIGHLIGHT_MS ? windiestDay : null
+  const strongWindDay = windiestDay && windiestDay.wind >= FORECAST_WIND_HIGHLIGHT_MS ? windiestDay : null
 
   return (
     <section className="dashboard-weather-box">
@@ -138,13 +139,13 @@ export default async function WeatherNav({
           <h3>今週の見通し</h3>
           <ul>
             <li>
-              ・最高気温の週平均は <span className="font-semibold">{avgMax.toFixed(1)}℃</span>
+              ・最高気温の週平均は <span className="font-semibold">{avgMax == null ? '—' : `${avgMax.toFixed(1)}℃`}</span>
               {tempLabel ? <> で、{tempLabel}です。</> : <>です。</>}
             </li>
-            <li>・降水確率の週平均は <span className="font-semibold">{avgRain.toFixed(0)}%</span> です。</li>
+            <li>・降水確率の週平均は <span className="font-semibold">{avgRain == null ? '—' : `${avgRain.toFixed(0)}%`}</span> です。</li>
             <li>
               ・週内の最大風速（日最大）は{' '}
-              <span className="font-semibold">{maxWind.toFixed(1)}m/s</span>
+              <span className="font-semibold">{maxWind == null ? '—' : `${maxWind.toFixed(1)}m/s`}</span>
               {windiestDay ? `（${windiestDay.dayLabel}）` : ''} です。
             </li>
           </ul>
@@ -156,8 +157,8 @@ export default async function WeatherNav({
               ・降水確率{FORECAST_RAIN_HIGHLIGHT_PCT}%以上：
               <span className="font-semibold">
                 {heavyRainDay
-                  ? `${heavyRainDay.dayLabel}（降水確率 ${heavyRainDay.precipitation}%）`
-                  : '該当する日はありません'}
+                  ? `${heavyRainDay.dayLabel}（降水確率 ${heavyRainDay.precipitation.toFixed(0)}%）`
+                  : rainDays.length < 7 ? '取得できた範囲に該当なし（欠測あり）' : '該当する日はありません'}
               </span>
             </li>
             <li>
@@ -165,7 +166,7 @@ export default async function WeatherNav({
               <span className="font-semibold">
                 {strongWindDay
                   ? `${strongWindDay.dayLabel}（日最大 ${strongWindDay.wind.toFixed(1)}m/s）`
-                  : '該当する日はありません'}
+                  : week.length < 7 || week.some(d => d.wind == null) ? '取得できた範囲に該当なし（欠測あり）' : '該当する日はありません'}
               </span>
             </li>
           </ul>

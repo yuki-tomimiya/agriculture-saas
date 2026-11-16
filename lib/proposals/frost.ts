@@ -126,8 +126,8 @@ export function assessSweetPotatoFrost(args: {
   /** false のときは季節のカードを出さない（年ごとの気温が無い） */
   harvestWindowReady: boolean
 }): SweetPotatoFrost | null {
-  const upcoming = args.forecast.find((day) => day.minTemp <= FROST_RISK_MAX_C)
-  if (upcoming) {
+  const upcoming = args.forecast.find(day => day.minTemp != null && day.minTemp <= FROST_RISK_MAX_C)
+  if (upcoming?.minTemp != null) {
     const when = formatYmd(upcoming.date)
     const temp = formatCelsius(upcoming.minTemp)
     const withinWeek = daysUntilYmd(args.today, upcoming.date) <= FORECAST_TODAY_DAYS
@@ -204,11 +204,11 @@ export function assessSpringLateFrost(args: {
   potato: boolean
 }): SpringLateFrost | null {
   const upcoming = args.forecast.find((day) => {
-    if (day.minTemp > FROST_RISK_MAX_C) return false
+    if (day.minTemp == null || day.minTemp > FROST_RISK_MAX_C) return false
     const month = Number(day.date.slice(5, 7))
     return month >= 1 && month <= 6
   })
-  if (!upcoming) return null
+  if (upcoming?.minTemp == null) return null
   const when = formatYmd(upcoming.date)
   const temp = formatCelsius(upcoming.minTemp)
   const withinWeek = daysUntilYmd(args.today, upcoming.date) <= FORECAST_TODAY_DAYS
