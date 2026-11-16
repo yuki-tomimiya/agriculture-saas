@@ -13,10 +13,11 @@ import { harvestAvailableDate, harvestDateLabel, harvestDatesByCrop, japanDateKe
 export default async function PesticidesPage({
   searchParams,
 }: {
-  searchParams: { cropId?: string; farmId?: string }
+  searchParams?: Promise<{ cropId?: string; farmId?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = (await searchParams) ?? {}
 
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   const cropsForFilter = await prisma.crop.findMany({
@@ -36,8 +37,8 @@ export default async function PesticidesPage({
   })
 
   const { where: pesticideWhere } = getPesticideWhere(user.id, {
-    cropId: searchParams.cropId,
-    farmId: searchParams.farmId,
+    cropId: sp.cropId,
+    farmId: sp.farmId,
   })
   type PesticideRow = Prisma.PesticideRecordGetPayload<{
     include: { crop: { include: { farm: true } }; farm: true }
@@ -81,7 +82,7 @@ export default async function PesticidesPage({
           <div className="farms-filter-bar">
             <Link
               href="/pesticides"
-              className={!searchParams.cropId && !searchParams.farmId ? 'farms-filter-active' : 'farms-filter-link'}
+              className={!sp.cropId && !sp.farmId ? 'farms-filter-active' : 'farms-filter-link'}
             >
               すべて
             </Link>
@@ -89,7 +90,7 @@ export default async function PesticidesPage({
               <Link
                 key={crop.id}
                 href={`/pesticides?cropId=${crop.id}`}
-                className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>
@@ -98,7 +99,7 @@ export default async function PesticidesPage({
               <Link
                 key={farm.id}
                 href={`/pesticides?farmId=${farm.id}`}
-                className={searchParams.farmId === farm.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.farmId === farm.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {farm.name}
               </Link>

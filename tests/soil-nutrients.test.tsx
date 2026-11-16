@@ -1,8 +1,7 @@
-import './helpers/next-runtime'
+import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import React from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import type { FarmSoil } from '@prisma/client'
 import { classifyEffectiveSoil, soilClassificationForFarm, soilNutrientTrigger, soilNutrientBasis, type SoilGroup } from '../lib/farm-soil/classification'
 import { soilNutrientHits, soilNutrientAdvice } from '../lib/benchmarks/soil-nutrients'
@@ -123,13 +122,8 @@ test('土壌画面と今日の提案が同じ現在の土を使い、区分変�
   prisma.farm.findMany = (async () => [farm]) as any
   prisma.farm.count = (async () => 0) as any
   prisma.user.findUnique = (async () => ({ id: 'user' })) as any
-  const { requestAsyncStorage } = require('next/dist/client/components/request-async-storage.external')
-  const { AppRouterContext } = require('next/dist/shared/lib/app-router-context.shared-runtime')
-  const router = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {} }
-  const page = async () => requestAsyncStorage.run({ cookies: { get: () => ({ value: 'user' }) } }, async () => {
-    const element = await SoilPage({})
-    return renderToStaticMarkup(<AppRouterContext.Provider value={router}>{element}</AppRouterContext.Provider>)
-  })
+  const page = async () => withRequestCookies({ get: () => ({ value: 'user' }) },
+    async () => renderWithRouter(await SoilPage({})))
   try {
     let html = await page(); assert.match(html, /上限 75/); assert.match(html, /地図の目安/)
     diagnosis.ec = .31

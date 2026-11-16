@@ -6,10 +6,11 @@ import WorkRecordNewForm from './WorkRecordNewForm'
 export default async function NewWorkRecordPage({
   searchParams,
 }: {
-  searchParams?: { date?: string; cropId?: string; farmId?: string; taskType?: string; description?: string }
+  searchParams?: Promise<{ date?: string; cropId?: string; farmId?: string; taskType?: string; description?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = await searchParams
 
   const farms = await prisma.farm.findMany({
     where: { userId: user.id },
@@ -33,11 +34,11 @@ export default async function NewWorkRecordPage({
   return (
     <WorkRecordNewForm
       farms={farmsForForm}
-      initialDate={searchParams?.date}
-      initialCropId={searchParams?.cropId}
-      initialFarmId={searchParams?.farmId}
-      initialTaskType={searchParams?.taskType}
-      initialDescription={searchParams?.description}
+      initialDate={sp?.date}
+      initialCropId={sp?.cropId}
+      initialFarmId={sp?.farmId}
+      initialTaskType={sp?.taskType}
+      initialDescription={sp?.description}
     />
   )
 }

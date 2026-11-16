@@ -11,10 +11,11 @@ import { WorkManagementTabs, buildWorkManagementQuery, formatCropOptionLabel } f
 export default async function WorkRecordsPage({
   searchParams,
 }: {
-  searchParams: { cropId?: string; farmId?: string }
+  searchParams?: Promise<{ cropId?: string; farmId?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = (await searchParams) ?? {}
 
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   const cropsForFilter = await prisma.crop.findMany({
@@ -34,8 +35,8 @@ export default async function WorkRecordsPage({
   })
 
   const { where: workRecordWhere } = getWorkRecordWhere(user.id, {
-    cropId: searchParams.cropId,
-    farmId: searchParams.farmId,
+    cropId: sp.cropId,
+    farmId: sp.farmId,
   })
   const records = await prisma.workRecord.findMany({
     where: workRecordWhere,
@@ -47,7 +48,7 @@ export default async function WorkRecordsPage({
     orderBy: { date: 'desc' },
   })
 
-  const filterQuery = buildWorkManagementQuery(searchParams)
+  const filterQuery = buildWorkManagementQuery(sp)
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -69,7 +70,7 @@ export default async function WorkRecordsPage({
           <div className="farms-filter-bar">
             <Link
               href="/work-records"
-              className={!searchParams.cropId && !searchParams.farmId ? 'farms-filter-active' : 'farms-filter-link'}
+              className={!sp.cropId && !sp.farmId ? 'farms-filter-active' : 'farms-filter-link'}
             >
               すべて
             </Link>
@@ -77,7 +78,7 @@ export default async function WorkRecordsPage({
               <Link
                 key={crop.id}
                 href={`/work-records?cropId=${crop.id}`}
-                className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>
@@ -86,7 +87,7 @@ export default async function WorkRecordsPage({
               <Link
                 key={farm.id}
                 href={`/work-records?farmId=${farm.id}`}
-                className={searchParams.farmId === farm.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.farmId === farm.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {farm.name}
               </Link>

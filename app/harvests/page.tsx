@@ -12,13 +12,14 @@ import { formatHarvestAmount } from '@/lib/crops/harvest'
 export default async function HarvestsPage({
   searchParams,
 }: {
-  searchParams: { cropId?: string }
+  searchParams?: Promise<{ cropId?: string }>
 }) {
   const user = await getCurrentUser()
 
   if (!user) {
     redirect('/auth/signin')
   }
+  const sp = (await searchParams) ?? {}
 
   const include = {
     crop: {
@@ -26,7 +27,7 @@ export default async function HarvestsPage({
     },
   } as const
 
-  const { where, whereFallback } = getHarvestWhere(user.id, { cropId: searchParams.cropId })
+  const { where, whereFallback } = getHarvestWhere(user.id, { cropId: sp.cropId })
 
   let harvests
   try {
@@ -75,7 +76,7 @@ export default async function HarvestsPage({
           <div className="farms-filter-bar">
             <Link
               href="/harvests"
-              className={!searchParams.cropId ? 'farms-filter-active' : 'farms-filter-link'}
+              className={!sp.cropId ? 'farms-filter-active' : 'farms-filter-link'}
             >
               すべて
             </Link>
@@ -83,7 +84,7 @@ export default async function HarvestsPage({
               <Link
                 key={crop.id}
                 href={`/harvests?cropId=${crop.id}`}
-                className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>

@@ -7,10 +7,11 @@ import PesticideNewForm from './PesticideNewForm'
 export default async function NewPesticidePage({
   searchParams,
 }: {
-  searchParams?: { cropId?: string; farmId?: string; date?: string }
+  searchParams?: Promise<{ cropId?: string; farmId?: string; date?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = await searchParams
 
   const crops = await prisma.crop.findMany({
     where: {
@@ -50,9 +51,9 @@ export default async function NewPesticidePage({
       crops={cropsForSelect}
       usageRecords={usageRecords}
       farms={farmsForSelect}
-      initialCropId={searchParams?.cropId ?? ''}
-      initialFarmId={searchParams?.farmId ?? ''}
-      initialDate={searchParams?.date ?? ''}
+      initialCropId={sp?.cropId ?? ''}
+      initialFarmId={sp?.farmId ?? ''}
+      initialDate={sp?.date ?? ''}
     />
   )
 }

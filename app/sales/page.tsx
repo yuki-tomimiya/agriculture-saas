@@ -12,12 +12,13 @@ import RecordDeleteButton from '@/components/RecordDeleteButton'
 export default async function SalesPage({
   searchParams,
 }: {
-  searchParams: { cropId?: string }
+  searchParams?: Promise<{ cropId?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = (await searchParams) ?? {}
 
-  const { where } = getSaleWhere(user.id, { cropId: searchParams.cropId })
+  const { where } = getSaleWhere(user.id, { cropId: sp.cropId })
 
   let sales: any[] = []
   try {
@@ -72,7 +73,7 @@ export default async function SalesPage({
           <div className="farms-filter-bar">
             <Link
               href="/sales"
-              className={!searchParams.cropId ? 'farms-filter-active' : 'farms-filter-link'}
+              className={!sp.cropId ? 'farms-filter-active' : 'farms-filter-link'}
             >
               すべて
             </Link>
@@ -80,7 +81,7 @@ export default async function SalesPage({
               <Link
                 key={crop.id}
                 href={`/sales?cropId=${crop.id}`}
-                className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>

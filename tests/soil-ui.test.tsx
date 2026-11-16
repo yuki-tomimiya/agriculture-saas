@@ -1,8 +1,7 @@
-import './helpers/next-runtime'
+import { renderWithRouter } from './helpers/next-runtime'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import React from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import type { FarmSoil as SavedSoil } from '@prisma/client'
 import { mkdtemp, rm } from 'node:fs/promises'
 import os from 'node:os'
@@ -12,8 +11,6 @@ import { createSoilLookup } from '../lib/soil-map/lookup'
 import { farmSoilPresentation, type SoilFarm } from '../lib/farm-soil/presentation'
 
 Object.assign(globalThis, { React })
-const { AppRouterContext } = require('next/dist/shared/lib/app-router-context.shared-runtime')
-const router = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {} }
 function fixture(overrides: Partial<SavedSoil> = {}): SoilFarm {
   return { id: 'farm', latitude: 35, longitude: 140, locationVersion: 0, soil: {
     farmId: 'farm', lookupStatus: 'matched', lookupToken: null, locationVersion: 0,
@@ -25,9 +22,7 @@ function fixture(overrides: Partial<SavedSoil> = {}): SoilFarm {
   } }
 }
 function render(farm: SoilFarm, diagnosis = false) {
-  return renderToStaticMarkup(<AppRouterContext.Provider value={router}>
-    {diagnosis ? <SoilDiagnosisBasis farm={farm} /> : <FarmSoil farm={farm} />}
-  </AppRouterContext.Provider>)
+  return renderWithRouter(diagnosis ? <SoilDiagnosisBasis farm={farm} /> : <FarmSoil farm={farm} />)
 }
 test('地図の名前・基準の列・実際の図の出典を分け、地目とコードを出さない', () => {
   for (const scale of ['50000', '200000']) {

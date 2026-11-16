@@ -1,8 +1,7 @@
-import './helpers/next-runtime'
+import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import React from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import CropsPage from '../app/crops/page'
 import CropsArchivePage from '../app/crops/archive/page'
 import FarmsPage from '../app/farms/page'
@@ -10,9 +9,6 @@ import { sortListRows } from '../components/ManagementList'
 import { prisma } from '../lib/prisma'
 
 Object.assign(globalThis, { React })
-const { requestAsyncStorage } = require('next/dist/client/components/request-async-storage.external')
-const { AppRouterContext } = require('next/dist/shared/lib/app-router-context.shared-runtime')
-const router = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {} }
 
 test('3画面の初期表示、画面別Cookie、農場での絞り込みと0件時の案内', async () => {
   const farm = {
@@ -37,11 +33,9 @@ test('3画面の初期表示、画面別Cookie、農場での絞り込みと0件
 
   const searchParams = Promise.resolve({ farmId: 'farm-a' })
   const render = (page: () => Promise<React.ReactElement>, cookieName?: string) =>
-    requestAsyncStorage.run({ cookies: { get: (name: string) =>
+    withRequestCookies({ get: name =>
       name === 'userId' ? { value: 'user' } : name === cookieName ? { value: 'tiles' } : undefined,
-    } }, async () => renderToStaticMarkup(
-      <AppRouterContext.Provider value={router}>{await page()}</AppRouterContext.Provider>,
-    ))
+    }, async () => renderWithRouter(await page()))
 
   try {
     for (const [page, key, otherKey, emptyText, action] of [

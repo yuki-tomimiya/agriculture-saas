@@ -12,10 +12,11 @@ import { WorkManagementTabs, buildWorkManagementQuery, formatCropOptionLabel } f
 export default async function FertilizersPage({
   searchParams,
 }: {
-  searchParams: { cropId?: string; farmId?: string }
+  searchParams?: Promise<{ cropId?: string; farmId?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = (await searchParams) ?? {}
 
   const { where: cropWhere, whereFallback: cropWhereFallback } = getCropWhere(user.id)
   const cropsForFilter = await prisma.crop.findMany({
@@ -35,8 +36,8 @@ export default async function FertilizersPage({
   })
 
   const { where: fertilizerWhere } = getFertilizerWhere(user.id, {
-    cropId: searchParams.cropId,
-    farmId: searchParams.farmId,
+    cropId: sp.cropId,
+    farmId: sp.farmId,
   })
   type FertilizerRow = Prisma.FertilizerRecordGetPayload<{
     include: { crop: { include: { farm: true } }; farm: true }
@@ -55,7 +56,7 @@ export default async function FertilizersPage({
     records = []
   }
 
-  const filterQuery = buildWorkManagementQuery(searchParams)
+  const filterQuery = buildWorkManagementQuery(sp)
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -77,7 +78,7 @@ export default async function FertilizersPage({
           <div className="farms-filter-bar">
             <Link
               href="/fertilizers"
-              className={!searchParams.cropId && !searchParams.farmId ? 'farms-filter-active' : 'farms-filter-link'}
+              className={!sp.cropId && !sp.farmId ? 'farms-filter-active' : 'farms-filter-link'}
             >
               すべて
             </Link>
@@ -85,7 +86,7 @@ export default async function FertilizersPage({
               <Link
                 key={crop.id}
                 href={`/fertilizers?cropId=${crop.id}`}
-                className={searchParams.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.cropId === crop.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {formatCropOptionLabel({ ...crop, farmName: crop.farm?.name })}
               </Link>
@@ -94,7 +95,7 @@ export default async function FertilizersPage({
               <Link
                 key={farm.id}
                 href={`/fertilizers?farmId=${farm.id}`}
-                className={searchParams.farmId === farm.id ? 'farms-filter-active' : 'farms-filter-link'}
+                className={sp.farmId === farm.id ? 'farms-filter-active' : 'farms-filter-link'}
               >
                 {farm.name}
               </Link>

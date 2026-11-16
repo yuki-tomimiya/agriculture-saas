@@ -24,15 +24,16 @@ function parseYearMonth(
 export default async function CalendarHistoryPage({
   searchParams,
 }: {
-  searchParams: { year?: string; month?: string }
+  searchParams?: Promise<{ year?: string; month?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = (await searchParams) ?? {}
 
   const today = new Date()
   // デフォルト: 「先月を含む過去3か月」の先頭（3か月前）
   const defaultStart = shiftMonth(today.getFullYear(), today.getMonth() + 1, -3)
-  const start = parseYearMonth(searchParams.year, searchParams.month, defaultStart)
+  const start = parseYearMonth(sp.year, sp.month, defaultStart)
   const prev = shiftMonth(start.year, start.month, -1)
   const next = shiftMonth(start.year, start.month, 1)
   const end = shiftMonth(start.year, start.month, 2)

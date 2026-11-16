@@ -1,6 +1,5 @@
-import './helpers/next-runtime'
+import { withRequestCookies } from './helpers/next-runtime'
 import assert from 'node:assert/strict'
-import type { AsyncLocalStorage } from 'node:async_hooks'
 import { execFileSync } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -11,9 +10,6 @@ import { NextRequest } from 'next/server'
 
 const { DatabaseSync } = require('node:sqlite') as {
   DatabaseSync: new (file: string) => { exec(sql: string): void; close(): void }
-}
-const { requestAsyncStorage } = require('next/dist/client/components/request-async-storage.external') as {
-  requestAsyncStorage: AsyncLocalStorage<{ cookies: NextRequest['cookies'] }>
 }
 
 async function testDatabase(t: TestContext) {
@@ -48,7 +44,7 @@ function update(handler: Update, method: 'PATCH' | 'PUT', id: string, body: obje
     headers: { cookie, 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
-  return requestAsyncStorage.run({ cookies: request.cookies }, () => handler(request, { params: Promise.resolve({ id }) }))
+  return withRequestCookies(request.cookies, () => handler(request, { params: Promise.resolve({ id }) }))
 }
 
 test('更新APIは変更先の農場・作付けの持ち主を確かめる', async t => {

@@ -7,13 +7,14 @@ import TaskNewForm from './TaskNewForm'
 export default async function NewTaskPage({
   searchParams,
 }: {
-  searchParams?: { cropId?: string; farmId?: string; title?: string; dueDate?: string }
+  searchParams?: Promise<{ cropId?: string; farmId?: string; title?: string; dueDate?: string }>
 }) {
   const user = await getCurrentUser()
 
   if (!user) {
     redirect('/auth/signin')
   }
+  const sp = await searchParams
 
   const farms = await prisma.farm.findMany({
     where: { userId: user.id },
@@ -32,10 +33,10 @@ export default async function NewTaskPage({
   return (
     <TaskNewForm
       farms={farmsWithCrops}
-      initialCropId={searchParams?.cropId}
-      initialFarmId={searchParams?.farmId}
-      initialTitle={searchParams?.title}
-      initialDueDate={searchParams?.dueDate}
+      initialCropId={sp?.cropId}
+      initialFarmId={sp?.farmId}
+      initialTitle={sp?.title}
+      initialDueDate={sp?.dueDate}
     />
   )
 }

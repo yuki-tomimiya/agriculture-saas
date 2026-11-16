@@ -6,10 +6,11 @@ import SalesNewForm from './SalesNewForm'
 export default async function NewSalesPage({
   searchParams,
 }: {
-  searchParams?: { cropId?: string; farmId?: string; date?: string; returnTo?: string }
+  searchParams?: Promise<{ cropId?: string; farmId?: string; date?: string; returnTo?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
+  const sp = await searchParams
 
   const crops = await prisma.crop.findMany({
     where: {
@@ -40,10 +41,10 @@ export default async function NewSalesPage({
     <SalesNewForm
       crops={cropsForSelect}
       farms={farmsForSelect}
-      initialCropId={searchParams?.cropId}
-      initialFarmId={searchParams?.farmId}
-      initialDate={searchParams?.date}
-      returnTo={searchParams?.returnTo}
+      initialCropId={sp?.cropId}
+      initialFarmId={sp?.farmId}
+      initialDate={sp?.date}
+      returnTo={sp?.returnTo}
     />
   )
 }

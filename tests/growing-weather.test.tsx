@@ -1,16 +1,12 @@
-import './helpers/next-runtime'
+import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import React from 'react'
-import { renderToStaticMarkup } from 'react-dom/server'
 import { temporarySqlite } from './helpers/temporary-sqlite'
 import { calculateHarvestWindow } from '@/lib/insights/harvest-date-window'
 
 Object.assign(globalThis, { React })
 process.env.TZ = 'Asia/Tokyo'
-const { requestAsyncStorage } = require('next/dist/client/components/request-async-storage.external')
-const { AppRouterContext } = require('next/dist/shared/lib/app-router-context.shared-runtime')
-const router = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {} }
 
 test('生育ナビは終了日に積算を止め、気温が取れないときは0℃日や未到達を出さない', async t => {
   const { db } = await temporarySqlite(t)
@@ -66,10 +62,8 @@ test('生育ナビは終了日に積算を止め、気温が取れないとき�
     } }))
   })
   const render = (cropId: string): Promise<string> =>
-    requestAsyncStorage.run({ cookies: { get: (name: string) => name === 'userId' ? { value: 'user' } : undefined } },
-      async () => renderToStaticMarkup(<AppRouterContext.Provider value={router}>
-        {await GddCropPage({ params: Promise.resolve({ cropId }) })}
-      </AppRouterContext.Provider>))
+    withRequestCookies({ get: name => name === 'userId' ? { value: 'user' } : undefined },
+      async () => renderWithRouter(await GddCropPage({ params: Promise.resolve({ cropId }) })))
 
   const ended = await render('ended')
   assert.match(ended, /終了時点：60 ℃日/)
