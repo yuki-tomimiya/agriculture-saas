@@ -2,6 +2,9 @@
   "name": "agriculture-saas",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  },
   "scripts": {
     "soil:import": "tsx scripts/soil-import.ts",
     "soil:verify": "tsx scripts/soil-verify.ts",
@@ -11,6 +14,8 @@
     "soil:nutrient-test": "tsx --test tests/soil-nutrients.test.tsx",
     "soil:ui-test": "tsx --test tests/soil-ui.test.tsx",
     "test": "node --import tsx --test \"tests/**/*.test.ts\" \"tests/**/*.test.tsx\"",
+    "test:update-fixtures": "node --import tsx tests/today-proposals.test.ts --update-fixtures",
+    "check": "tsc --noEmit && npm run lint && npm test",
     "check-data": "tsx scripts/proposal-check-data.ts",
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "dev:lan": "next dev -H 0.0.0.0 -p 3000",

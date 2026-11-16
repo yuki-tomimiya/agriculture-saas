@@ -1,5 +1,7 @@
+// 提案の変更を固定出力に反映するときだけ npm run test:update-fixtures を実行する。
+// 通常の npm test と npm run check は固定出力を読み、差分を検出する。
 import assert from 'node:assert/strict'
-import { readFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { test } from 'node:test'
 import { ymdKey } from '@/lib/insights/harvest-date-window'
@@ -11,6 +13,7 @@ import { temporarySqlite } from './helpers/temporary-sqlite'
 // 本番と同じ暦日で、実行マシンのタイムゾーンに左右されず答えを比較する。
 process.env.TZ = 'Asia/Tokyo'
 const now = new Date(2026, 10, 13, 12)
+const updateFixtures = process.argv.includes('--update-fixtures')
 
 function archiveFixture(): LocationArchive {
   const times: string[] = []
@@ -107,8 +110,12 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       }
       const expectedPath = path.join(__dirname, 'fixtures', 'today-proposals', `${scenario}.json`)
       const actual = JSON.stringify(answer, null, 2) + '\n'
-      const expected = await readFile(expectedPath, 'utf8')
-      assert.equal(actual, expected.replace(/\r\n/g, '\n'))
+      const expected = (await readFile(expectedPath, 'utf8')).replace(/\r\n/g, '\n')
+      if (updateFixtures) {
+        if (actual !== expected) await writeFile(expectedPath, actual, 'utf8')
+      } else {
+        assert.equal(actual, expected)
+      }
     })
   }
 
