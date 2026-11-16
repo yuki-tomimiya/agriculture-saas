@@ -176,14 +176,16 @@ async function historicalRows(args: { startDate: Date; endDate: Date; point?: Pa
   }
 }
 
-export async function getHistoricalDailyTemps(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; avgTemp: number; maxTemp: number; minTemp: number }[]> {
+export async function getHistoricalDailyTemps(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; avgTemp: number }[]> {
   const rows = await historicalRows(args)
-  return rows?.flatMap(row => row.tempMean == null || row.tempMax == null || row.tempMin == null ? [] : [{
-    date: new Date(`${row.date}T00:00:00`),
-    maxTemp: Math.round(row.tempMax * 10) / 10,
-    minTemp: Math.round(row.tempMin * 10) / 10,
-    avgTemp: Math.round(row.tempMean * 10) / 10,
-  }]) ?? []
+  if (!rows) return []
+  const daily = []
+  for (const row of rows) {
+    // 日平均が1日でも取れないと、期間の積算は計算できない。
+    if (row.tempMean == null || !Number.isFinite(row.tempMean)) return []
+    daily.push({ date: new Date(`${row.date}T00:00:00`), avgTemp: Math.round(row.tempMean * 10) / 10 })
+  }
+  return daily
 }
 
 export async function getHistoricalDailySunshine(args: { startDate: Date; endDate: Date; point?: Partial<WeatherPoint> }): Promise<{ date: Date; sunshineHours: number }[]> {

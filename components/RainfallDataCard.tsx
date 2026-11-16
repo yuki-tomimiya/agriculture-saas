@@ -22,11 +22,13 @@ export default function RainfallDataCard({
   rainyDays,
   lastYearPoints = [],
   lastYearLabel = null,
+  periodEndLabel,
 }: {
   cropName: string
   plantingDate?: Date | null
   daysFromPlanting: number
   currentCumulativeMm: number
+  periodEndLabel?: string
   /** null は取得失敗。空配列は線を出さない */
   normalCumulativeMm?: number[] | null
   historicalPoints: CumPoint[]
@@ -162,7 +164,7 @@ export default function RainfallDataCard({
       </h2>
       <WeatherDataSource kind="mixed" />
       <p className="dashboard-section-sub">
-        {cropName}の圃場地点に基づき、植え付け日から今日までの実績雨量を表示しています。
+        {cropName}の圃場地点に基づき、植え付け日から{periodEndLabel ?? '今日'}までの実績雨量を表示しています。
         {lastYearPath ? ' 灰色は前回作付けの積算雨量です。' : ''}
       </p>
 
@@ -237,7 +239,7 @@ export default function RainfallDataCard({
             )}
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#3b82f6' }} />
-              <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">現在（推計）：{Math.round(currentCumulativeMm)} mm</span>
+              <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">{periodEndLabel ? '終了時点' : '現在'}（推計）：{Math.round(currentCumulativeMm)} mm</span>
             </div>
           </div>
         </div>

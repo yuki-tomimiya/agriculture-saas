@@ -28,6 +28,7 @@ type GDDChartProps = {
   historicalPoints?: ProjectionPoint[]
   dailyProjections?: ProjectionPoint[]
   projectionLabel?: string
+  viewingPastCrop?: boolean
   /** 前回作付けの累積GDD（植付けからの日数で揃える） */
   lastYearPoints?: LastYearPoint[]
   lastYearLabel?: string | null
@@ -101,6 +102,7 @@ export default function GDDChart({
   historicalPoints = [],
   dailyProjections = [],
   projectionLabel = '数値予報モデルの計算',
+  viewingPastCrop = false,
   lastYearPoints = [],
   lastYearLabel = null,
   normalGddByDay,
@@ -215,6 +217,7 @@ export default function GDDChart({
     projectedProgressPct != null ? Math.min(100, projectedProgressPct) : null
 
   const basisLabel = formatHarvestGddTarget(targetGDD, harvestReference)
+  const actualLabel = viewingPastCrop ? '終了時点' : '現在'
 
   return (
     <section className="dashboard-card">
@@ -222,9 +225,9 @@ export default function GDDChart({
         {cropLabel}の積算温度（GDD）の推移
         <Link href="/faq/gdd" className="chart-help" aria-label="積算温度とは">？</Link>
       </h2>
-      <WeatherDataSource kind="mixed" />
+      <WeatherDataSource kind={hasProjection ? 'mixed' : 'archive'} />
       <p className="dashboard-section-sub">
-        上段は実績（緑）と数値予報モデルの計算（青破線）
+        上段は実績（緑）{hasProjection && 'と数値予報モデルの計算（青破線）'}
         {hasLastYear ? '、前回作付け（灰）' : ''}
         の累積推移{showHarvestTarget ? '、下段はこの基準までの進捗を表示します。' : 'を表示します。'}
         {!crop && ' 作物一覧で植え付け日を登録した作物がここに表示されます。'}
@@ -236,8 +239,8 @@ export default function GDDChart({
           <span>{originLabel ?? '植え付け'}からの推移（累積 ℃日）</span>
           <span className="dashboard-gdd-graph-current">
             {showHarvestTarget
-              ? `現在：${currentGDD} ℃日 / ${basisLabel}`
-              : valueCaption ?? `現在：${currentGDD} ℃日`}
+              ? `${actualLabel}：${currentGDD} ℃日 / ${basisLabel}`
+              : valueCaption ?? `${actualLabel}：${currentGDD} ℃日`}
           </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">
@@ -369,7 +372,7 @@ export default function GDDChart({
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#34D399' }} />
               <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">
-                現在：{Math.round(currentGDD)} ℃日
+                {actualLabel}：{Math.round(currentGDD)} ℃日
               </span>
             </div>
             {hasLastYear && (

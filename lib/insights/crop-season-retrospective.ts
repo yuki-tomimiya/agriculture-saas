@@ -3,7 +3,7 @@ import { describeYieldChange, formatPlantingLabel } from '@/lib/insights/crop-se
 import { seasonName } from '@/lib/insights/season'
 import { latestHarvestDate, ownYieldRates, sharesFieldPeriod } from '@/lib/benchmarks/national-yield'
 import { personalGroupKey, plantingGapNote, previousPlanting } from '@/lib/crops/conditions'
-import { heatForCrop, loadHarvestSamples, pickHarvestBasis, viewForCrop, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
+import { cropHeatEndDate, heatForCrop, loadHarvestSamples, pickHarvestBasis, viewForCrop, type HarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { gddStartDate } from '@/lib/benchmarks/gdd-methods'
 import {
   getAccumulatedGDDFromApi,
@@ -338,13 +338,8 @@ export async function getRetrospectiveGdd(
     },
   })
   if (!crop) return null
-  const firstHarvestDate = crop.harvests[0]?.date ?? null
-  const lastHarvestDate = crop.harvests[crop.harvests.length - 1]?.date ?? null
   const view = viewForCrop(crop)
-  const endDate =
-    view.status === 'active' && view.startDate
-      ? firstHarvestDate ?? crop.harvestDate
-      : crop.harvestDate ?? lastHarvestDate ?? (crop.status === 'growing' ? new Date() : null)
+  const endDate = cropHeatEndDate(crop, view)
   const point = {
     latitude: crop.farm?.latitude ?? null,
     longitude: crop.farm?.longitude ?? null,

@@ -2,7 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { heatForCrop, loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import {
   forecastAvgByYmd,
-  projectHarvestWindow,
+  calculateHarvestWindow,
 } from '@/lib/insights/harvest-date-window'
 import {
   buildGeneralLayerDetails,
@@ -599,22 +599,15 @@ export async function scoreCrops(
       confirmationCrops.push({ cropId: crop.id, cropName: crop.name, farmName: crop.farm?.name, reason })
     }
     if (days === null) continue
-    const harvestWindowReady = Boolean(
-      basis.view.status === 'active' &&
-      !basis.view.startDate &&
-      climate?.archive &&
-      currentGDD != null &&
-      targetGDD > 0
-    )
-    const harvestWindow = harvestWindowReady
-      ? projectHarvestWindow({
+    const windowResult = basis.view.status === 'active' && !basis.view.startDate && climate?.archive && currentGDD != null && targetGDD > 0
+      ? calculateHarvestWindow({
           today,
-          currentGdd: currentGDD ?? 0,
+          currentGdd: currentGDD,
           targetGdd: targetGDD,
           count: heat.count,
           baseTemp: heat.baseTemp,
-          archive: climate!.archive!,
-          forecastByYmd: forecastAvgByYmd(climate!.forecast),
+          archive: climate.archive,
+          forecastByYmd: forecastAvgByYmd(climate.forecast),
         })
       : null
     const stage = resolveCropStage(matchName, matchVariety, {
@@ -835,8 +828,8 @@ export async function scoreCrops(
             targetGdd: targetGDD,
             reference: basis.view.status === 'active' ? { sampleCount: basis.sampleCount, method: basis.view } : undefined,
             hasSeenRoots,
-            harvestWindow,
-            harvestWindowReady,
+            harvestWindow: windowResult?.status === 'projected' ? windowResult.window : null,
+            harvestWindowReady: windowResult != null && windowResult.status !== 'unavailable',
           })
         : null
     if (frost && ((confirmations && frost.deadline) || !isProposalDismissed(dismissed, frost.trigger, crop.id))) {

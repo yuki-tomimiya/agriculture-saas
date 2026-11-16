@@ -184,6 +184,17 @@ export function viewForCrop(crop: HarvestBasisCrop): GddAvailability {
   })
 }
 
+/** 振り返りと終了済みの生育ナビで、積算を止める日をそろえる。収穫は日付の昇順。 */
+export function cropHeatEndDate(
+  crop: { status: string; harvestDate: Date | null; harvests: { date: Date }[] },
+  view: GddAvailability,
+): Date | null {
+  if (view.status === 'active' && view.startDate) {
+    return crop.harvests[0]?.date ?? crop.harvestDate
+  }
+  return crop.harvestDate ?? crop.harvests.at(-1)?.date ?? (crop.status === 'growing' ? new Date() : null)
+}
+
 export function chosenHarvestSamples(
   samples: HarvestSample[],
   crop: HarvestBasisCrop

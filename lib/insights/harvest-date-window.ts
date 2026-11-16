@@ -114,7 +114,7 @@ function tempOn(
  * 今年の12月31日で止める。届かない年は数えない。
  * 届いた年が4年以上なら、いちばん早い年と遅い年を1つずつ除く。
  */
-export function projectHarvestWindow(args: {
+type HarvestWindowInput = {
   today: Date
   currentGdd: number
   targetGdd: number
@@ -123,12 +123,18 @@ export function projectHarvestWindow(args: {
   archive: LocationArchive
   forecastByYmd?: Map<string, number> | null
   includeToday?: boolean
-}): HarvestDateWindow | null {
-  if (args.targetGdd <= 0) return null
+}
+
+type HarvestWindowResult =
+  | { status: 'unavailable' | 'unreachable' }
+  | { status: 'projected'; window: HarvestDateWindow }
+
+export function calculateHarvestWindow(args: HarvestWindowInput): HarvestWindowResult {
+  if (args.targetGdd <= 0) return { status: 'unavailable' }
   const today = atNoon(args.today)
   const seasonEnd = new Date(today.getFullYear(), 11, 31, 12, 0, 0, 0)
   const byYear = indexTemps(args.archive)
-  if (byYear.size === 0) return null
+  if (byYear.size === 0) return { status: 'unavailable' }
   const forecastUntil = addDays(today, FORECAST_LEAD_DAYS)
   const arrivals: Date[] = []
 
@@ -153,17 +159,19 @@ export function projectHarvestWindow(args: {
     }
   }
 
-  if (arrivals.length === 0) return null
+  if (arrivals.length === 0) return { status: 'unreachable' }
   arrivals.sort((a, b) => a.getTime() - b.getTime())
   const reached = arrivals.length
   const kept = reached >= 4 ? arrivals.slice(1, -1) : arrivals
   return {
-    years: byYear.size,
-    reached,
-    inside: kept.length,
-    early: kept[0],
-    late: kept[kept.length - 1],
+    status: 'projected',
+    window: { years: byYear.size, reached, inside: kept.length, early: kept[0], late: kept[kept.length - 1] },
   }
+}
+
+export function projectHarvestWindow(args: HarvestWindowInput): HarvestDateWindow | null {
+  const result = calculateHarvestWindow(args)
+  return result.status === 'projected' ? result.window : null
 }
 
 /** 「9月26日〜9月30日（過去10年の気温で計算。10年中8年がこの間）」 */

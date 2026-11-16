@@ -5,6 +5,7 @@ import {
 } from '@/lib/weather-forecast'
 import { dailyNormalsFromArchive, sumNormalPrecip, loadLocationArchive } from '@/lib/weather-normals'
 import { annualPeriodTotals, tenYearClass } from '@/lib/insights/ten-year-classes'
+import { ymdKey } from '@/lib/insights/harvest-date-window'
 import { TEN_YEAR_MEAN } from '@/lib/weather-labels'
 
 export type RegionalRainSummary = {
@@ -52,8 +53,16 @@ function dateAtTokyo(year: number, month: number, day: number): Date {
   return new Date(year, month - 1, day, 12, 0, 0, 0)
 }
 
-function sumMm(rows: { precipitationMm: number }[]): number {
-  const total = rows.reduce((s, r) => s + r.precipitationMm, 0)
+function completeRainTotal(rows: { date: Date; precipitationMm: number }[], start: Date, days: number): number | null {
+  const amounts = new Map(rows.map(row => [ymdKey(row.date), row.precipitationMm]))
+  const cursor = new Date(start)
+  let total = 0
+  for (let day = 0; day < days; day++) {
+    const amount = amounts.get(ymdKey(cursor))
+    if (amount == null || !Number.isFinite(amount)) return null
+    total += amount
+    cursor.setDate(cursor.getDate() + 1)
+  }
   return Math.round(total * 10) / 10
 }
 
@@ -81,7 +90,7 @@ function buildInterpretation(args: {
     args.dayOfMonth <= 1 ? `${args.month}月1日まで` : `${args.month}月1日〜${args.dayOfMonth}日`
 
   if (args.thisYearMm === null) {
-    const msg = `${place}の降水量データを取得できませんでした。緯度・経度や通信状況を確認してください。`
+    const msg = `${place}の${period}の降水量データがそろっていないため、比較できません。`
     return { shortLine: msg, interpretation: msg, diffPct: null, normalRatioPct: null }
   }
 
@@ -189,8 +198,8 @@ export async function getRegionalRainSummary(args: {
   ])
   const normals = dailyNormalsFromArchive(archive)
 
-  const thisYearMm = thisRows.length > 0 ? sumMm(thisRows) : null
-  const lastYearMm = lastRows.length > 0 ? sumMm(lastRows) : null
+  const thisYearMm = completeRainTotal(thisRows, thisStart, dayOfMonth)
+  const lastYearMm = completeRainTotal(lastRows, lastStart, dayOfMonth)
   const normalMm = normals ? sumNormalPrecip(normals, thisStart, thisEnd) : null
 
   const { shortLine, interpretation, diffPct, normalRatioPct } = buildInterpretation({

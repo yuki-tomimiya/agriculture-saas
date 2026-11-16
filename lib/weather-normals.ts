@@ -152,19 +152,15 @@ export function sumNormalPrecip(normals: Map<string, DayNormal>, start: Date, en
   last.setHours(12, 0, 0, 0)
   if (cursor > last) return null
   let total = 0
-  let days = 0
   while (cursor <= last) {
     let month = cursor.getMonth() + 1
     let day = cursor.getDate()
     if (month === 2 && day === 29) day = 28
     const row = normals.get(`${month}-${day}`)
-    if (row) {
-      total += row.precipMm
-      days += 1
-    }
+    if (!row || !Number.isFinite(row.precipMm)) return null
+    total += row.precipMm
     cursor.setDate(cursor.getDate() + 1)
   }
-  if (days === 0) return null
   return Math.round(total * 10) / 10
 }
 
