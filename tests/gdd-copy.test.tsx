@@ -47,7 +47,7 @@ test('生育ナビの単位と到達の文の位置をそろえ、ダッシュ�
     db.openMeteoDaily.createMany({ data: datesBetween(start, end).map(date =>
       ({ location, date, tempMean, precip: 1, radiation: 10 })) })
   await writeDays('2025-07-01', '2025-10-31', 28)
-  await writeDays('2026-08-02', '2026-11-17', 25)
+  await writeDays('2026-08-02', '2026-11-17', 25.004)
   t.mock.method(globalThis, 'fetch', async (input: RequestInfo | URL) => {
     const url = new URL(String(input))
     if (url.pathname.endsWith('/forecast')) return new Response(JSON.stringify({ daily: { time: [] } }))
@@ -69,13 +69,13 @@ test('生育ナビの単位と到達の文の位置をそろえ、ダッシュ�
   const active = await renderCrop('active')
   assert.match(active, /現在：2,700 ℃日/)
   assert.match(active, new RegExp(range.source + '前回のあなたは3,444℃日で収穫しました。'))
-  assert.match(gddCopy(active), /資料の目安（2,400℃日）は超えましたが、今季は前回のあなたが収穫した時点（3,444℃日）には届かない見込みです。.*出典：/s)
+  assert.match(gddCopy(active), /資料の目安（2,400℃日）は超えましたが、今季は前回あなたが収穫した時点（3,444℃日）には届かない見込みです。.*出典：/s)
 
   await db.openMeteoDaily.updateMany({
     where: { location, date: { gte: '2026-08-02' } }, data: { tempMean: 35 },
   })
   const reached = await renderCrop('active')
-  const reachedText = '前回のあなたが収穫した時点（3,444℃日）も超えています。'
+  const reachedText = '前回あなたが収穫した時点（3,444℃日）も超えています。'
   assert.equal(reached.split(reachedText).length, 2)
   assert.match(gddCopy(reached), /3,444℃日）も超えています。.*出典：/s)
 

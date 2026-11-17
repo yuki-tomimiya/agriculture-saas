@@ -115,10 +115,16 @@ function earliestDateThisYear(today: Date, frost: FirstFrostSummary): Date {
   return new Date(today.getFullYear(), frost.earliest.month - 1, frost.earliest.day, 12, 0, 0, 0)
 }
 
-export function formatConfirmationDate(label: string, days: number): string {
+function formatConfirmationDate(label: string, days: number): string {
   if (days < 0) return `${label}（今年はもう過ぎています）`
   if (days === 0) return `${label}（今日）`
   return `${label}（${days === 1 ? 'あす' : `あと${days}日`}）`
+}
+
+export function formatSeasonDateEnding(days: number): string {
+  if (days < 0) return 'で、今年はもう過ぎています。'
+  if (days === 0) return 'で、今日にあたります。'
+  return `で、${days === 1 ? 'あす' : `あと${days}日`}です。`
 }
 
 function formatWindowDates(window: HarvestDateWindow): string {
@@ -179,14 +185,14 @@ export function assessSweetPotatoFrost(args: {
     reference: args.reference,
     windowText,
   })
-  const earlyFrost = formatConfirmationDate(formatMonthDay(frost.earliest), days)
+  const earlyFrost = `${formatMonthDay(frost.earliest)}（${origin.source === 'station' ? '観測' : '推計'}）`
   const target = formatHarvestGddTarget(args.targetGdd, args.reference)
   const targetTiming = window
     ? args.currentGdd >= args.targetGdd
       ? `${target}にはすでに届いています。`
       : `${target}に届く見込みは${formatWindowDates(window)}です。`
     : `${target}には今季届かない見込みです。`
-  const confirmationReason = `${targetTiming}過去10年で最も早く最低気温が4℃以下になった日は${earlyFrost}（${origin.source === 'station' ? '観測' : '推計'}）。`
+  const confirmationReason = `${targetTiming}過去10年で最も早く最低気温が4℃以下になった日は${earlyFrost}${formatSeasonDateEnding(days)}`
   const station = origin.source === 'station'
     ? `${origin.stationName}観測所（農場から${formatKm(origin.distanceKm ?? 0)}km${origin.elevationDiffM == null ? '' : `、標高差${origin.elevationDiffM}m`}）の日別値を使っています。`
     : '近くの観測所の記録が使えないため、推計の気温を使っています。'

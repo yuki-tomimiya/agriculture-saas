@@ -68,7 +68,7 @@ test('同じきっかけと理由を1枚にまとめ、異なる理由の作付�
 })
 
 test('例年の霜の理由は作付けの見込みを先に置き、最早日までの日数を添える', () => {
-  for (const [day, expected] of [[17, '今年はもう過ぎています'], [13, 'あす'], [11, 'あと3日']] as const) {
+  for (const [day, expected] of [[17, '今年はもう過ぎています'], [14, '今日にあたります'], [13, 'あすです'], [11, 'あと3日です']] as const) {
     const frost = assessSweetPotatoFrost({
       today: new Date(2026, 10, day, 12), forecast: [], currentGdd: 3000, targetGdd: 3398,
       reference: { sampleCount: 1, method: { low: 2400, count: 'simple' } },
@@ -79,8 +79,8 @@ test('例年の霜の理由は作付けの見込みを先に置き、最早日�
       hasSeenRoots: false, harvestWindow: null, harvestWindowReady: true,
     })
     assert.ok(frost)
-    assert.match(frost.confirmationReason, /^前回のあなたが収穫した時点（3,398℃日）には今季届かない見込みです。/)
-    assert.ok(frost.confirmationReason.endsWith(`11月14日（${expected}）（観測）。`))
+    assert.match(frost.confirmationReason, /^前回あなたが収穫した時点（3,398℃日）には今季届かない見込みです。/)
+    assert.ok(frost.confirmationReason.endsWith(`11月14日（観測）で、${expected}。`))
     assert.match(frost.confirmationLayers.regional, /宇都宮観測所/)
     assert.doesNotMatch(frost.confirmationLayers.general, /観測所|3,398/)
   }

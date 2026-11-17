@@ -239,8 +239,8 @@ export default function GDDChart({
           <span>{originLabel ?? '植え付け'}からの推移（累積 ℃日）</span>
           <span className="dashboard-gdd-graph-current">
             {showHarvestTarget
-              ? `${actualLabel}：${currentGDD.toLocaleString('ja-JP')} ℃日 / ${basisLabel}`
-              : valueCaption ?? `${actualLabel}：${currentGDD.toLocaleString('ja-JP')} ℃日`}
+              ? `${actualLabel}：${Math.round(currentGDD).toLocaleString('ja-JP')} ℃日 / ${basisLabel}`
+              : valueCaption ?? `${actualLabel}：${Math.round(currentGDD).toLocaleString('ja-JP')} ℃日`}
           </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">

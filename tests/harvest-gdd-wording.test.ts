@@ -26,9 +26,9 @@ function heatTarget(samples: HarvestSample[]) {
 test('資料の目安を超えても前回の収穫時点には届かないときは、両方の物差しを示す', () => {
   const target = heatTarget([sample('last', 3407)])
   assert.equal(formatHarvestGddOutlook({ ...target, currentGdd: 2688, windowText: null }),
-    '資料の目安（2,400℃）は超えましたが、今季は前回のあなたが収穫した時点（3,407℃日）には届かない見込みです。')
+    '資料の目安（2,400℃）は超えましたが、今季は前回あなたが収穫した時点（3,407℃日）には届かない見込みです。')
   assert.equal(formatHarvestGddOutlook({ ...target, currentGdd: 2400, windowText: null }),
-    '今季は前回のあなたが収穫した時点（3,407℃日）には届かない見込みです。')
+    '今季は前回あなたが収穫した時点（3,407℃日）には届かない見込みです。')
 })
 
 test('同じ品種の実績がなくても、1作の記録を使う場合は平均とは表示しない', () => {
@@ -37,7 +37,7 @@ test('同じ品種の実績がなくても、1作の記録を使う場合は平�
   assert.equal(pickHarvestBasis(samples, crop).source, 'crop')
   assert.match(pickHarvestBasis(samples, crop).summary, /前回のあなたは/)
   assert.equal(formatHarvestGddTarget(target.targetGdd, target.reference),
-    '前回のあなたが収穫した時点（3,407℃日）')
+    '前回あなたが収穫した時点（3,407℃日）')
 })
 
 test('複数の実績では作数と平均を示し、実績がなければ資料の目安と明記する', () => {
@@ -58,7 +58,7 @@ test('数値予報モデルによる計算と、到達の文の物差しを確�
   assert.equal(endCumulativeGDD, 3417)
   assert.equal(targetReachDate, forecast[0].date)
   assert.deepEqual(suggestions, [
-    '資料の目安（2,400℃）は超えました。前回のあなたが収穫した時点（3,407℃日）にはすでに届いています。',
+    '資料の目安（2,400℃）は超えました。前回あなたが収穫した時点（3,407℃日）にはすでに届いています。',
   ])
 })
 
@@ -78,6 +78,6 @@ test('霜のカードでも両方の物差しを示し、試し掘りの助言�
   })
 
   assert.equal(frost?.trigger, FROST_SEASON_TRIGGER)
-  assert.match(frost.harvestOutlook?.text ?? '', /資料の目安（2,400℃）.*前回のあなたが収穫した時点（3,407℃日）/)
+  assert.match(frost.harvestOutlook?.text ?? '', /資料の目安（2,400℃）.*前回あなたが収穫した時点（3,407℃日）/)
   assert.match(frost.conclusion, /試し掘りで太りを確かめて、霜の前に掘り上げましょう/)
 })

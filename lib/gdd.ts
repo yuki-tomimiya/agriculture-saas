@@ -34,7 +34,7 @@ export function formatHarvestGddTarget(targetGdd: number, reference?: HarvestGdd
   if (reference.sampleCount === 0) {
     return `資料の目安（${value}${reference.method.count === 'simple' ? '℃' : '℃日'}）`
   }
-  if (reference.sampleCount === 1) return `前回のあなたが収穫した時点（${value}℃日）`
+  if (reference.sampleCount === 1) return `前回あなたが収穫した時点（${value}℃日）`
   return `過去${reference.sampleCount}作の収穫時点の平均（${value}℃日）`
 }
 

@@ -13,7 +13,7 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { eligibleMilestoneAsks, isMilestoneTrigger, MILESTONE_SOURCE_AKITA, MILESTONE_SOURCE_CHIBA, pickMilestoneAsk, type MilestoneAsk } from '@/lib/proposals/milestones'
-import { assessSpringLateFrost, assessSweetPotatoFrost, formatConfirmationDate, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
+import { assessSpringLateFrost, assessSweetPotatoFrost, formatSeasonDateEnding, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
 import { LATE_FROST_COVER, LATE_FROST_POTATO, plantingConditionForKind, plantedThisSpring } from '@/lib/benchmarks/planting-conditions'
 import {
   adviceNames,
@@ -673,11 +673,12 @@ export async function scoreCrops(
       !inHouse && isTomatoCrop(matchName, matchVariety) ? climate?.coolNight ?? null : null
     if (coolNight && isOnOrAfterCoolNight(today, coolNight)) {
       const nightDate = `${formatMonthDay(coolNight)}ごろ`
+      const ending = confirmations ? formatSeasonDateEnding(daysUntilMonthDay(today, coolNight)) : 'です。'
       hits.push({
         trigger: 'season-finish',
         signal: {
           stage: 'season',
-          reason: `過去の${climate?.coolSource === 'station' ? '観測' : '推計'}では、${confirmations ? formatConfirmationDate(nightDate, daysUntilMonthDay(today, coolNight)) : nightDate}が夜${TOMATO_POLLEN_MIN_C}℃を下回り始める目安です。`,
+          reason: `過去の${climate?.coolSource === 'station' ? '観測' : '推計'}では、${nightDate}が夜${TOMATO_POLLEN_MIN_C}℃を下回り始める目安${ending}`,
           weatherSource: climate?.coolSource === 'estimate' ? 'archive' : undefined,
           stationSource: confirmations && climate?.coolSource === 'station',
           sources: [{ label: TOMATO_NIGHT_SOURCE, url: MILESTONE_SOURCE_AKITA.url }],
