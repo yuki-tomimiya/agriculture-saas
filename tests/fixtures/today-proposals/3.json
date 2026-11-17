@@ -18,31 +18,33 @@
     ]
   ],
   "deadlineGroups": [],
-  "confirmations": [
-    {
-      "crop": "確認用 トマト",
-      "farm": "確認用 位置未登録の農場",
-      "selected": {
-        "stage": "window",
-        "reason": "植え付けから12日で、第1花房の開花を確かめる時期に入っています。",
-        "trigger": "milestone:flower-1st",
-        "title": "いちばん下の花のかたまり（第1花房）が咲きましたか？",
-        "layers": {
-          "personal": null,
-          "regional": null,
-          "general": "咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。",
-          "conclusion": "咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。"
-        }
-      },
-      "others": [
-        {
+  "confirmationGroups": [
+    [
+      {
+        "crop": "確認用 トマト",
+        "farm": "確認用 位置未登録の農場",
+        "selected": {
           "stage": "window",
-          "reason": "この品目の見回りの時期です。",
-          "trigger": "pest:tomato:yellow-leaf-curl",
-          "title": "トマトに黄化葉巻病は出ていませんか？"
-        }
-      ]
-    }
+          "reason": "植え付けから12日で、第1花房の開花を確かめる時期に入っています。",
+          "trigger": "milestone:flower-1st",
+          "title": "いちばん下の花のかたまり（第1花房）が咲きましたか？",
+          "layers": {
+            "personal": null,
+            "regional": null,
+            "general": "咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。",
+            "conclusion": "咲いた日を記録すると、その日から積算温度を数えて収穫が始まるころを見込めます。"
+          }
+        },
+        "others": [
+          {
+            "stage": "window",
+            "reason": "この品目の見回りの時期です。",
+            "trigger": "pest:tomato:yellow-leaf-curl",
+            "title": "トマトに黄化葉巻病は出ていませんか？"
+          }
+        ]
+      }
+    ]
   ],
   "noConfirmations": {},
   "organization": {
@@ -61,14 +63,7 @@
     ]
   },
   "supplemental": [],
-  "milestoneGroups": [
-    {
-      "question": "いちばん下の花のかたまり（第1花房）が咲きましたか？",
-      "crops": [
-        "確認用 トマト"
-      ]
-    }
-  ],
+  "milestoneGroups": [],
   "pestGroups": [
     {
       "question": "トマトに黄化葉巻病は出ていませんか？",

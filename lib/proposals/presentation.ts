@@ -69,6 +69,7 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
 
   const deadlines = new Map<string, CropConfirmation[]>()
   const confirmations: CropConfirmation[] = []
+  const selectedQuestions = new Map<string, Confirmation>()
   const noConfirmations: Partial<Record<NoConfirmationReason, ConfirmationCrop[]>> = {}
   for (const crop of crops) {
     const [selected, ...others] = (byCrop.get(crop.cropId) ?? []).sort(compareConfirmations)
@@ -77,6 +78,7 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
       continue
     }
     const row = { crop, selected, others }
+    selectedQuestions.set(crop.cropId, selected)
     if (selected.stage === 'deadline' && selected.kind === 'proposal') {
       const { proposal } = selected
       const key = JSON.stringify([proposal.signal?.deadline, proposal.layers.conclusion])
@@ -90,14 +92,31 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
 
   const deadlineGroups = [...deadlines.values()].sort((a, b) => compareConfirmations(a[0].selected, b[0].selected))
   confirmations.sort((a, b) => compareConfirmations(a.selected, b.selected))
+  const byReason = new Map<string, CropConfirmation[]>()
+  for (const row of confirmations) {
+    const { trigger, stage, reason } = row.selected
+    const key = JSON.stringify([trigger, stage, reason])
+    const group = byReason.get(key) ?? []
+    group.push(row)
+    byReason.set(key, group)
+  }
+  const confirmationGroups = [...byReason.values()]
+  const milestoneGroups = [...milestones.values()]
+  const remainingMilestoneGroups = milestoneGroups
+    .map(group => group.filter(proposal =>
+      selectedQuestions.get(proposal.relatedCropId!)?.trigger !== proposal.trigger))
+    .filter(group => group.length > 0)
+  const remainingPestGroups = groupPestQuestions(pestQuestions.filter(question =>
+    selectedQuestions.get(question.cropId)?.trigger !== pestTrigger(question.pest.key)))
   const taskGroups = [...tasks.values()]
-  const deadlineCount = taskGroups.reduce((count, group) => count + group.length, 0) +
-    deadlineGroups.reduce((count, group) => count + group.length, 0)
+  const deadlineCount = taskGroups.length + deadlineGroups.length
 
   return {
-    taskGroups, deadlineGroups, deadlineCount, confirmations, noConfirmations, organization, supplemental,
-    milestoneGroups: [...milestones.values()], pestGroups: groupPestQuestions(pestQuestions),
-    count: deadlineCount + confirmations.length,
+    taskGroups, deadlineGroups, deadlineCount, confirmations, confirmationGroups,
+    noConfirmations, organization, supplemental,
+    milestoneGroups, pestGroups: groupPestQuestions(pestQuestions),
+    remainingMilestoneGroups, remainingPestGroups,
+    count: deadlineCount + confirmationGroups.length,
   }
 }
 

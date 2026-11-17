@@ -1,7 +1,7 @@
 import { normalizeCropNameForMatch } from '@/lib/benchmarks/crops'
 import { LATE_FROST_COVER, LATE_FROST_POTATO, LATE_FROST_SOURCE } from '@/lib/benchmarks/planting-conditions'
 import { formatHarvestWindow, type HarvestDateWindow } from '@/lib/insights/harvest-date-window'
-import { formatHarvestGddOutlook, type HarvestGddReference } from '@/lib/gdd'
+import { formatHarvestGddOutlook, formatHarvestGddTarget, type HarvestGddReference } from '@/lib/gdd'
 import { MILESTONE_SOURCE_CHIBA } from '@/lib/proposals/milestones'
 import type { ForecastDay } from '@/lib/weather-forecast'
 import {
@@ -57,6 +57,8 @@ export type SweetPotatoFrost = {
   urgency: 'today' | 'thisWeek'
   title: string
   reason: string
+  confirmationReason: string
+  confirmationLayers: { regional: string; general: string; conclusion: string }
   deadline?: string
   conclusion: string
   harvestOutlook?: { text: string; windowText: string | null }
@@ -113,6 +115,18 @@ function earliestDateThisYear(today: Date, frost: FirstFrostSummary): Date {
   return new Date(today.getFullYear(), frost.earliest.month - 1, frost.earliest.day, 12, 0, 0, 0)
 }
 
+export function formatConfirmationDate(label: string, days: number): string {
+  if (days < 0) return `${label}（今年はもう過ぎています）`
+  if (days === 0) return `${label}（今日）`
+  return `${label}（${days === 1 ? 'あす' : `あと${days}日`}）`
+}
+
+function formatWindowDates(window: HarvestDateWindow): string {
+  const early = `${window.early.getMonth() + 1}月${window.early.getDate()}日`
+  const late = `${window.late.getMonth() + 1}月${window.late.getDate()}日`
+  return early === late ? early : `${early}〜${late}`
+}
+
 export function assessSweetPotatoFrost(args: {
   today: Date
   forecast: ForecastDay[]
@@ -130,12 +144,17 @@ export function assessSweetPotatoFrost(args: {
   if (upcoming?.minTemp != null) {
     const when = formatYmd(upcoming.date)
     const temp = formatCelsius(upcoming.minTemp)
-    const withinWeek = daysUntilYmd(args.today, upcoming.date) <= FORECAST_TODAY_DAYS
+    const days = daysUntilYmd(args.today, upcoming.date)
+    const withinWeek = days <= FORECAST_TODAY_DAYS
     return {
       trigger: FROST_FORECAST_TRIGGER,
       urgency: withinWeek ? 'today' : 'thisWeek',
       title: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です`,
       reason: `${when}の最低気温は${temp}℃の計算です（数値予報モデル）。`,
+      confirmationReason: `${formatConfirmationDate(when, days)}の最低気温は${temp}℃の計算です（数値予報モデル）。`,
+      confirmationLayers: {
+        regional: FORECAST_FROST_NOTE, general: baseSourceLine(), conclusion: forecastConclusion(args.hasSeenRoots),
+      },
       deadline: upcoming.date,
       conclusion: forecastConclusion(args.hasSeenRoots),
       generalLine: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です。霜のおそれがあるので、${args.hasSeenRoots ? 'その前に掘り上げます' : 'まず試し掘りで太りを確かめて、その前に掘り上げます'}。${FORECAST_FROST_NOTE}`,
@@ -146,7 +165,8 @@ export function assessSweetPotatoFrost(args: {
   const origin = args.firstFrost
   if (!origin || args.currentGdd == null || !args.harvestWindowReady || args.targetGdd <= 0) return null
   const frost = origin.summary
-  if (daysUntilMonthDay(args.today, frost.earliest) > SEASON_LEAD_DAYS) return null
+  const days = daysUntilMonthDay(args.today, frost.earliest)
+  if (days > SEASON_LEAD_DAYS) return null
   const when = frostWhen(origin)
   const reason = `過去10年で、最低気温が最も早く4℃以下になったのは${formatMonthDay(frost.earliest)}です（${origin.source === 'station' ? '観測' : '推計'}）。`
   const note = origin.source === 'station' ? STATION_FROST_NOTE : FORECAST_FROST_NOTE
@@ -159,12 +179,30 @@ export function assessSweetPotatoFrost(args: {
     reference: args.reference,
     windowText,
   })
+  const earlyFrost = formatConfirmationDate(formatMonthDay(frost.earliest), days)
+  const target = formatHarvestGddTarget(args.targetGdd, args.reference)
+  const targetTiming = window
+    ? args.currentGdd >= args.targetGdd
+      ? `${target}にはすでに届いています。`
+      : `${target}に届く見込みは${formatWindowDates(window)}です。`
+    : `${target}には今季届かない見込みです。`
+  const confirmationReason = `${targetTiming}過去10年で最も早く最低気温が4℃以下になった日は${earlyFrost}（${origin.source === 'station' ? '観測' : '推計'}）。`
+  const station = origin.source === 'station'
+    ? `${origin.stationName}観測所（農場から${formatKm(origin.distanceKm ?? 0)}km${origin.elevationDiffM == null ? '' : `、標高差${origin.elevationDiffM}m`}）の日別値を使っています。`
+    : '近くの観測所の記録が使えないため、推計の気温を使っています。'
+  const confirmationLayers = {
+    regional: `${station}過去10年で最低気温が初めて4℃以下になった日の平均は${formatMonthDay(frost.mean)}です。${frost.years < FROST_ARCHIVE_YEARS ? `該当したのは${frost.years}年です。` : ''}${note}`,
+    general: baseSourceLine(),
+    conclusion: `${window && args.currentGdd < args.targetGdd ? '見込みの時期より先に霜が来る年があります。' : ''}${action}。`,
+  }
   if (!window) {
     return {
       trigger: FROST_SEASON_TRIGGER,
       urgency: 'thisWeek',
       title: '霜の前に収穫を考えましょう',
       reason,
+      confirmationReason,
+      confirmationLayers,
       conclusion: `${when}。${action}。`,
       harvestOutlook: { text: outlook, windowText },
       generalLine: `${outlook}${when}。${args.hasSeenRoots ? '霜の前に掘り上げます' : 'まず試し掘りで太りを確かめて、霜の前に掘り上げます'}。${note}`,
@@ -179,6 +217,8 @@ export function assessSweetPotatoFrost(args: {
     urgency: 'thisWeek',
     title: when,
     reason,
+    confirmationReason,
+    confirmationLayers,
     conclusion: `見込みの時期より先に霜が来る年があります。${action}。`,
     harvestOutlook: { text: outlook, windowText },
     generalLine: `${when}。${outlook}見込みの時期より先に霜が来る年があります。${after}。${note}`,
@@ -191,6 +231,8 @@ export type SpringLateFrost = {
   urgency: 'today' | 'thisWeek'
   title: string
   reason: string
+  confirmationReason: string
+  regionalNote: string
   deadline: string
   conclusion: string
   generalLine: string
@@ -211,7 +253,8 @@ export function assessSpringLateFrost(args: {
   if (upcoming?.minTemp == null) return null
   const when = formatYmd(upcoming.date)
   const temp = formatCelsius(upcoming.minTemp)
-  const withinWeek = daysUntilYmd(args.today, upcoming.date) <= FORECAST_TODAY_DAYS
+  const days = daysUntilYmd(args.today, upcoming.date)
+  const withinWeek = days <= FORECAST_TODAY_DAYS
   const hill = args.potato ? LATE_FROST_POTATO : ''
   const conclusion = `霜のおそれがあります。${LATE_FROST_COVER}${hill}`
   return {
@@ -219,6 +262,8 @@ export function assessSpringLateFrost(args: {
     urgency: withinWeek ? 'today' : 'thisWeek',
     title: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です`,
     reason: `${when}の最低気温は${temp}℃の計算です（数値予報モデル）。`,
+    confirmationReason: `${formatConfirmationDate(when, days)}の最低気温は${temp}℃の計算です（数値予報モデル）。`,
+    regionalNote: FORECAST_FROST_NOTE,
     deadline: upcoming.date,
     conclusion,
     generalLine: `数値予報モデルの計算では、${when}の最低気温は${temp}℃です。霜のおそれがあります。${LATE_FROST_COVER}${hill}${FORECAST_FROST_NOTE}`,

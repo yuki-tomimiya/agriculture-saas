@@ -13,7 +13,7 @@ import {
 } from '@/lib/ai-proposal-context'
 import { isProposalDismissed } from '@/lib/proposals/dismissal'
 import { eligibleMilestoneAsks, isMilestoneTrigger, MILESTONE_SOURCE_AKITA, MILESTONE_SOURCE_CHIBA, pickMilestoneAsk, type MilestoneAsk } from '@/lib/proposals/milestones'
-import { assessSpringLateFrost, assessSweetPotatoFrost, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
+import { assessSpringLateFrost, assessSweetPotatoFrost, formatConfirmationDate, isSweetPotatoCrop, type SweetPotatoFrost } from '@/lib/proposals/frost'
 import { LATE_FROST_COVER, LATE_FROST_POTATO, plantingConditionForKind, plantedThisSpring } from '@/lib/benchmarks/planting-conditions'
 import {
   adviceNames,
@@ -48,7 +48,7 @@ import {
 import { isOnOrAfterCoolNight } from '@/lib/weather-night'
 import { isDaylengthCrop } from '@/lib/benchmarks/daylength-crops'
 import { gddStartDate, type GddSource } from '@/lib/benchmarks/gdd-methods'
-import { formatMonthDay } from '@/lib/weather-frost'
+import { daysUntilMonthDay, formatMonthDay } from '@/lib/weather-frost'
 
 export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 
@@ -62,6 +62,7 @@ export type ProposalSignal = {
   reason?: string
   deadline?: string
   weatherSource?: 'forecast' | 'archive' | 'mixed'
+  stationSource?: boolean
   sources?: GddSource[]
 }
 
@@ -671,12 +672,14 @@ export async function scoreCrops(
     const coolNight =
       !inHouse && isTomatoCrop(matchName, matchVariety) ? climate?.coolNight ?? null : null
     if (coolNight && isOnOrAfterCoolNight(today, coolNight)) {
+      const nightDate = `${formatMonthDay(coolNight)}ごろ`
       hits.push({
         trigger: 'season-finish',
         signal: {
           stage: 'season',
-        reason: `過去の${climate?.coolSource === 'station' ? '観測' : '推計'}では、${formatMonthDay(coolNight)}ごろが夜${TOMATO_POLLEN_MIN_C}℃を下回り始める目安です。`,
+          reason: `過去の${climate?.coolSource === 'station' ? '観測' : '推計'}では、${confirmations ? formatConfirmationDate(nightDate, daysUntilMonthDay(today, coolNight)) : nightDate}が夜${TOMATO_POLLEN_MIN_C}℃を下回り始める目安です。`,
           weatherSource: climate?.coolSource === 'estimate' ? 'archive' : undefined,
+          stationSource: confirmations && climate?.coolSource === 'station',
           sources: [{ label: TOMATO_NIGHT_SOURCE, url: MILESTONE_SOURCE_AKITA.url }],
         },
         urgency: 'today',
@@ -833,7 +836,8 @@ export async function scoreCrops(
           })
         : null
     if (frost && ((confirmations && frost.deadline) || !isProposalDismissed(dismissed, frost.trigger, crop.id))) {
-      const frostConclusion = frost.conclusion
+      const frostConclusion = confirmations ? frost.confirmationLayers.conclusion : frost.conclusion
+      const stationSource = confirmations && !frost.deadline && climate?.frost?.source === 'station'
       frostNoteByCrop.set(crop.id, frost.generalLine)
       const withinWeek = frost.urgency === 'today'
       frostCards.push({
@@ -844,9 +848,10 @@ export async function scoreCrops(
         title: confirmations ? '霜の前に収穫を考えましょう' : frost.title,
         signal: {
           stage: frost.deadline ? 'deadline' : 'season',
-          reason: frost.reason,
+          reason: confirmations ? frost.confirmationReason : frost.reason,
           deadline: frost.deadline,
-          weatherSource: frost.deadline ? 'forecast' : 'mixed',
+          weatherSource: frost.deadline ? 'forecast' : stationSource ? undefined : confirmations ? 'archive' : 'mixed',
+          stationSource,
           sources: [{ label: `${MILESTONE_SOURCE_CHIBA.publisher}「${MILESTONE_SOURCE_CHIBA.name}」`, url: MILESTONE_SOURCE_CHIBA.url }],
         },
         harvestOutlook: frost.harvestOutlook,
@@ -862,9 +867,11 @@ export async function scoreCrops(
         conclusion: frostConclusion,
         action: { kind: 'work', taskType: '収穫', title: `${crop.name}を霜の前に掘り上げる` },
         layers: mergeLayers({
-          personal: `${crop.name}は栽培中です（${farmName}）。`,
-          regional: confirmations ? (frost.deadline ? frost.generalLine : frost.reason) : null,
-          general: confirmations && !frost.deadline ? `${frost.generalLine} ${frost.sourceLine}` : frost.sourceLine,
+          personal: confirmations
+            ? hasHarvest ? '収穫の記録があります。' : hasSeenRoots ? '試し掘りの記録があります。' : null
+            : `${crop.name}は栽培中です（${farmName}）。`,
+          regional: confirmations ? frost.confirmationLayers.regional : null,
+          general: confirmations ? frost.confirmationLayers.general : frost.sourceLine,
           conclusion: frostConclusion,
         }),
       })
@@ -892,7 +899,10 @@ export async function scoreCrops(
         score: withinWeek ? 96 : 88,
         trigger: springFrost.trigger,
         title: confirmations ? '遅霜に備えましょう' : springFrost.title,
-        signal: { stage: 'deadline', reason: springFrost.reason, deadline: springFrost.deadline, weatherSource: 'forecast' },
+        signal: {
+          stage: 'deadline', reason: confirmations ? springFrost.confirmationReason : springFrost.reason,
+          deadline: springFrost.deadline, weatherSource: 'forecast',
+        },
         cropId: crop.id,
         cropName: crop.name,
         farmId: crop.farmId ?? undefined,
@@ -909,9 +919,11 @@ export async function scoreCrops(
           title: springFrost.potato ? `${crop.name}を軽く土寄せする` : `${crop.name}を覆って霜を避ける`,
         },
         layers: mergeLayers({
-          personal: `${crop.name}は栽培中です（${farmName}）。`,
-          regional: confirmations ? springFrost.reason : null,
-          general: `${springFrost.generalLine} ${springFrost.sourceLine}`,
+          personal: confirmations && crop.plantingDate
+            ? `${formatMonthDay({ month: crop.plantingDate.getMonth() + 1, day: crop.plantingDate.getDate() })}に植え付けを記録しています。`
+            : `${crop.name}は栽培中です（${farmName}）。`,
+          regional: confirmations ? springFrost.regionalNote : null,
+          general: confirmations ? springFrost.sourceLine : `${springFrost.generalLine} ${springFrost.sourceLine}`,
           conclusion: springFrost.conclusion,
         }),
       })
@@ -1020,11 +1032,13 @@ export async function scoreCrops(
         frostNote: confirmations ? undefined : frostNoteByCrop.get(crop.id),
         layers: mergeLayers({
           personal: personalText,
-          regional,
+          regional: confirmations && coolFinish && climate?.coolStationName
+            ? `${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。`
+            : regional,
           general: advice.recordOnly
             ? RECORD_ONLY_NOTE
             : coolFinish
-              ? climate?.coolSource === 'station' && climate.coolStationName
+              ? !confirmations && climate?.coolSource === 'station' && climate.coolStationName
                 ? `${TOMATO_NIGHT_SOURCE}。過去10年の観測では、${climate.coolStationName}観測所（農場から${formatKm(climate.coolDistanceKm ?? 0)}km）の日別の最低気温を暦日で平均しています。出典：気象庁ホームページ『過去の気象データ検索』（${JMA_SEARCH_TOP}）の日別値を加工して作成`
                 : TOMATO_NIGHT_SOURCE
               : generalDetails.text,

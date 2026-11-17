@@ -95,17 +95,22 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       } })
       const answer = readableAnswer(result)
       if (scenario === '1') {
-        assert.equal(answer.confirmations[0].selected.trigger, 'frost-season')
-        assert.ok(answer.confirmations[0].others.some(card => card.trigger === 'milestone:test-dig'))
+        assert.equal(answer.confirmationGroups[0][0].selected.trigger, 'frost-season')
+        const selected = result.confirmationGroups[0][0].selected
+        assert.equal(selected.kind, 'proposal')
+        assert.equal(selected.proposal.layers.personal, null)
+        assert.ok(answer.confirmationGroups[0][0].others.some(card => card.trigger === 'milestone:test-dig'))
         assert.ok(legacy.some(card => card.trigger === 'frost-season' && /3,407℃日/.test(card.title)))
         assert.deepEqual(legacy.map(card => card.trigger), ['result-missing', 'milestone:test-dig', 'frost-season', 'neglected-crop'])
       } else if (scenario === '2') {
         assert.deepEqual(result.deadlineGroups.map(group => group.length), [2])
-        assert.ok(result.milestoneGroups.some(group => group[0].milestone?.key === 'flower-1st' && group.length === 2))
+        const flowers = result.confirmationGroups.flat().filter(row => row.selected.trigger === 'milestone:flower-1st')
+        assert.equal(flowers.length, 2)
+        assert.ok(result.remainingMilestoneGroups.every(group => group[0].milestone?.key !== 'flower-1st'))
         assert.ok(legacy.some(card => card.trigger === 'frost-forecast' && card.lines?.length === 2))
       } else {
         assert.equal(result.taskGroups.flat().length, 1)
-        assert.equal(answer.confirmations[0].selected.trigger, 'milestone:flower-1st')
+        assert.equal(answer.confirmationGroups[0][0].selected.trigger, 'milestone:flower-1st')
         assert.ok(answer.organization.items.some(card => card.trigger === 'place-missing'))
       }
       const expectedPath = path.join(__dirname, 'fixtures', 'today-proposals', `${scenario}.json`)
@@ -148,8 +153,9 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       } },
     })
     assert.deepEqual(result.taskGroups.map(group => group.length), [1, 2])
-    assert.equal(result.deadlineCount, 3)
-    assert.equal(result.count, 4)
+    assert.equal(result.deadlineCount, 2)
+    assert.equal(result.taskGroups.flat().length, 3)
+    assert.equal(result.count, 3)
     assert.equal(result.confirmations[0].selected.stage, 'reached')
     assert.deepEqual(Object.fromEntries(Object.entries(result.noConfirmations).map(([reason, crops]) => [reason, crops.map(crop => crop.cropName)])), {
       'no-location': ['位置なし'], 'no-weather': ['気象データなし'],
@@ -159,7 +165,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       userId: user.id, cropId: corn.id, trigger: 'harvest-window', remindAfter: new Date(2026, 10, 14),
     } })
     const afterDismissal = await loadTodayConfirmations(user.id, { now, weather })
-    assert.equal(afterDismissal.deadlineCount, 3)
+    assert.equal(afterDismissal.taskGroups.flat().length, 3)
     assert.ok(!afterDismissal.confirmations.some(row => row.selected.trigger === 'harvest-window'))
   })
   await t.test('トマトの例年の冷え込みは、整理ではなく季節の確認事項', async () => {
@@ -190,12 +196,15 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
 })
 
 type Result = Awaited<ReturnType<typeof import('../lib/proposals/presentation').loadTodayConfirmations>>
-type CropRow = Result['confirmations'][number]
+type CropRow = Result['confirmationGroups'][number][number]
 type Confirmation = CropRow['selected']
 type Proposal = import('../lib/ai-proposal').Proposal
 
 function proposalAnswer(proposal: Proposal) {
-  return { trigger: proposal.trigger, title: proposal.title, layers: proposal.layers }
+  return {
+    trigger: proposal.trigger, title: proposal.title, layers: proposal.layers,
+    weatherSource: proposal.signal?.stationSource ? 'station' : proposal.signal?.weatherSource,
+  }
 }
 
 function confirmationAnswer(item: Confirmation) {
@@ -222,7 +231,7 @@ function readableAnswer(result: Result) {
       ...proposalAnswer(proposal),
     }))),
     deadlineGroups: result.deadlineGroups.map(group => group.map(cropAnswer)),
-    confirmations: result.confirmations.map(cropAnswer),
+    confirmationGroups: result.confirmationGroups.map(group => group.map(cropAnswer)),
     noConfirmations: Object.fromEntries(Object.entries(result.noConfirmations).map(([reason, crops]) => [
       reason, crops.map(crop => ({ crop: crop.cropName, farm: crop.farmName })),
     ])),
@@ -230,10 +239,10 @@ function readableAnswer(result: Result) {
       crop: proposal.relatedCropName, ...proposalAnswer(proposal),
     })) },
     supplemental: result.supplemental.map(proposalAnswer),
-    milestoneGroups: result.milestoneGroups.map(group => ({
+    milestoneGroups: result.remainingMilestoneGroups.map(group => ({
       question: group[0].title, crops: group.map(item => item.relatedCropName),
     })),
-    pestGroups: result.pestGroups.map(group => ({
+    pestGroups: result.remainingPestGroups.map(group => ({
       question: group[0].pest.question, crops: group.map(item => item.cropName),
     })),
   }
