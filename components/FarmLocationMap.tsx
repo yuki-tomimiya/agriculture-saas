@@ -1,33 +1,44 @@
 'use client'
 
-import { useEffect, useEffectEvent, useRef, useState } from 'react'
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import * as leaflet from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { FarmCoordinates } from '@/lib/farms/coordinates'
+import { PREFECTURES, municipalitiesIn } from '@/lib/places/catalog'
+import { MUNICIPALITY_POINT_SOURCE, municipalityMapCenter, prefectureMapCenter } from '@/lib/places/map-center'
 
 const tiles = 'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png'
 const attribution = '<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
 
-type MapCenter = FarmCoordinates & { zoom: number }
+export type MapArea = { prefectureCode: string; municipalityCode: string }
 
 export default function FarmLocationMap({
-  point, center, disabled, onPick,
+  point, area, disabled, onPick, onAreaChange,
 }: {
   point: FarmCoordinates | null
-  center?: MapCenter | null
+  area: MapArea
   disabled: boolean
   onPick: (point: FarmCoordinates) => void
+  onAreaChange: (area: MapArea) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<leaflet.Map | null>(null)
   const marker = useRef<leaflet.Marker | null>(null)
+  const previousPoint = useRef(point)
   const [tileError, setTileError] = useState(false)
+  const { prefectureCode, municipalityCode } = area
+  const municipalities = prefectureCode ? municipalitiesIn(prefectureCode) : []
+  const center = useMemo(() => {
+    const municipality = municipalityMapCenter(municipalityCode)
+    if (municipality) return { ...municipality, zoom: 12 }
+    const prefecture = prefectureMapCenter(prefectureCode)
+    return prefecture ? { ...prefecture, zoom: 8 } : null
+  }, [prefectureCode, municipalityCode])
   const selectPoint = useEffectEvent(({ lat, lng }: leaflet.LatLng) => {
     if (!disabled) onPick({ latitude: lat, longitude: lng })
   })
-  const initialView = useEffectEvent(() => point
-    ? { ...point, zoom: 13 }
-    : center ?? { latitude: 36.5, longitude: 138.5, zoom: 5 })
+  const initialView = useEffectEvent(() => center ??
+    (point ? { ...point, zoom: 13 } : { latitude: 36.5, longitude: 138.5, zoom: 5 }))
 
   useEffect(() => {
     if (!container.current) return
@@ -56,6 +67,8 @@ export default function FarmLocationMap({
   useEffect(() => {
     const current = map.current
     if (!current) return
+    const pointChanged = previousPoint.current !== point
+    previousPoint.current = point
     if (!point) {
       marker.current?.remove()
       marker.current = null
@@ -79,13 +92,36 @@ export default function FarmLocationMap({
     }
     if (disabled) marker.current.dragging?.disable()
     else marker.current.dragging?.enable()
-    if (!current.getBounds().contains(position)) current.panTo(position, { animate: false })
+    if (pointChanged && !current.getBounds().contains(position)) current.panTo(position, { animate: false })
   }, [point, disabled])
 
   return (
     <div className="min-w-0">
+      <fieldset disabled={disabled} className="mb-2 grid min-w-0 gap-2">
+        <legend className="text-sm font-semibold">地図の表示位置</legend>
+        <label className="grid min-w-0 gap-1 text-sm">都道府県
+          <select className="input min-w-0" value={prefectureCode} onChange={event =>
+            onAreaChange({ prefectureCode: event.target.value, municipalityCode: '' })}>
+            <option value="">選んでください</option>
+            {PREFECTURES.map(prefecture =>
+              <option key={prefecture.code} value={prefecture.code}>{prefecture.name}</option>)}
+          </select>
+        </label>
+        <label className="grid min-w-0 gap-1 text-sm">市区町村
+          <select className="input min-w-0" disabled={!prefectureCode} value={municipalityCode}
+            onChange={event => onAreaChange({ prefectureCode, municipalityCode: event.target.value })}>
+            <option value="">選んでください</option>
+            {municipalities.map(municipality =>
+              <option key={municipality.code} value={municipality.code}>{municipality.name}</option>)}
+          </select>
+        </label>
+      </fieldset>
       <div ref={container} aria-label="農場の場所を選ぶ地図"
         className="relative isolate h-56 w-full rounded-md border border-gray-200 sm:h-80" />
+      <p className="mt-2 text-xs text-gray-600">
+        出典：<a href={MUNICIPALITY_POINT_SOURCE.url} className="underline">{MUNICIPALITY_POINT_SOURCE.text}</a>{' '}
+        <a href={MUNICIPALITY_POINT_SOURCE.licenseUrl} className="underline">{MUNICIPALITY_POINT_SOURCE.license}</a>
+      </p>
       {tileError && <p role="status" className="mt-2 text-sm text-gray-700">
         地図を読み込めない場所があります。地図で選べないときは、現在地か緯度・経度の入力を使ってください。
       </p>}

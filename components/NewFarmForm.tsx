@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import FarmPlaceCard from '@/components/FarmPlaceCard'
+import type { MapArea } from '@/components/FarmLocationMap'
 import { readFarmCoordinates, type FarmCoordinates } from '@/lib/farms/coordinates'
 import type { PlaceCard } from '@/lib/farms/place-card'
 import { PREFECTURES, municipalitiesIn } from '@/lib/places/catalog'
@@ -29,6 +30,7 @@ export default function NewFarmForm() {
   const [place, setPlace] = useState<PlaceState>({ status: 'idle' })
   const [manualOpen, setManualOpen] = useState(false)
   const [mapOpen, setMapOpen] = useState(false)
+  const [mapArea, setMapArea] = useState<MapArea>({ prefectureCode: '', municipalityCode: '' })
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   const [locationError, setLocationError] = useState('')
@@ -84,6 +86,11 @@ export default function NewFarmForm() {
     setLatitude(String(point.latitude))
     setLongitude(String(point.longitude))
     void preview(point)
+  }
+
+  function toggleMap() {
+    if (!mapOpen && !mapArea.prefectureCode) setMapArea({ prefectureCode, municipalityCode })
+    setMapOpen(!mapOpen)
   }
 
   function chooseCurrentLocation() {
@@ -176,7 +183,7 @@ export default function NewFarmForm() {
             onClick={chooseCurrentLocation} disabled={saving || place.status === 'locating'}>現在地を使う</button>
           <button className="btn btn-outline max-w-full whitespace-normal !px-2" type="button"
             aria-controls="farm-map" aria-expanded={mapOpen} disabled={saving}
-            onClick={() => setMapOpen(!mapOpen)}>{mapOpen ? '地図を閉じる' : '地図で選ぶ'}</button>
+            onClick={toggleMap}>{mapOpen ? '地図を閉じる' : '地図で選ぶ'}</button>
           <button className="btn btn-outline max-w-full whitespace-normal !px-2" type="button"
             aria-controls="farm-coordinates" aria-expanded={manualOpen}
             onClick={() => setManualOpen(!manualOpen)}>緯度・経度を入れる</button>
@@ -184,7 +191,8 @@ export default function NewFarmForm() {
         <div id="farm-map" hidden={!mapOpen}>
           {mapOpen && <div className="mt-3 space-y-2">
             <p className="text-sm text-gray-700">地図を押して、農場の位置に印を置きます。</p>
-            <FarmLocationMap point={point} onPick={choosePoint} disabled={saving} />
+            <FarmLocationMap point={point} onPick={choosePoint} disabled={saving}
+              area={mapArea} onAreaChange={setMapArea} />
           </div>}
         </div>
         <form id="farm-coordinates" onSubmit={chooseManualLocation} hidden={!manualOpen}>
