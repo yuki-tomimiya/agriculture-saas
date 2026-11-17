@@ -3,7 +3,7 @@ import { harvestDatesByCrop, japanDateKey, pesticideCounts, pesticideUsage, pest
 import { forecastOffice } from '@/lib/pest-forecast'
 import { findPest, pestGuide, isPestTrigger } from '@/lib/pests/catalog'
 import { listActiveDismissals } from '@/lib/proposals/dismissal'
-import { selectPestQuestion } from '@/lib/pests/selection'
+import { pestHistoryRange, selectPestQuestion } from '@/lib/pests/selection'
 import { pestMeasuresForSite } from '@/lib/pests/presentation'
 
 const owner = (userId: string) => ({ OR: [{ userId }, { farm: { userId } }] })
@@ -18,7 +18,9 @@ export function ownedPestCrop(userId: string, id: string) {
 
 export async function loadPestQuestions(userId: string, now = new Date()) {
   const today = japanDateKey(now)
-  const since = new Date(`${Number(today.slice(0, 4)) - 1}-01-01T00:00:00+09:00`)
+  const { first, last } = pestHistoryRange(today)
+  const since = new Date(`${first}T00:00:00+09:00`)
+  const until = new Date(`${last}T23:59:59.999+09:00`)
   const [crops, history, dismissed] = await Promise.all([
     prisma.crop.findMany({
       where: { ...owner(userId), status: 'growing' },
@@ -29,7 +31,7 @@ export async function loadPestQuestions(userId: string, now = new Date()) {
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
     }),
     prisma.pestCheck.findMany({
-      where: { present: true, observedAt: { gte: since }, crop: owner(userId) },
+      where: { present: true, observedAt: { gte: since, lte: until }, crop: owner(userId) },
       select: { pestKey: true, observedAt: true, crop: { select: { farmId: true, cropKind: true } } },
     }),
     listActiveDismissals(userId, now),
@@ -46,7 +48,7 @@ export async function loadPestQuestions(userId: string, now = new Date()) {
     )
     if (!question) return []
     const timing = question.previous
-      ? `去年は${Number(question.previous.observedDay.slice(5, 7))}月${Number(question.previous.observedDay.slice(8))}日に「いた」と記録しています。`
+      ? previousPestTiming(question.previous.observedDay, today)
       : question.season
         ? `${question.season.source.publisher}の資料では、${question.season.label}とされています。`
         : null
@@ -55,6 +57,12 @@ export async function loadPestQuestions(userId: string, now = new Date()) {
       pest: question.pest, timing, timingSource: question.previous ? undefined : question.season?.source.url, today,
     }]
   })
+}
+
+function previousPestTiming(observedDay: string, today: string): string {
+  const [year, month, day] = observedDay.split('-').map(Number)
+  const prefix = year === Number(today.slice(0, 4)) - 1 ? '去年は' : `${year}年`
+  return `${prefix}${month}月${day}日に「いた」と記録しています。`
 }
 
 export async function loadPestAdvice(userId: string, crop: NonNullable<Awaited<ReturnType<typeof ownedPestCrop>>>, key: string) {

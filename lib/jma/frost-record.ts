@@ -14,7 +14,6 @@ import {
 } from '@/lib/weather-frost'
 import { loadLocationArchive } from '@/lib/weather-normals'
 import { firstMeanMinBelow, type CoolNightDate } from '@/lib/weather-night'
-import type { LocationArchive } from '@/lib/weather-normals'
 import { hasWeatherCoordinates, type WeatherPoint } from '@/lib/weather-forecast'
 
 /** 昨年までの10年。Open-Meteo の平年値と同じ決め方 */
@@ -347,17 +346,6 @@ export async function springBriefsForFarms(
   return briefs
 }
 
-export function stationArchive(rows: { date: string; tMin: number | null }[]): LocationArchive {
-  return {
-    times: rows.map((row) => row.date),
-    precip: [],
-    radiation: [],
-    tempMean: [],
-    tempMin: rows.map((row) => row.tMin),
-    tempMax: null,
-  }
-}
-
 export async function readCoolNight(point?: Partial<WeatherPoint>, now = new Date()): Promise<{
   date: CoolNightDate | null
   source: 'station' | 'estimate'
@@ -367,8 +355,10 @@ export async function readCoolNight(point?: Partial<WeatherPoint>, now = new Dat
   const pick = await chooseStation(point)
   if (pick?.usable) {
     const rows = await stationRows(pick.station.blockNo, now)
-    if (rows.length > 0) {
-      const date = firstMeanMinBelow(stationArchive(rows))
+    const { fromYear, toYear } = archiveYears(now)
+    const series = autumnSeries(rows, fromYear, toYear)
+    if (series.usableYears >= STATION_ENOUGH_YEARS) {
+      const date = firstMeanMinBelow({ times: series.times, tempMin: series.mins })
       return {
         date,
         source: 'station',

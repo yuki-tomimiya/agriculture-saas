@@ -2,8 +2,16 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import type { Proposal } from '@/lib/ai-proposal'
 import { assessSweetPotatoFrost } from '@/lib/proposals/frost'
+import { pickMilestoneAsk } from '@/lib/proposals/milestones'
 import { organizeConfirmations } from '@/lib/proposals/presentation'
 import type { ConfirmationCrop, ProposalSignal } from '@/lib/proposals/scoring'
+
+test('玉ねぎの倒伏は苗と植え方未入力の作付けにだけ聞く', () => {
+  const onion = { cropName: '玉ねぎ', daysSincePlanting: 160, records: [] }
+  assert.equal(pickMilestoneAsk({ ...onion, plantingMethod: 'direct' }), null)
+  assert.equal(pickMilestoneAsk({ ...onion, plantingMethod: 'transplant' })?.key, 'onion-lodging')
+  assert.equal(pickMilestoneAsk(onion)?.key, 'onion-lodging')
+})
 
 function candidate(cropId: string, trigger: string, stage: ProposalSignal['stage'], deadline?: string, reason = trigger): Proposal {
   return {

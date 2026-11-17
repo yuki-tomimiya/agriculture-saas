@@ -4,6 +4,7 @@ import { pests, pestGuide } from '@/lib/pests/catalog'
 import { selectPestQuestion } from '@/lib/pests/selection'
 import { groupPestQuestions, pestMeasuresForSite } from '@/lib/pests/presentation'
 import { PROPOSAL_DISMISS_DAYS } from '@/lib/proposals/constants'
+import { temporarySqlite } from './helpers/temporary-sqlite'
 
 const crop = { cropKind: 'cucumber', farmId: 'farm', growingSite: 'house', plantingDay: '2026-10-01' }
 const pestKey = 'cucumber:powdery-mildew'
@@ -21,6 +22,42 @@ test('前年の記録は前後14日。同じ農場が優先される', () => {
   const outside = [{ ...history[0], observedDay: '2025-11-25' }]
   assert.equal(ask({}, [], outside), null)
   assert.equal(ask({ prefectureCode: '39' }, [], outside), null)
+})
+
+test('前年の前後14日は年をまたぎ、2月29日は前年の2月28日から数える', () => {
+  const previous = (today: string, observedDay: string) => selectPestQuestion(
+    crop, today, [], [{ pestKey, observedDay, farmId: 'farm' }], new Set(),
+  )?.previous
+
+  assert.equal(previous('2027-01-04', '2025-12-25')?.gap, 10)
+  assert.equal(previous('2027-01-10', '2025-12-25'), undefined)
+  assert.equal(previous('2027-01-04', '2026-12-25'), undefined)
+  assert.equal(previous('2026-12-19', '2025-12-31')?.gap, 12)
+  assert.equal(previous('2026-12-19', '2026-01-02')?.gap, 14)
+  assert.equal(previous('2025-02-28', '2024-02-29')?.gap, 1)
+  assert.equal(previous('2024-02-29', '2023-02-14')?.gap, 14)
+})
+
+test('病害虫の問いは前年の年初より前の記録を取得し、年を添える', async t => {
+  const { db } = await temporarySqlite(t)
+  const runtime = globalThis as typeof globalThis & { prisma?: typeof db }
+  const savedPrisma = runtime.prisma
+  runtime.prisma = db
+  t.after(() => { runtime.prisma = savedPrisma })
+  const { loadPestQuestions } = await import('@/lib/pests/service')
+
+  await db.user.create({ data: { id: 'owner', email: 'owner@example.invalid', password: 'unused' } })
+  await db.crop.createMany({ data: [
+    { id: 'old', name: 'キュウリ', cropKind: 'cucumber', userId: 'owner', status: 'harvested' },
+    { id: 'active', name: 'キュウリ', cropKind: 'cucumber', userId: 'owner', status: 'growing' },
+  ] })
+  await db.pestCheck.create({ data: {
+    cropId: 'old', pestKey, present: true, observedAt: new Date('2025-12-21T00:00:00+09:00'),
+  } })
+  const questions = await loadPestQuestions('owner', new Date('2027-01-04T12:00:00+09:00'))
+  assert.deepEqual(questions.map(question => [question.cropId, question.pest.key, question.timing]), [
+    ['active', pestKey, '2025年12月21日に「いた」と記録しています。'],
+  ])
 })
 
 test('県と栽培場所が合うときだけ資料の時期を使う', () => {

@@ -126,26 +126,36 @@ test('霜と夜の冷えを固定した観測・推計データで確かめる',
   })
 
   await t.test('T1 夜の最低気温の平均が8月15日以降に13℃を下回る日', async () => {
-    const rows = [
-      { date: '2024-08-14', tMin: 10 },
-      { date: '2024-08-15', tMin: 12 }, { date: '2025-08-15', tMin: 14 },
-      { date: '2024-08-16', tMin: null }, { date: '2025-08-16', tMin: null },
-      { date: '2024-08-17', tMin: 12 }, { date: '2025-08-17', tMin: 13 },
-    ]
+    const rows = autumnRows(0).map(row => ({
+      ...row, tMin: row.date.endsWith('-08-15') ? 13 : row.date.endsWith('-08-17') ? 12 : 14,
+    }))
     await setObservations(rows)
     const expected = { month: 8, day: 17 }
     const cooler = await readCoolNight(utsunomiya, today)
     assert.equal(cooler.source, 'station')
     assert.deepEqual(cooler.date, expected)
-    await setObservations(rows.slice(0, 5))
+    await setObservations(rows.map(row => ({ ...row, tMin: 13 })))
     const before = fetch.mock.callCount()
     const noCoolNight = await readCoolNight(utsunomiya, today)
     assert.equal(noCoolNight.source, 'station')
     assert.equal(noCoolNight.date, null)
     assert.equal(fetch.mock.callCount(), before)
-    await setObservations([])
-    const estimate = await readCoolNight(utsunomiya, today)
-    assert.equal(estimate.source, 'estimate')
-    assert.deepEqual(estimate.date, expected)
+    for (const sparse of [
+      rows.slice(0, 139),
+      rows.slice(0, -15),
+    ]) {
+      await setObservations(sparse)
+      const estimate = await readCoolNight(utsunomiya, today)
+      assert.equal(estimate.source, 'estimate')
+      assert.deepEqual(estimate.date, expected)
+    }
+
+    const excludedYear = rows.slice(0, 139).slice(0, 124).map(row => ({
+      date: row.date.replace('2016-', '2024-'), tMin: 0,
+    }))
+    await setObservations([...rows, ...excludedYear])
+    const enough = await readCoolNight(utsunomiya, today)
+    assert.equal(enough.source, 'station')
+    assert.deepEqual(enough.date, expected)
   })
 })

@@ -16,7 +16,7 @@ function onOrAfter(month: number, day: number, fromMonth: number, fromDay: numbe
  * 霜（届いた年の日付を平均する）とは逆に、先に気温を平均する。
  */
 export function firstMeanMinBelow(
-  archive: LocationArchive,
+  archive: Pick<LocationArchive, 'times' | 'tempMin'>,
   thresholdC = TOMATO_POLLEN_MIN_C
 ): CoolNightDate | null {
   if (!archive.tempMin) return null

@@ -11,6 +11,26 @@ type Target = {
   plantingDay: string | null
 }
 const dayGap = (later: string, earlier: string) => (Date.parse(later) - Date.parse(earlier)) / 86_400_000
+const previousYearWindowDays = 14
+
+function previousYearDay(today: string): string {
+  const [year, month, day] = today.split('-').map(Number)
+  const lastDay = new Date(Date.UTC(year - 1, month, 0)).getUTCDate()
+  return new Date(Date.UTC(year - 1, month - 1, Math.min(day, lastDay))).toISOString().slice(0, 10)
+}
+
+export function pestHistoryRange(today: string): { first: string; last: string } {
+  const day = new Date(previousYearDay(today))
+  const year = day.getUTCFullYear()
+  const first = new Date(+day)
+  first.setUTCDate(day.getUTCDate() - previousYearWindowDays)
+  const last = new Date(+day)
+  last.setUTCDate(day.getUTCDate() + previousYearWindowDays)
+  return {
+    first: [`${year}-01-01`, first.toISOString().slice(0, 10)].sort()[0],
+    last: [`${year}-12-31`, last.toISOString().slice(0, 10)].sort()[1],
+  }
+}
 
 export function selectPestQuestion(
   crop: Target, today: string, checks: Check[], history: History[], deferred: ReadonlySet<string>,
@@ -19,22 +39,19 @@ export function selectPestQuestion(
   if (!kind || kind.recordOnly || checks.some(check => dayGap(today, check.answeredDay) < 7)) return null
 
   const [year, month] = today.split('-').map(Number)
+  const anniversary = previousYearDay(today)
   const candidates = pests.filter(pest => pest.cropKind === kind.key).flatMap(pest => {
     const latest = checks.filter(check => check.pestKey === pest.key)
       .sort((a, b) => b.answeredDay.localeCompare(a.answeredDay))[0]
     if (deferred.has(pest.key) || (latest && dayGap(today, latest.answeredDay) < (latest.present ? 14 : 28))) return []
 
-    const previousYear = history.filter(check => check.pestKey === pest.key && Number(check.observedDay.slice(0, 4)) === year - 1)
-    const previous = previousYear
-      .map(check => {
-        const [, m, d] = check.observedDay.split('-').map(Number)
-        const anniversary = new Date(Date.UTC(year, m - 1, Math.min(d, new Date(Date.UTC(year, m, 0)).getUTCDate())))
-        return { ...check, gap: Math.abs(dayGap(today, anniversary.toISOString().slice(0, 10))) }
-      })
-      .filter(check => check.gap <= 14)
+    const pastChecks = history.filter(check => check.pestKey === pest.key)
+    const previous = pastChecks
+      .map(check => ({ ...check, gap: Math.abs(dayGap(check.observedDay, anniversary)) }))
+      .filter(check => check.gap <= previousYearWindowDays)
       .sort((a, b) => Number(!!crop.farmId && b.farmId === crop.farmId) -
         Number(!!crop.farmId && a.farmId === crop.farmId) || a.gap - b.gap)[0]
-    if (previousYear.length && !previous) return []
+    if (!previous && pastChecks.some(check => Number(check.observedDay.slice(0, 4)) === year - 1)) return []
 
     const localSeasons = pest.seasons.filter(item =>
       item.code === crop.prefectureCode && (!item.site || item.site === crop.growingSite))

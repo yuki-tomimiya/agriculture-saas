@@ -586,7 +586,7 @@ export function* eligibleMilestoneAsks(input: MilestoneAskInput): Generator<Mile
   const hidden = new Set(input.hiddenKeys ?? [])
   const recorded = new Set(input.records.map((record) => record.key))
   for (const item of catalogFor(input.cropName, input.variety)) {
-    if (item.key === 'broccoli-bud' && input.plantingMethod === 'direct') continue
+    if (input.plantingMethod === 'direct' && (item.key === 'broccoli-bud' || item.key === 'onion-lodging')) continue
     if (item.ask === false) continue
     if (recorded.has(item.key) || hidden.has(item.key)) continue
     if (item.skipWhenHarvest && input.hasHarvest) continue
