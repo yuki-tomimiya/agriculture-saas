@@ -5,18 +5,23 @@ import { renderToStaticMarkup } from 'react-dom/server'
 // Next.jsが起動時に用意するAPIを、サーバーを起動しない部品テストにも用意する。
 Object.assign(globalThis, { AsyncLocalStorage })
 
-// Next.js 16への更新時はwork-unit-async-storageと新しいリクエストの形に差し替える。
+// cookies() が読むリクエストの情報だけをテストに用意する。
 type TestCookies = { get(name: string): { value: string } | undefined }
-const { requestAsyncStorage } = require('next/dist/client/components/request-async-storage.external') as {
-  requestAsyncStorage: AsyncLocalStorage<{ cookies: TestCookies }>
+const { workAsyncStorage } = require('next/dist/server/app-render/work-async-storage.external') as {
+  workAsyncStorage: AsyncLocalStorage<{ route: string }>
+}
+const { workUnitAsyncStorage } = require('next/dist/server/app-render/work-unit-async-storage.external') as {
+  workUnitAsyncStorage: AsyncLocalStorage<{ type: 'request'; phase: 'render'; cookies: TestCookies }>
 }
 const { AppRouterContext } = require('next/dist/shared/lib/app-router-context.shared-runtime') as typeof import(
   'next/dist/shared/lib/app-router-context.shared-runtime'
 )
-const router = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {} }
+const router = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {}, bfcacheId: 'test' }
 
 export function withRequestCookies<T>(cookies: TestCookies, callback: () => T): T {
-  return requestAsyncStorage.run({ cookies }, callback)
+  return workAsyncStorage.run({ route: '/test' }, () =>
+    workUnitAsyncStorage.run({ type: 'request', phase: 'render', cookies }, callback)
+  )
 }
 
 export function renderWithRouter(element: ReactElement): string {

@@ -75,8 +75,10 @@ test('画面がURLの条件を受け取る', async t => {
 
   t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 16, 12) })
   await t.test('/calendar/history がカレンダーへ渡す開始月', async () => {
+    type CalendarContainer = React.ReactElement<{ children: React.ReactElement }>
+    type Main = React.ReactElement<{ children: [React.ReactNode, React.ReactNode, CalendarContainer] }>
     const calendarProps = (element: React.ReactElement) => {
-      const [, main] = element.props.children
+      const [, main] = (element.props as { children: [React.ReactNode, Main] }).children
       const [, , calendarContainer] = main.props.children
       return calendarContainer.props.children.props
     }

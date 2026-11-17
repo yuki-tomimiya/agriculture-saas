@@ -20,7 +20,7 @@
 
 ## 技術スタック
 
-Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma / 自前認証（`lib/auth.ts`） / 気象 Open-Meteo（`lib/weather-forecast.ts`）
+Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css` / Prisma / 自前認証（`lib/auth.ts`） / 気象 Open-Meteo（`lib/weather-forecast.ts`）
 
 内部名: `package.json` の `agriculture-saas`（ユーザー向け表示には使わない）
 
