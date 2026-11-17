@@ -5,7 +5,7 @@ import { pestTrigger } from '@/lib/pests/catalog'
 import type { PestQuestion as Question } from '@/lib/proposals/presentation'
 import PestAdvice, { type PestAdviceData } from '@/components/PestAdvice'
 
-function PestQuestionRow({ question }: { question: Question }) {
+export function PestQuestionRow({ question, inline = false }: { question: Question; inline?: boolean }) {
   const { cropId, cropName, farmName, pest, timing, timingSource, today } = question
   const [date, setDate] = useState(today)
   const [notes, setNotes] = useState('')
@@ -37,16 +37,18 @@ function PestQuestionRow({ question }: { question: Question }) {
     }
   }
 
-  return <li className="space-y-2 border-t py-2">
-    <p className="ai-proposal-card-meta">{cropName}{farmName && ` · ${farmName}`}</p>
-    {timing && <p className="text-sm">{timing} {timingSource && <a className="underline" href={timingSource}>時期の出典</a>}</p>}
+  const notesInput = <textarea aria-label="見回りのメモ" maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} />
+
+  return <div className="space-y-2 border-t py-2">
+    {!inline && <p className="ai-proposal-card-meta">{cropName}{farmName && ` · ${farmName}`}</p>}
+    {!inline && timing && <p className="text-sm">{timing} {timingSource && <a className="underline" href={timingSource}>時期の出典</a>}</p>}
     {answer === null ? <>
       <label className="text-sm">見た日 <input type="date" value={date} max={today}
         onChange={e => setDate(e.target.value)} /></label>
-      <details className="text-sm">
+      {inline ? <label className="block text-sm">メモ（任意）{notesInput}</label> : <details className="text-sm">
         <summary>メモを添える</summary>
-        <textarea aria-label="見回りのメモ" maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} />
-      </details>
+        {notesInput}
+      </details>}
       <div className="flex flex-wrap gap-2">
         <button type="button" className="ai-proposal-action ai-proposal-action--primary" disabled={pending || !date} onClick={() => submit(true)}>いた</button>
         <button type="button" className="ai-proposal-action" disabled={pending || !date} onClick={() => submit(false)}>いなかった</button>
@@ -55,7 +57,7 @@ function PestQuestionRow({ question }: { question: Question }) {
     </> : <p role="status">{answer === 'later' ? 'あとで確認するようにしました。' : `${answer ? '「いた」' : '「いなかった」'}を記録しました。`}</p>}
     {error && <p role="alert">{error}</p>}
     {advice && <PestAdvice advice={advice} />}
-  </li>
+  </div>
 }
 
 export default function PestQuestion({ id, questions }: { id: string; questions: Question[] }) {
@@ -65,7 +67,7 @@ export default function PestQuestion({ id, questions }: { id: string; questions:
       <summary>{pest.question}（{questions.length}件）</summary>
       <div className="ai-proposal-card-body">
         <div className="ai-proposal-card-action-column space-y-2">
-          <ul>{questions.map(question => <PestQuestionRow key={question.cropId} question={question} />)}</ul>
+          <ul>{questions.map(question => <li key={question.cropId}><PestQuestionRow question={question} /></li>)}</ul>
         </div>
         <div className="ai-proposal-evidence space-y-2">
           <p>{pest.marker} {pest.appearance && <a className="underline" href={pest.appearance.url}>見た目の資料</a>}</p>

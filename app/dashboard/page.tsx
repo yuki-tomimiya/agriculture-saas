@@ -106,7 +106,7 @@ export default async function DashboardPage() {
   const proposalNote = proposals
     ? proposals.count === 0
       ? '表示する締切・確認事項はありません'
-      : `締切 ${proposals.deadlineCount}件・作付けごとの確認 ${proposals.confirmations.length}件`
+      : `締切 ${proposals.deadlineCount}件・作付けごとの確認 ${proposals.confirmationGroups.length}件`
     : '提案の件数を取得できませんでした'
 
   let recentCrops = await prisma.crop.findMany({

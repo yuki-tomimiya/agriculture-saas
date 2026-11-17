@@ -30,7 +30,7 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | パス | 役割 |
 |------|------|
-| `/dashboard/ai-proposal` | 今日の提案。締切、作付けごとの確認、確認事項なしの理由、記録の整理、補足、節目・病害虫の回答 |
+| `/dashboard/ai-proposal` | 今日の提案。締切、確認カードとカード内の回答、確認事項なしの理由、記録の整理、補足、残りの回答、天気の出典 |
 | `/gdd` | 生育ナビの入口（栽培中を選ぶ。1件だけならその作付けへ） |
 | `/gdd/[cropId]` | その作付けの積算温度・雨量・日射。過去の作付けも開ける |
 | `/gdd/past` | 過去の生育データ（2階層目） |
@@ -59,11 +59,11 @@ Next.js 14（App Router） / TypeScript / Tailwind + `app/globals.css` / Prisma 
 
 | 領域 | パス |
 |------|------|
-| 今日の提案 | `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。終了確認の日数は台帳 I2）、`app/dashboard/ai-proposal/page.tsx`（表示と節目の回答）、`app/dashboard/page.tsx`（件数）、`app/api/proposals/dismiss/` |
-| 提案の組み立て | `lib/proposals/scoring.ts` が候補に意味の段を付け、`lib/proposals/presentation.ts` の `loadTodayConfirmations(userId, { now, weather })` が確認事項を選ぶ。気象の取得口は `lib/proposals/weather.ts`。カレンダーは `lib/ai-proposal.ts` の `getTodayProposals` |
+| 今日の提案 | `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。台帳 I2・I17）、`app/dashboard/ai-proposal/page.tsx`（取得）、同じフォルダの `MorningProposals.tsx`（画面と回答の配置）、`app/dashboard/page.tsx`（件数）、`app/api/proposals/dismiss/` |
+| 提案の組み立て | `lib/proposals/scoring.ts`（候補）、`lib/proposals/presentation.ts` の `loadTodayConfirmations(userId, { now, weather })`（選択とグループ化）。気象の取得口は `lib/proposals/weather.ts`。カレンダーは `lib/ai-proposal.ts` の `getTodayProposals` |
 | 提案の答え合わせ | `tests/today-proposals.test.ts` と `tests/fixtures/today-proposals/`。3つの形は `scripts/proposal-check-scenarios.ts` |
 | 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`（台帳 B7）, `lib/proposals/frost.ts`（さつまいもの霜の締切・春の霜の終わり。台帳 D9） |
-| 天気の保存・出典 | 過去の天気の保存は `lib/open-meteo/archive.ts` → `OpenMeteoDaily`（取り直しは台帳 I14）。実績・予報の日平均は `lib/weather-forecast.ts`（台帳 A1・B7）。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。取り先の住所は `lib/open-meteo/url.ts`（`OPEN_METEO_API_KEY` で契約者用へ）、取得は `lib/open-meteo/fetch.ts`（台帳 I14）。出典の表示は `components/WeatherDataSource.tsx`（気象庁用も共通。出典の扱いは台帳 A3） |
+| 天気の保存・出典 | 過去の天気の保存は `lib/open-meteo/archive.ts` → `OpenMeteoDaily`（台帳 I14）。実績・予報の日平均は `lib/weather-forecast.ts`（台帳 A1・B7）。標高は `lib/jma/elevation.ts` → `OpenMeteoElevation`。取り先の住所は `lib/open-meteo/url.ts`（`OPEN_METEO_API_KEY` で契約者用へ）、取得は `lib/open-meteo/fetch.ts`（台帳 I14）。出典の表示は `components/WeatherDataSource.tsx`（今日の提案は `CompactWeatherDataSource` と `WeatherDataNotes`、観測は `JmaDataSource`。出典の扱いは台帳 A3） |
 | 植える条件 | `lib/benchmarks/planting-conditions.ts`（台帳 D10。霜の注意の対象は同じ表の `lateFrostAdvice`、台帳 D11）。登録画面は `components/CropForm.tsx`、来年の計画は `lib/insights/next-year-plan.ts`、農場詳細は `components/FarmPlantingConditions.tsx`。遅霜のカードは `lib/proposals/scoring.ts` |
 | 来年の計画 | `app/plan/page.tsx`, `lib/insights/next-year-plan.ts`, `lib/insights/harvest-gdd-basis.ts`（計画・生育ナビ・提案・振り返りで同じ基準）。ブロッコリーの2段の歩き方は `projectTwoStageHarvestWindow`（`lib/insights/harvest-date-window.ts`）。数え方・幅・暑い年／涼しい年は台帳 B1c〜B1f・B7・B8 |
 | 分析・比較 | `app/insights/`, `lib/insights/crop-season-compare.ts` |

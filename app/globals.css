@@ -979,11 +979,14 @@
   margin-bottom: 0.75rem;
 }
 .morning-disclosure input,
-.morning-disclosure textarea {
+.morning-disclosure textarea,
+.morning-card input,
+.morning-card textarea {
   max-width: 100%;
   min-width: 0;
 }
-.morning-disclosure .ai-proposal-milestone-date {
+.morning-disclosure .ai-proposal-milestone-date,
+.morning-card .ai-proposal-milestone-date {
   flex-wrap: wrap;
 }
 .morning-card > .morning-disclosure {

@@ -102,6 +102,18 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
         assert.ok(answer.confirmationGroups[0][0].others.some(card => card.trigger === 'milestone:test-dig'))
         assert.ok(legacy.some(card => card.trigger === 'frost-season' && /3,407℃日/.test(card.title)))
         assert.deepEqual(legacy.map(card => card.trigger), ['result-missing', 'milestone:test-dig', 'frost-season', 'neglected-crop'])
+        const observed = await loadTodayConfirmations(user.id, { now, weather: {
+          ...weather,
+          async frost(point, date) {
+            const origin = await weather.frost(point, date)
+            return origin && { ...origin, source: 'station', stationName: '館山', distanceKm: 3, near: true }
+          },
+        } })
+        const station = observed.confirmationGroups[0][0].selected
+        assert.equal(station.kind, 'proposal')
+        assert.equal(station.proposal.signal?.stationSource, true)
+        assert.equal(station.proposal.signal?.weatherSource, undefined)
+        assert.match(station.proposal.layers.regional ?? '', /館山観測所/)
       } else if (scenario === '2') {
         assert.deepEqual(result.deadlineGroups.map(group => group.length), [2])
         const flowers = result.confirmationGroups.flat().filter(row => row.selected.trigger === 'milestone:flower-1st')
@@ -156,7 +168,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
     assert.equal(result.deadlineCount, 2)
     assert.equal(result.taskGroups.flat().length, 3)
     assert.equal(result.count, 3)
-    assert.equal(result.confirmations[0].selected.stage, 'reached')
+    assert.equal(result.confirmationGroups[0][0].selected.stage, 'reached')
     assert.deepEqual(Object.fromEntries(Object.entries(result.noConfirmations).map(([reason, crops]) => [reason, crops.map(crop => crop.cropName)])), {
       'no-location': ['位置なし'], 'no-weather': ['気象データなし'],
       'record-only': ['記録だけ'], 'no-question': ['今は聞くことがない'],
@@ -166,7 +178,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
     } })
     const afterDismissal = await loadTodayConfirmations(user.id, { now, weather })
     assert.equal(afterDismissal.taskGroups.flat().length, 3)
-    assert.ok(!afterDismissal.confirmations.some(row => row.selected.trigger === 'harvest-window'))
+    assert.ok(!afterDismissal.confirmationGroups.flat().some(row => row.selected.trigger === 'harvest-window'))
   })
   await t.test('トマトの例年の冷え込みは、整理ではなく季節の確認事項', async () => {
     const user = await db.user.create({ data: { email: 'cool-night@example.invalid', password: 'unused' } })
@@ -177,8 +189,8 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
         return { date: { month: 11, day: 1 }, source: 'estimate', stationName: null, distanceKm: null }
       },
     } })
-    assert.equal(result.confirmations.length, 2)
-    for (const row of result.confirmations) {
+    assert.equal(result.confirmationGroups.flat().length, 2)
+    for (const row of result.confirmationGroups.flat()) {
       assert.equal(row.selected.stage, 'season')
       assert.equal(row.selected.trigger, 'season-finish')
       assert.match(row.selected.reason, /13℃/)

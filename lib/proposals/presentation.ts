@@ -69,7 +69,7 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
 
   const deadlines = new Map<string, CropConfirmation[]>()
   const confirmations: CropConfirmation[] = []
-  const selectedQuestions = new Map<string, Confirmation>()
+  const selectedTriggers = new Map<string, string>()
   const noConfirmations: Partial<Record<NoConfirmationReason, ConfirmationCrop[]>> = {}
   for (const crop of crops) {
     const [selected, ...others] = (byCrop.get(crop.cropId) ?? []).sort(compareConfirmations)
@@ -78,7 +78,7 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
       continue
     }
     const row = { crop, selected, others }
-    selectedQuestions.set(crop.cropId, selected)
+    selectedTriggers.set(crop.cropId, selected.trigger)
     if (selected.stage === 'deadline' && selected.kind === 'proposal') {
       const { proposal } = selected
       const key = JSON.stringify([proposal.signal?.deadline, proposal.layers.conclusion])
@@ -101,20 +101,18 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
     byReason.set(key, group)
   }
   const confirmationGroups = [...byReason.values()]
-  const milestoneGroups = [...milestones.values()]
-  const remainingMilestoneGroups = milestoneGroups
+  const remainingMilestoneGroups = [...milestones.values()]
     .map(group => group.filter(proposal =>
-      selectedQuestions.get(proposal.relatedCropId!)?.trigger !== proposal.trigger))
+      proposal.relatedCropId && selectedTriggers.get(proposal.relatedCropId) !== proposal.trigger))
     .filter(group => group.length > 0)
   const remainingPestGroups = groupPestQuestions(pestQuestions.filter(question =>
-    selectedQuestions.get(question.cropId)?.trigger !== pestTrigger(question.pest.key)))
+    selectedTriggers.get(question.cropId) !== pestTrigger(question.pest.key)))
   const taskGroups = [...tasks.values()]
   const deadlineCount = taskGroups.length + deadlineGroups.length
 
   return {
-    taskGroups, deadlineGroups, deadlineCount, confirmations, confirmationGroups,
+    taskGroups, deadlineGroups, deadlineCount, confirmationGroups,
     noConfirmations, organization, supplemental,
-    milestoneGroups, pestGroups: groupPestQuestions(pestQuestions),
     remainingMilestoneGroups, remainingPestGroups,
     count: deadlineCount + confirmationGroups.length,
   }
