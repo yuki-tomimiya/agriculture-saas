@@ -38,16 +38,20 @@ const archiveInflight = new Map<string, Promise<LocationArchive | null>>()
  * 地点の過去10年（昨年まで）を1回で取る。平年値と初霜が同じ応答を使う。
  * 失敗したときは null。
  */
-export function loadLocationArchive(point?: Partial<WeatherPoint>, now = new Date()): Promise<LocationArchive | null> {
+export function loadLocationArchive(
+  point?: Partial<WeatherPoint>, now = new Date(), options: { retry?: boolean } = {},
+): Promise<LocationArchive | null> {
   if (!hasWeatherCoordinates(point)) return Promise.resolve(null)
   const endYear = now.getFullYear() - 1
   const startYear = endYear - 9
   const latitude = Number(point!.latitude)
   const longitude = Number(point!.longitude)
-  const key = `${latitude}|${longitude}|${startYear}`
-  const existing = archiveInflight.get(key)
+  const base = `${latitude}|${longitude}|${startYear}`
+  const retryKey = `${base}|retry`
+  const key = options.retry ? retryKey : base
+  const existing = archiveInflight.get(retryKey) ?? archiveInflight.get(key)
   if (existing) return existing
-  const pending = fetchLocationArchive(latitude, longitude, startYear, endYear).finally(() => {
+  const pending = fetchLocationArchive(latitude, longitude, startYear, endYear, options.retry).finally(() => {
     archiveInflight.delete(key)
   })
   archiveInflight.set(key, pending)
@@ -58,10 +62,13 @@ async function fetchLocationArchive(
   latitude: number,
   longitude: number,
   startYear: number,
-  endYear: number
+  endYear: number,
+  retry: boolean | undefined,
 ): Promise<LocationArchive | null> {
   try {
-    const rows = await loadDailyWeather({ latitude, longitude }, `${startYear}-01-01`, `${endYear}-12-31`)
+    const rows = await loadDailyWeather({ latitude, longitude }, `${startYear}-01-01`, `${endYear}-12-31`, {
+      fullHistory: true, retry,
+    })
     if (!rows) return null
     return {
       times: rows.map(row => row.date), precip: rows.map(row => row.precip),

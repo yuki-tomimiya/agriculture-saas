@@ -119,13 +119,13 @@ export async function readFarmFrost(point?: Partial<WeatherPoint>, now = new Dat
 
 /** 秋に4℃以下の日が無かった観測と、時期を出せなかった場合を区別する。 */
 export async function readFarmAutumnFrost(
-  point?: Partial<WeatherPoint>, now = new Date(),
-): Promise<FrostOrigin | { source: 'station'; summary: null } | null> {
+  point?: Partial<WeatherPoint>, now = new Date(), loadArchive = loadLocationArchive,
+): Promise<FrostOrigin | { source: 'station'; summary: null; usableYears: number } | null> {
   const pick = await chooseStation(point)
   if (pick?.usable) {
     const rows = await stationRows(pick.station.blockNo, now)
     const read = readStationFrost(rows, now)
-    if (read.kind === 'none') return { source: 'station', summary: null }
+    if (read.kind === 'none') return { source: 'station', summary: null, usableYears: read.usableYears }
     if (read.kind === 'station') {
       return {
         summary: read.summary,
@@ -137,7 +137,7 @@ export async function readFarmAutumnFrost(
       }
     }
   }
-  const archive = await loadLocationArchive(point, now)
+  const archive = await loadArchive(point, now)
   if (!archive?.tempMin) return null
   const summary = summarizeAutumnFirstFrost(archive.times, archive.tempMin)
   if (!summary) return null
@@ -243,7 +243,9 @@ export type SpringFrostOrigin = {
   near: boolean
 }
 
-export async function readFarmSpringFrost(point?: Partial<WeatherPoint>): Promise<SpringFrostOrigin | null> {
+export async function readFarmSpringFrost(
+  point?: Partial<WeatherPoint>, loadArchive = loadLocationArchive,
+): Promise<SpringFrostOrigin | null> {
   const pick = await chooseStation(point)
   if (pick?.usable) {
     const rows = await stationRows(pick.station.blockNo)
@@ -269,7 +271,7 @@ export async function readFarmSpringFrost(point?: Partial<WeatherPoint>): Promis
       }
     }
   }
-  const archive = await loadLocationArchive(point)
+  const archive = await loadArchive(point)
   if (!archive?.tempMin) return null
   const summary = summarizeSpringLastFrost(archive.times, archive.tempMin)
   if (!summary) return null

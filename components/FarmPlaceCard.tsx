@@ -10,7 +10,13 @@ const missingNotes: Record<PlaceCard['missing'][number], string> = {
   soil: 'この場所の土の種類は、土壌図からはまだ出せません。',
 }
 
-export default function FarmPlaceCard({ card }: { card: PlaceCard }) {
+export default function FarmPlaceCard({
+  card, onRetryWeather, retryDisabled,
+}: {
+  card: PlaceCard
+  onRetryWeather: () => void
+  retryDisabled: boolean
+}) {
   const { frost, normal, soil, missing } = card
   const observed = frost.autumn?.source === 'station' || frost.spring?.source === 'station'
   const estimated = frost.autumn?.source === 'estimate' || frost.spring?.source === 'estimate'
@@ -24,6 +30,10 @@ export default function FarmPlaceCard({ card }: { card: PlaceCard }) {
             ? '土壌図の区画の境目などのため、土の種類を1つに絞れません。'
             : missingNotes[item]).join('')}
         </p>
+      )}
+      {missing.some(item => item === 'autumn_frost' || item === 'spring_frost' || item === 'normal') && (
+        <button type="button" className="btn btn-outline mt-2 max-w-full whitespace-normal !px-2"
+          onClick={onRetryWeather} disabled={retryDisabled}>もう一度取る</button>
       )}
       <div className="mt-3 space-y-3 divide-y divide-green-100">
         {(frost.autumn || frost.spring) && <section>

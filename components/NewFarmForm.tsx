@@ -39,7 +39,7 @@ export default function NewFarmForm() {
     return requestNumber.current
   }
 
-  async function preview(point: FarmCoordinates) {
+  async function preview(point: FarmCoordinates, retryWeather = false) {
     const number = resetLocationRequest()
     const controller = new AbortController()
     previewRequest.current = controller
@@ -48,7 +48,7 @@ export default function NewFarmForm() {
       const response = await fetch('/api/farms/place-card', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(point),
+        body: JSON.stringify({ ...point, retryWeather }),
         signal: controller.signal,
       })
       if (!response.ok) {
@@ -178,15 +178,17 @@ export default function NewFarmForm() {
 
       <div aria-live="polite">
         {place.status === 'locating' && <p role="status">現在地を取得しています。</p>}
-        {place.status === 'loading' && <p role="status">この土地の情報を調べています。</p>}
+        {place.status === 'loading' && <p role="status">
+          この土地の情報を調べています。はじめての場所は、過去10年の天気の取り込みに数十秒かかることがあります。
+        </p>}
         {place.status === 'error' && <div>
           <p role="alert" className="text-sm text-red-700">{place.message}</p>
           <button className="btn btn-outline mt-2 max-w-full whitespace-normal !px-2" type="button"
-            onClick={() => void preview(place.point)}>もう一度見る</button>
+            onClick={() => void preview(place.point, true)}>もう一度取る</button>
         </div>}
         {place.status === 'ready' && <>
           <p className="mb-2 text-sm text-gray-600">緯度 {place.point.latitude}、経度 {place.point.longitude}</p>
-          <FarmPlaceCard card={place.card} />
+          <FarmPlaceCard card={place.card} onRetryWeather={() => void preview(place.point, true)} retryDisabled={saving} />
         </>}
       </div>
 

@@ -12,6 +12,7 @@ export async function POST(request: Request) {
     ? readFarmCoordinates(input.latitude, input.longitude)
     : null
   if (!point) return NextResponse.json({ error: '緯度・経度を正しく入力してください' }, { status: 400 })
-  const card = await buildFarmPlaceCard(point)
+  const retryWeather = typeof input === 'object' && input != null && 'retryWeather' in input && input.retryWeather === true
+  const card = await buildFarmPlaceCard(point, { retryWeather })
   return NextResponse.json(card, { headers: { 'Cache-Control': 'private, no-store' } })
 }

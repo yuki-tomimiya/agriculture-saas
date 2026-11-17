@@ -4,8 +4,8 @@ import { soilGuidelineColumn } from '@/lib/farm-soil/presentation'
 import { autumnFirstFrostSentence, chooseStation, frostStationLine, readFarmAutumnFrost, readFarmSpringFrost, springFrostSentence } from '@/lib/jma/frost-record'
 import { suggestPrefecture, type PlaceSuggestion } from '@/lib/places/suggest'
 import { lookupSoilMap, type SoilLookupResult } from '@/lib/soil-map/lookup'
-import { FROST_ARCHIVE_YEARS, FROST_RISK_MAX_C } from '@/lib/weather-frost'
-import { getLocationDailyNormals } from '@/lib/weather-normals'
+import { FROST_RISK_MAX_C } from '@/lib/weather-frost'
+import { dailyNormalsFromArchive, loadLocationArchive } from '@/lib/weather-normals'
 import type { FarmCoordinates } from './coordinates'
 
 type FrostText = { text: string; source: 'station' | 'estimate' }
@@ -38,20 +38,24 @@ function placeSoil(lookup: SoilLookupResult): PlaceSoil {
   return { status: 'matched', name: candidate.soilName, column: soilGuidelineColumn(soil.group), scale: candidate.scale }
 }
 
-export async function buildFarmPlaceCard(point: FarmCoordinates, findSoil = lookupSoilMap): Promise<PlaceCard> {
+export async function buildFarmPlaceCard(
+  point: FarmCoordinates, { findSoil = lookupSoilMap, retryWeather = false } = {},
+): Promise<PlaceCard> {
   const suggestion = suggestPrefecture(point.latitude, point.longitude)
+  const now = new Date()
+  const archive = loadLocationArchive(point, now, { retry: retryWeather })
   // 個別の取得に失敗しても、そろった項目は表示する。
   const [autumn, spring, pick, normals, soilLookup] = await Promise.all([
-    readFarmAutumnFrost(point).catch(() => null),
-    readFarmSpringFrost(point).catch(() => null),
+    readFarmAutumnFrost(point, now, () => archive).catch(() => null),
+    readFarmSpringFrost(point, () => archive).catch(() => null),
     chooseStation(point).catch(() => null),
-    getLocationDailyNormals(point).catch(() => null),
+    archive.then(dailyNormalsFromArchive).catch(() => null),
     findSoil({ ...point, prefectureCode: suggestion?.prefectureCode }).catch((): SoilLookupResult =>
       ({ status: 'data_unavailable', reason: '土壌図を読めません' })),
   ])
   const autumnText: FrostText | null = autumn && {
     text: autumn.summary ? autumnFirstFrostSentence(autumn)
-      : `過去${FROST_ARCHIVE_YEARS}年の観測では、秋に最低気温が${FROST_RISK_MAX_C}℃以下になった日はありません。`,
+      : `この観測所の記録のそろった${autumn.usableYears}年では、秋に最低気温が${FROST_RISK_MAX_C}℃以下になった日はありません。`,
     source: autumn.source,
   }
   const springText: FrostText | null = spring && {

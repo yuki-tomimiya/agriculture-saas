@@ -3,6 +3,8 @@ import { fetchOpenMeteo } from './fetch'
 
 /** ⚙ 運用の値（根拠台帳I14）：直近7日を24時間ごとに更新。昨年以前は取り直さない。 */
 export const ARCHIVE_REFRESH_DAYS = 7
+/** ⚙ 運用の値（台帳I14）。10年分の初回取り込みの打ち切り。 */
+export const INITIAL_HISTORY_TIMEOUT_MS = 30_000
 const REFRESH_MS = 24 * 60 * 60 * 1000
 const RETRY_MS = 60 * 60 * 1000
 const queues = new Map<string, Promise<void>>()
@@ -34,13 +36,13 @@ async function serial<T>(location: string, work: () => Promise<T>): Promise<T> {
   try { return await pending } finally { if (queues.get(location) === tail) queues.delete(location) }
 }
 
-async function fetchRange(location: string, start: string, end: string): Promise<boolean> {
+async function fetchRange(location: string, start: string, end: string, timeoutMs?: number): Promise<boolean> {
   if ((retryAfter.get(location) ?? 0) > Date.now()) return false
   const [latitude, longitude] = location.split(',')
   const params = new URLSearchParams({ latitude, longitude, start_date: start, end_date: end, daily: Object.values(variables).join(','), timezone: 'Asia/Tokyo' })
   try {
     // DBが取り直す時期を決める。Nextの永続キャッシュで古い応答を再保存しない。
-    const res = await fetchOpenMeteo('archive', params, { cache: 'no-store' })
+    const res = await fetchOpenMeteo('archive', params, { cache: 'no-store' }, timeoutMs)
     if (process.env.NODE_ENV !== 'production') console.info(`[OpenMeteo archive] ${start}..${end} status=${res.status}`)
     if (!res.ok) {
       retryAfter.set(location, Date.now() + RETRY_MS)
@@ -81,7 +83,10 @@ async function fetchRange(location: string, start: string, end: string): Promise
 }
 
 /** 必要な期間だけ読み、連続した未取得・更新対象日をまとめて取り足す。欠測nullも取得済みとして扱う。 */
-export async function loadDailyWeather(point: { latitude: number; longitude: number }, start: string, end: string) {
+export async function loadDailyWeather(
+  point: { latitude: number; longitude: number }, start: string, end: string,
+  options: { fullHistory?: boolean; retry?: boolean } = {},
+) {
   if (!Number.isFinite(point.latitude) || !Number.isFinite(point.longitude) || !/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end)) return null
   const today = tokyoToday()
   end = end > today ? today : end
@@ -104,7 +109,11 @@ export async function loadDailyWeather(point: { latitude: number; longitude: num
         else { range = { start: date, end: date }; ranges.push(range) }
       } else range = null
     }
-    for (const missing of ranges) { if (!await fetchRange(location, missing.start, missing.end)) break }
+    const timeoutMs = options.fullHistory && !rows.length &&
+      !await prisma.openMeteoDaily.findFirst({ where: { location }, select: { date: true } })
+      ? INITIAL_HISTORY_TIMEOUT_MS : undefined
+    if (options.retry && ranges.length) retryAfter.delete(location)
+    for (const missing of ranges) { if (!await fetchRange(location, missing.start, missing.end, timeoutMs)) break }
     const result = ranges.length ? await prisma.openMeteoDaily.findMany(query) : rows
     return result.length === expected ? result : null
   })
