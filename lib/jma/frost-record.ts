@@ -113,11 +113,19 @@ async function stationRows(blockNo: string, today = new Date()) {
 }
 
 export async function readFarmFrost(point?: Partial<WeatherPoint>, now = new Date()): Promise<FrostOrigin | null> {
+  const result = await readFarmAutumnFrost(point, now)
+  return result?.summary ? result : null
+}
+
+/** 秋に4℃以下の日が無かった観測と、時期を出せなかった場合を区別する。 */
+export async function readFarmAutumnFrost(
+  point?: Partial<WeatherPoint>, now = new Date(),
+): Promise<FrostOrigin | { source: 'station'; summary: null } | null> {
   const pick = await chooseStation(point)
   if (pick?.usable) {
     const rows = await stationRows(pick.station.blockNo, now)
     const read = readStationFrost(rows, now)
-    if (read.kind === 'none') return null
+    if (read.kind === 'none') return { source: 'station', summary: null }
     if (read.kind === 'station') {
       return {
         summary: read.summary,

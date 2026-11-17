@@ -1,5 +1,5 @@
 import type { FarmSoil } from '@prisma/client'
-import { soilClassificationForFarm } from './classification'
+import { soilClassificationForFarm, type SoilGroup } from './classification'
 
 export type SoilFarm = {
   id: string; latitude: number | null; longitude: number | null; locationVersion: number; soil: FarmSoil | null
@@ -24,8 +24,12 @@ export function farmSoilPresentation(farm: SoilFarm) {
     else if (soil.reason === 'not_in_guideline' && ['D4', 'J4'].includes(saved?.rawGroupCode?.trim() ?? '')) status = 'この土の基準は確認中です。これまでの目安を使っています。'
     else status = 'この土は、普通畑の基準表との対応が確認できていないため、これまでの目安を使っています。'
   }
-  const column = soil.group === 'black' ? '黒ボク土・多湿黒ボク土'
-    : soil.group === 'sandy' ? '砂丘未熟土・岩屑土'
-    : soil.group === 'ordinary' ? 'その他の土（黒ボク土・多湿黒ボク土・砂丘未熟土・岩屑土以外）' : null
+  const column = soilGuidelineColumn(soil.group)
   return { soil, status, mapName, column, mapScale: currentMap ? saved?.mapScale : null }
+}
+
+export function soilGuidelineColumn(group: SoilGroup): string | null {
+  return group === 'black' ? '黒ボク土・多湿黒ボク土'
+    : group === 'sandy' ? '砂丘未熟土・岩屑土'
+    : group === 'ordinary' ? 'その他の土（黒ボク土・多湿黒ボク土・砂丘未熟土・岩屑土以外）' : null
 }
