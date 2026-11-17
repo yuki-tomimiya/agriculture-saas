@@ -1,11 +1,23 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import FarmPlaceCard from '@/components/FarmPlaceCard'
 import { readFarmCoordinates, type FarmCoordinates } from '@/lib/farms/coordinates'
 import type { PlaceCard } from '@/lib/farms/place-card'
 import { PREFECTURES, municipalitiesIn } from '@/lib/places/catalog'
+
+function FarmMapUnavailable() {
+  return <p role="status" className="text-sm">
+    地図を読み込めませんでした。現在地か緯度・経度の入力を使ってください。
+  </p>
+}
+
+const FarmLocationMap = dynamic(
+  () => import('@/components/FarmLocationMap').catch(() => FarmMapUnavailable),
+  { ssr: false, loading: () => <p role="status" className="text-sm">地図を読み込んでいます。</p> },
+)
 
 type PlaceState = { status: 'idle' | 'locating' } |
   { status: 'loading'; point: FarmCoordinates } |
@@ -16,6 +28,7 @@ export default function NewFarmForm() {
   const router = useRouter()
   const [place, setPlace] = useState<PlaceState>({ status: 'idle' })
   const [manualOpen, setManualOpen] = useState(false)
+  const [mapOpen, setMapOpen] = useState(false)
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   const [locationError, setLocationError] = useState('')
@@ -67,6 +80,12 @@ export default function NewFarmForm() {
     }
   }
 
+  function choosePoint(point: FarmCoordinates) {
+    setLatitude(String(point.latitude))
+    setLongitude(String(point.longitude))
+    void preview(point)
+  }
+
   function chooseCurrentLocation() {
     const number = resetLocationRequest()
     const showManualEntry = (message: string) => {
@@ -88,9 +107,7 @@ export default function NewFarmForm() {
           showManualEntry('現在地を取得できませんでした。緯度・経度を入力してください。')
           return
         }
-        setLatitude(String(point.latitude))
-        setLongitude(String(point.longitude))
-        void preview(point)
+        choosePoint(point)
       },
       error => showManualEntry(error.code === error.PERMISSION_DENIED
         ? '位置情報の利用が許可されませんでした。緯度・経度を入力してください。'
@@ -149,6 +166,7 @@ export default function NewFarmForm() {
 
   const suggestion = place.status === 'ready' ? place.card.suggestion : null
   const cities = prefectureCode ? municipalitiesIn(prefectureCode) : []
+  const point = 'point' in place ? place.point : null
   return (
     <div className="min-w-0 space-y-5 [overflow-wrap:anywhere]">
       <section aria-labelledby="farm-location-heading">
@@ -157,8 +175,17 @@ export default function NewFarmForm() {
           <button className="btn btn-primary max-w-full whitespace-normal !px-2" type="button"
             onClick={chooseCurrentLocation} disabled={saving || place.status === 'locating'}>現在地を使う</button>
           <button className="btn btn-outline max-w-full whitespace-normal !px-2" type="button"
+            aria-controls="farm-map" aria-expanded={mapOpen} disabled={saving}
+            onClick={() => setMapOpen(!mapOpen)}>{mapOpen ? '地図を閉じる' : '地図で選ぶ'}</button>
+          <button className="btn btn-outline max-w-full whitespace-normal !px-2" type="button"
             aria-controls="farm-coordinates" aria-expanded={manualOpen}
             onClick={() => setManualOpen(!manualOpen)}>緯度・経度を入れる</button>
+        </div>
+        <div id="farm-map" hidden={!mapOpen}>
+          {mapOpen && <div className="mt-3 space-y-2">
+            <p className="text-sm text-gray-700">地図を押して、農場の位置に印を置きます。</p>
+            <FarmLocationMap point={point} onPick={choosePoint} disabled={saving} />
+          </div>}
         </div>
         <form id="farm-coordinates" onSubmit={chooseManualLocation} hidden={!manualOpen}>
           <fieldset disabled={saving} className="mt-3 grid min-w-0 gap-2">
