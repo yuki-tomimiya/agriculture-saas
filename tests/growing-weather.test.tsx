@@ -64,10 +64,18 @@ test('生育ナビは終了日に積算を止め、気温が取れないとき�
   const render = (cropId: string): Promise<string> =>
     withRequestCookies({ get: name => name === 'userId' ? { value: 'user' } : undefined },
       async () => renderWithRouter(await GddCropPage({ params: Promise.resolve({ cropId }) })))
+  const cardWithTitle = (html: string, title: string) =>
+    html.split('</section>').find(section => section.includes(title)) ?? ''
 
   const ended = await render('ended')
   assert.match(ended, /終了時点：60 ℃日/)
-  assert.match(ended, /11月12日までの実績雨量/)
+  const endedRain = cardWithTitle(ended, 'の積算雨量の推移')
+  assert.match(endedRain, /11月12日までの実績雨量/)
+  assert.doesNotMatch(endedRain, /先の値は数値予報モデルの計算結果です|日降水量20mm以上の計算結果|該当日はありません/)
+  const endedSun = cardWithTitle(ended, 'の積算日射量の推移')
+  assert.equal((endedSun.match(/終了時点：30 MJ\/㎡/g) ?? []).length, 2)
+  assert.match(endedSun, /11月12日までの積算日射量を、同じ期間の10年平均/)
+  assert.doesNotMatch(endedSun, /現在：|今年/)
   assert.doesNotMatch(ended, /14日後見込み|今季は.*届かない/)
   assert.equal(calls.some(url => url.pathname.endsWith('/forecast')), false)
   assert.deepEqual(await getRetrospectiveGdd('user', 'ended'), { accumulatedGdd: 60 })
@@ -84,6 +92,24 @@ test('生育ナビは終了日に積算を止め、気温が取れないとき�
   assert.match(missingArchive, /現在：140 ℃日/)
   assert.match(missingArchive, /収穫の見込みは計算できません/)
   assert.doesNotMatch(missingArchive, /今季は.*届かない/)
+  const growingRain = cardWithTitle(missingArchive, 'の積算雨量の推移')
+  assert.match(growingRain, /今日までの実績雨量/)
+  assert.match(growingRain, /先の値は数値予報モデルの計算結果です/)
+  assert.match(growingRain, /日降水量20mm以上の計算結果/)
+  assert.match(growingRain, /該当日はありません/)
+  const growingSun = cardWithTitle(missingArchive, 'の積算日射量の推移')
+  assert.match(growingSun, /現在：70 MJ\/㎡/)
+  assert.match(growingSun, /今年：70 MJ\/㎡/)
+
+  await db.openMeteoDaily.updateMany({
+    where: { location: '36.5551,139.8828', date: { lte: '2025-12-31' } },
+    data: { tempMean: 20 },
+  })
+  const endedComparison = cardWithTitle(await render('ended'), 'の積算日射量の推移')
+  assert.match(endedComparison, /11月12日までの10年平均/)
+  assert.match(endedComparison, /終了時点の積算は10年平均より/)
+  assert.doesNotMatch(endedComparison, /今年は/)
+  assert.match(cardWithTitle(await render('missing-archive'), 'の積算日射量の推移'), /今年は10年平均より/)
 
   const now = new Date(2026, 10, 16, 12)
   const archive = { times: ['2025-11-16'], tempMean: [null], tempMin: null, tempMax: null, precip: [1], radiation: [10] }

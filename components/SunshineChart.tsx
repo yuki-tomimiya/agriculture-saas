@@ -44,6 +44,7 @@ export default function SunshineChart({
   lastYearPoints = [],
   lastYearLabel = null,
   normalCumulativeMj = null,
+  periodEndLabel,
 }: {
   crop?: CropForSunshine
   daysFromPlanting?: number
@@ -51,6 +52,7 @@ export default function SunshineChart({
   lastYearPoints?: { dayFromPlanting: number; value: number }[]
   lastYearLabel?: string | null
   normalCumulativeMj?: number[] | null
+  periodEndLabel?: string
 }) {
   const cropLabel = crop ? `${crop.name}${crop.variety ? `（${crop.variety}）` : ''}` : '対象作物'
   const currentRadiation = historicalPoints[historicalPoints.length - 1]?.cumulativeRadiationMj ?? 0
@@ -73,7 +75,7 @@ export default function SunshineChart({
   const displayDays = Math.max(10, Math.min(MAX_DAYS, Math.max(historyMaxDay, lastYearMaxDay) || 10))
 
   const lastYearMax = hasLastYear ? Math.max(...lastYearPoints.map((p) => p.value)) : 0
-  const normalAtToday =
+  const normalAtDisplayedDay =
     normalCumulativeMj && normalCumulativeMj.length > 0
       ? normalCumulativeMj[Math.min(Math.max(0, Math.floor(daysFromPlanting ?? 0)), normalCumulativeMj.length - 1)] ?? null
       : null
@@ -140,17 +142,17 @@ export default function SunshineChart({
       </h2>
       <WeatherDataSource />
       <p className="dashboard-section-sub">
-        植え付け日からの積算日射量の推移を、10年平均（推計）と今年
-        {hasLastYear ? '・前回作付け' : ''}
-        で比較して表示します。
+        {periodEndLabel
+          ? `植え付け日から${periodEndLabel}までの積算日射量を、同じ期間の10年平均（推計）${hasLastYear ? 'や前回作付け' : ''}と比較します。`
+          : `植え付け日からの積算日射量の推移を、10年平均（推計）と今年${hasLastYear ? '・前回作付け' : ''}で比較して表示します。`}
         {crop && !hasHistory && ' この作物の農場に緯度・経度を登録すると、実データに基づく推移が表示されます。'}
       </p>
       <div className="dashboard-gdd-graph">
         <div className="dashboard-gdd-graph-header">
           <span>植え付けからの推移（累積 MJ/㎡）</span>
           <span className="dashboard-gdd-graph-current">
-            現在：{currentRadiation} MJ/㎡
-            {normalAtToday != null ? ` / 10年平均：${Math.round(normalAtToday)} MJ/㎡` : ''}
+            {periodEndLabel ? '終了時点' : '現在'}：{currentRadiation} MJ/㎡
+            {normalAtDisplayedDay != null ? ` / 10年平均：${Math.round(normalAtDisplayedDay)} MJ/㎡` : ''}
           </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">
@@ -236,7 +238,7 @@ export default function SunshineChart({
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#f97316' }} />
               <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">
-                今年：{currentRadiation} MJ/㎡
+                {periodEndLabel ? '終了時点' : '今年'}：{currentRadiation} MJ/㎡
               </span>
             </div>
             {hasLastYear && (
@@ -250,7 +252,7 @@ export default function SunshineChart({
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot dashboard-gdd-graph-dot--standard" />
               <span className="dashboard-gdd-graph-marker-text">
-                {normalAtToday != null ? `10年平均（推計）：${Math.round(normalAtToday)} MJ/㎡` : '10年平均なし'}
+                {normalAtDisplayedDay != null ? `10年平均（推計）：${Math.round(normalAtDisplayedDay)} MJ/㎡` : '10年平均なし'}
               </span>
             </div>
           </div>
@@ -259,14 +261,14 @@ export default function SunshineChart({
         <div className="dashboard-gdd-summary">
           <p className="dashboard-gdd-summary-title">日射量の傾向</p>
           <p className="dashboard-gdd-summary-text">
-            {normalAtToday != null ? (
+            {normalAtDisplayedDay != null ? (
               <>
-                同じ日付時点の10年平均：<span className="font-semibold">{Math.round(normalAtToday)} MJ/㎡</span>
-                <br />→ 今年は10年平均より{' '}
+                {periodEndLabel ? `${periodEndLabel}までの10年平均` : '同じ日付時点の10年平均'}：<span className="font-semibold">{Math.round(normalAtDisplayedDay)} MJ/㎡</span>
+                <br />→ {periodEndLabel ? '終了時点の積算は' : '今年は'}10年平均より{' '}
                 <span className="font-semibold text-orange-600">
-                  {currentRadiation - normalAtToday >= 0 ? '+' : ''}
-                  {Math.round((currentRadiation - normalAtToday) * 10) / 10} MJ/㎡
-                  {normalAtToday > 0 ? `（10年平均の${Math.round((currentRadiation / normalAtToday) * 100)}%）` : ''}
+                  {currentRadiation - normalAtDisplayedDay >= 0 ? '+' : ''}
+                  {Math.round((currentRadiation - normalAtDisplayedDay) * 10) / 10} MJ/㎡
+                  {normalAtDisplayedDay > 0 ? `（10年平均の${Math.round((currentRadiation / normalAtDisplayedDay) * 100)}%）` : ''}
                 </span>
               </>
             ) : (

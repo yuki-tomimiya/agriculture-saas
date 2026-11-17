@@ -32,7 +32,8 @@ export default function RainfallDataCard({
   /** null は取得失敗。空配列は線を出さない */
   normalCumulativeMm?: number[] | null
   historicalPoints: CumPoint[]
-  rainyDays: RainPoint[]
+  /** 予報欄を使わないときは省略。空配列なら該当日なし。 */
+  rainyDays?: RainPoint[]
   lastYearPoints?: { dayFromPlanting: number; value: number }[]
   lastYearLabel?: string | null
 }) {
@@ -162,7 +163,7 @@ export default function RainfallDataCard({
         {cropName}の積算雨量の推移
         <Link href="/faq/normals" className="chart-help" aria-label="10年平均とは">？</Link>
       </h2>
-      <WeatherDataSource kind="mixed" />
+      <WeatherDataSource kind={rainyDays ? 'mixed' : 'archive'} />
       <p className="dashboard-section-sub">
         {cropName}の圃場地点に基づき、植え付け日から{periodEndLabel ?? '今日'}までの実績雨量を表示しています。
         {lastYearPath ? ' 灰色は前回作付けの積算雨量です。' : ''}
@@ -261,20 +262,22 @@ export default function RainfallDataCard({
         </p>
       </div>
 
-      <div className="dashboard-gdd-suggestions">
-        <p className="dashboard-gdd-suggestions-title">日降水量{FORECAST_HEAVY_RAIN_MM}mm以上の計算結果</p>
-        {rainyDays.length === 0 ? (
-          <p className="dashboard-gdd-note">該当日はありません。</p>
-        ) : (
-          <ul className="dashboard-gdd-suggestions-list">
-            {rainyDays.map((day) => (
-              <li key={`${day.dayLabel}-${day.precipitationMm}`}>
-                {day.dayLabel}: {day.precipitationMm.toFixed(1)} mm
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+      {rainyDays && (
+        <div className="dashboard-gdd-suggestions">
+          <p className="dashboard-gdd-suggestions-title">日降水量{FORECAST_HEAVY_RAIN_MM}mm以上の計算結果</p>
+          {rainyDays.length === 0 ? (
+            <p className="dashboard-gdd-note">該当日はありません。</p>
+          ) : (
+            <ul className="dashboard-gdd-suggestions-list">
+              {rainyDays.map((day) => (
+                <li key={`${day.dayLabel}-${day.precipitationMm}`}>
+                  {day.dayLabel}: {day.precipitationMm.toFixed(1)} mm
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
 
       <p className="dashboard-gdd-note">
         ※ 単位は日降水量（mm）です。

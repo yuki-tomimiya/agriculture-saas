@@ -239,6 +239,7 @@ export default async function GddCropPage({
     ? `${previousSeason.plantingDate.getFullYear()}年作`
     : null
   const title = cropLabel(selectedCrop.name, selectedCrop.variety)
+  const periodEndLabel = viewingPastCrop && historyEnd ? formatMonthDay(historyEnd) : undefined
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -375,10 +376,12 @@ export default async function GddCropPage({
               currentCumulativeMm={cumulativeRain}
               normalCumulativeMm={normalSeries?.precipMm ?? null}
               historicalPoints={rainfallCumulative}
-              rainyDays={heavyRainDays.map((d) => ({ dayLabel: d.dayLabel, precipitationMm: d.precipitationMm }))}
+              rainyDays={viewingPastCrop ? undefined : heavyRainDays.map((d) => ({
+                dayLabel: d.dayLabel, precipitationMm: d.precipitationMm,
+              }))}
               lastYearPoints={previousSeason?.rain ?? []}
               lastYearLabel={lastYearShortLabel}
-              periodEndLabel={viewingPastCrop && historyEnd ? formatMonthDay(historyEnd) : undefined}
+              periodEndLabel={periodEndLabel}
             />
           )}
 
@@ -394,6 +397,7 @@ export default async function GddCropPage({
             lastYearPoints={previousSeason?.radiation ?? []}
             lastYearLabel={lastYearShortLabel}
             normalCumulativeMj={normalSeries?.radiationMj ?? null}
+            periodEndLabel={periodEndLabel}
           />}
         </div>
       </main>
