@@ -8,7 +8,7 @@ import GDDChart from '@/components/GDDChart'
 import RainfallDataCard from '@/components/RainfallDataCard'
 import SunshineChart from '@/components/SunshineChart'
 import { getForecastDailyPrecipitation, getForecastDailyTemps, getHistoricalDailyPrecipitation, getHistoricalDailyRadiation, getHistoricalDailyTemps, hasWeatherCoordinates } from '@/lib/weather-forecast'
-import { computeGDDProjection, describeForecastCoverage, formatHarvestGddOutlook } from '@/lib/gdd'
+import { computeGDDProjection, describeForecastCoverage, formatDegreeDays, formatHarvestGddOutlook, formatHarvestGddReached } from '@/lib/gdd'
 import { dailyHeat, displayHeat, gddStartDate, type ActiveDayMethod, type ActiveGddMethod } from '@/lib/benchmarks/gdd-methods'
 import { cropHeatEndDate, loadHarvestSamples, pickHarvestBasis } from '@/lib/insights/harvest-gdd-basis'
 import { getPreviousSeasonWeather } from '@/lib/insights/previous-season-weather'
@@ -202,9 +202,16 @@ export default async function GddCropPage({
     ? formatHarvestWindow(windowResult.window)
     : null
   const seasonUnreachable = windowResult?.status === 'unreachable'
-  const harvestOutlook = currentGDD != null && (harvestWindowText || seasonUnreachable)
-    ? formatHarvestGddOutlook({ currentGdd: currentGDD, targetGdd: targetGDD, reference, windowText: harvestWindowText })
+  const harvestMessage = !viewingPastCrop && activeMethod && currentGDD != null && targetGDD > 0
+    ? currentGDD >= targetGDD
+      ? formatHarvestGddReached(currentGDD, targetGDD, reference)
+      : harvestWindowText || seasonUnreachable
+        ? formatHarvestGddOutlook({ currentGdd: currentGDD, targetGdd: targetGDD, reference, windowText: harvestWindowText })
+        : '過去の日平均気温が取れないため、収穫の見込みは計算できません。'
     : null
+  const recordedBasis = harvestBasis.source === 'variety' || harvestBasis.source === 'crop'
+    ? `${formatDegreeDays(harvestBasis.summary).replace(/。 +/g, '。')}。`
+    : ''
   const projection = !viewingPastCrop && currentGDD != null && activeMethod && targetGDD > 0
     ? computeGDDProjection(currentGDD, heat.count, heat.baseTemp, forecastTemps, targetGDD, {
         harvestWindowText,
@@ -321,7 +328,7 @@ export default async function GddCropPage({
             valueCaption={
               activeMethod || viewingPastCrop
                 ? undefined
-                : `現在：${currentGDD} ℃日（参考：植え付けから日平均気温をそのまま足したもの）`
+                : `現在：${currentGDD.toLocaleString('ja-JP')} ℃日（参考：植え付けから日平均気温をそのまま足したもの）`
             }
             daysFromPlanting={daysFromGddOrigin}
             originLabel={activeMethod?.originLabel}
@@ -335,14 +342,20 @@ export default async function GddCropPage({
           />}
           <p className="dashboard-gdd-summary-text">
             {activeMethod
-              ? `${activeMethod.countLabel}。目安は${activeMethod.rangeLabel}（${activeMethod.scopeLabel}）。`
+              ? `${activeMethod.countLabel}。目安は${formatDegreeDays(activeMethod.rangeLabel)}（${activeMethod.scopeLabel}）。`
               : dayMethod
                 ? `${dayMethod.countLabel}。収穫の目安は${formatMonthDay(addDays(dayMethod.startDate, dayMethod.lowDays))}〜${formatMonthDay(addDays(dayMethod.startDate, dayMethod.highDays))}ごろです。`
               : harvestBasis.summary}
-            {harvestBasis.source === 'variety' || harvestBasis.source === 'crop'
-              ? ` ${harvestBasis.summary}。`
-              : ''}
+            {recordedBasis}
           </p>
+          {harvestMessage && (
+            <p className="dashboard-gdd-summary-text">{formatDegreeDays(harvestMessage)}</p>
+          )}
+          {!viewingPastCrop && activeMethod && currentGDD != null && currentGDD >= activeMethod.low && (
+            <p className="dashboard-gdd-summary-text">
+              {activeMethod.count === 'simple' ? formatDegreeDays(activeMethod.reachBody) : activeMethod.reachBody}
+            </p>
+          )}
           {activeMethod && (
             <p className="dashboard-gdd-summary-text">
               出典：{activeMethod.sourceLine}
@@ -356,16 +369,6 @@ export default async function GddCropPage({
               </p>
               <p className="dashboard-gdd-summary-text">出典：{dayMethod.sourceLine}</p>
             </>
-          )}
-          {harvestOutlook && (
-            <p className="dashboard-gdd-summary-text">{harvestOutlook}</p>
-          )}
-          {!viewingPastCrop && activeMethod && currentGDD != null && currentGDD < targetGDD &&
-            (!windowResult || windowResult.status === 'unavailable') && (
-              <p className="dashboard-gdd-summary-text">過去の日平均気温が取れないため、収穫の見込みは計算できません。</p>
-            )}
-          {!viewingPastCrop && activeMethod && currentGDD != null && currentGDD >= activeMethod.low && (
-            <p className="dashboard-gdd-summary-text">{activeMethod.reachBody}</p>
           )}
 
           {rainfallCumulative.length > 0 && historicalRainfall.length === daysFromPlanting + 1 && (

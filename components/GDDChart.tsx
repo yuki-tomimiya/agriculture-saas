@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import WeatherDataSource from '@/components/WeatherDataSource'
-import { formatHarvestGddReached, formatHarvestGddTarget, type HarvestGddReference } from '@/lib/gdd'
+import { formatDegreeDays, formatHarvestGddTarget, type HarvestGddReference } from '@/lib/gdd'
 
 type CropForGDD = {
   id: string
@@ -216,7 +216,7 @@ export default function GDDChart({
   const projectedBarWidth =
     projectedProgressPct != null ? Math.min(100, projectedProgressPct) : null
 
-  const basisLabel = formatHarvestGddTarget(targetGDD, harvestReference)
+  const basisLabel = formatDegreeDays(formatHarvestGddTarget(targetGDD, harvestReference))
   const actualLabel = viewingPastCrop ? '終了時点' : '現在'
 
   return (
@@ -239,8 +239,8 @@ export default function GDDChart({
           <span>{originLabel ?? '植え付け'}からの推移（累積 ℃日）</span>
           <span className="dashboard-gdd-graph-current">
             {showHarvestTarget
-              ? `${actualLabel}：${currentGDD} ℃日 / ${basisLabel}`
-              : valueCaption ?? `${actualLabel}：${currentGDD} ℃日`}
+              ? `${actualLabel}：${currentGDD.toLocaleString('ja-JP')} ℃日 / ${basisLabel}`
+              : valueCaption ?? `${actualLabel}：${currentGDD.toLocaleString('ja-JP')} ℃日`}
           </span>
         </div>
         <div className="dashboard-gdd-graph-body dashboard-gdd-graph-body--large">
@@ -372,7 +372,7 @@ export default function GDDChart({
             <div className="dashboard-gdd-graph-marker-row">
               <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#34D399' }} />
               <span className="dashboard-gdd-graph-marker-text dashboard-gdd-graph-marker-text--current">
-                {actualLabel}：{Math.round(currentGDD)} ℃日
+                {actualLabel}：{Math.round(currentGDD).toLocaleString('ja-JP')} ℃日
               </span>
             </div>
             {hasLastYear && (
@@ -381,7 +381,7 @@ export default function GDDChart({
                 <span className="dashboard-gdd-graph-marker-text">
                   前回作付け
                   {lastYearLabel ? `（${lastYearLabel}）` : ''}
-                  ：{Math.round(lastYearMaxGDD)} ℃日
+                  ：{Math.round(lastYearMaxGDD).toLocaleString('ja-JP')} ℃日
                 </span>
               </div>
             )}
@@ -389,7 +389,7 @@ export default function GDDChart({
               <div className="dashboard-gdd-graph-marker-row">
                 <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#D97706' }} />
                 <span className="dashboard-gdd-graph-marker-text">
-                  10年平均（推計）：{Math.round(normalAtToday)} ℃日
+                  10年平均（推計）：{Math.round(normalAtToday).toLocaleString('ja-JP')} ℃日
                 </span>
               </div>
             )}
@@ -402,7 +402,7 @@ export default function GDDChart({
             {projectedGDD != null && (
               <div className="dashboard-gdd-graph-marker-row">
                 <span className="dashboard-gdd-graph-dot" style={{ backgroundColor: '#60A5FA' }} />
-                <span className="dashboard-gdd-graph-marker-text">{projectionLabel}：{Math.round(projectedGDD)} ℃日</span>
+                <span className="dashboard-gdd-graph-marker-text">{projectionLabel}：{Math.round(projectedGDD).toLocaleString('ja-JP')} ℃日</span>
               </div>
             )}
           </div>
@@ -452,11 +452,6 @@ export default function GDDChart({
             </div>
           )}
         </div>
-        {currentProgressPct > 100 && (
-          <p className="dashboard-gdd-summary-text" style={{ marginTop: '0.5rem' }}>
-            {formatHarvestGddReached(currentGDD, targetGDD, harvestReference)}
-          </p>
-        )}
       </div>
       )}
       <p className="dashboard-gdd-note">

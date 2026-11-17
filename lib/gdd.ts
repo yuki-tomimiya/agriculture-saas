@@ -22,6 +22,12 @@ export type HarvestGddReference = {
   method: Pick<ActiveGddMethod, 'low' | 'count'>
 }
 
+/** 生育ナビで積算値を表示するときの単位と桁区切り。 */
+export function formatDegreeDays(text: string): string {
+  return text.replace(/(\d[\d,]*(?:\.\d+)?)℃(?:日)?/g, (_, value: string) =>
+    `${Number(value.replaceAll(',', '')).toLocaleString('ja-JP')}℃日`)
+}
+
 export function formatHarvestGddTarget(targetGdd: number, reference?: HarvestGddReference): string {
   const value = targetGdd.toLocaleString('ja-JP')
   if (!reference) return `収穫の目安（${value}℃日）`
