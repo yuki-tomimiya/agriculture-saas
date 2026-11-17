@@ -1,19 +1,20 @@
 import { loadDailyWeather } from '@/lib/open-meteo/archive'
 import { dailyHeat, type HeatCount } from '@/lib/benchmarks/gdd-methods'
 import { hasWeatherCoordinates, type WeatherPoint } from '@/lib/weather-forecast'
+import { STATION_ENOUGH_YEARS } from '@/lib/jma/thresholds'
 
 export type DayNormal = {
-  precipMm: number
-  radiationMj: number
-  tempMean: number
+  precipMm: number | null
+  radiationMj: number | null
+  tempMean: number | null
   /** 同じ暦日の最高気温の10年平均。取得できない日は null */
   tempMax: number | null
 }
 
 export type NormalSeries = {
-  precipMm: number[]
-  radiationMj: number[]
-  gdd: number[]
+  precipMm: number[] | null
+  radiationMj: number[] | null
+  gdd: number[] | null
 }
 
 function monthDayKey(month: number, day: number): string {
@@ -80,46 +81,47 @@ export async function getLocationDailyNormals(
   return dailyNormalsFromArchive(await loadLocationArchive(point))
 }
 
-export function dailyNormalsFromArchive(archive: LocationArchive | null): Map<string, DayNormal> | null {
-  if (!archive) return null
-  const { times, precip, radiation, tempMean: temps, tempMax: maxes } = archive
-
-  const sums = new Map<
-    string,
-    { precip: number; radiation: number; temp: number; count: number; tempMax: number; maxCount: number }
-  >()
+/** 台帳 I23。同じ月日の記録が十分ある日だけを数え、要素ごとに平均する。 */
+function dailyAverage(times: string[], values: LocationArchive['tempMax']): Map<string, number> {
+  const sums = new Map<string, { sum: number; years: Set<string> }>()
+  if (!values) return new Map()
   for (let i = 0; i < times.length; i++) {
+    const value = values[i]
+    if (value == null || !Number.isFinite(value)) continue
     const [year, monthText, dayText] = times[i].split('-')
     const month = Number(monthText)
     const day = Number(dayText)
     if (!year || !month || !day) continue
     if (month === 2 && day === 29) continue
-    const p = precip[i]
-    const r = radiation[i]
-    const t = temps[i]
-    if (p == null || r == null || t == null) continue
     const key = monthDayKey(month, day)
-    const row = sums.get(key) ?? { precip: 0, radiation: 0, temp: 0, count: 0, tempMax: 0, maxCount: 0 }
-    row.precip += p
-    row.radiation += r
-    row.temp += t
-    row.count += 1
-    const mx = maxes?.[i]
-    if (mx != null) {
-      row.tempMax += mx
-      row.maxCount += 1
-    }
+    const row = sums.get(key) ?? { sum: 0, years: new Set<string>() }
+    if (row.years.has(year)) continue
+    row.sum += value
+    row.years.add(year)
     sums.set(key, row)
   }
-  if (sums.size < 300) return null
-
-  const normals = new Map<string, DayNormal>()
+  const averages = new Map<string, number>()
   for (const [key, row] of sums) {
+    if (row.years.size >= STATION_ENOUGH_YEARS) averages.set(key, row.sum / row.years.size)
+  }
+  return averages.size >= 300 ? averages : new Map()
+}
+
+export function dailyNormalsFromArchive(archive: LocationArchive | null): Map<string, DayNormal> | null {
+  if (!archive) return null
+  const precip = dailyAverage(archive.times, archive.precip)
+  const radiation = dailyAverage(archive.times, archive.radiation)
+  const temps = dailyAverage(archive.times, archive.tempMean)
+  const maxes = dailyAverage(archive.times, archive.tempMax)
+  const keys = new Set([...precip.keys(), ...radiation.keys(), ...temps.keys(), ...maxes.keys()])
+  if (!keys.size) return null
+  const normals = new Map<string, DayNormal>()
+  for (const key of keys) {
     normals.set(key, {
-      precipMm: row.precip / row.count,
-      radiationMj: row.radiation / row.count,
-      tempMean: row.temp / row.count,
-      tempMax: row.maxCount > 0 ? row.tempMax / row.maxCount : null,
+      precipMm: precip.get(key) ?? null,
+      radiationMj: radiation.get(key) ?? null,
+      tempMean: temps.get(key) ?? null,
+      tempMax: maxes.get(key) ?? null,
     })
   }
   return normals
@@ -133,10 +135,10 @@ export function meanNormalMaxTemp(normals: Map<string, DayNormal>, dates: string
     const parts = ymd.split('-')
     const month = Number(parts[1])
     let day = Number(parts[2])
-    if (!month || !day) continue
+    if (!month || !day) return null
     if (month === 2 && day === 29) day = 28
     const row = normals.get(`${month}-${day}`)
-    if (row?.tempMax == null) continue
+    if (row?.tempMax == null) return null
     sum += row.tempMax
     count += 1
   }
@@ -156,9 +158,9 @@ export function sumNormalPrecip(normals: Map<string, DayNormal>, start: Date, en
     let month = cursor.getMonth() + 1
     let day = cursor.getDate()
     if (month === 2 && day === 29) day = 28
-    const row = normals.get(`${month}-${day}`)
-    if (!row || !Number.isFinite(row.precipMm)) return null
-    total += row.precipMm
+    const precipMm = normals.get(`${month}-${day}`)?.precipMm
+    if (precipMm == null) return null
+    total += precipMm
     cursor.setDate(cursor.getDate() + 1)
   }
   return Math.round(total * 10) / 10
@@ -178,19 +180,15 @@ export function sumNormalGdd(
   last.setHours(12, 0, 0, 0)
   if (cursor > last) return null
   let heat = 0
-  let days = 0
   while (cursor <= last) {
     let month = cursor.getMonth() + 1
     let day = cursor.getDate()
     if (month === 2 && day === 29) day = 28
-    const row = normals.get(`${month}-${day}`)
-    if (row && Number.isFinite(row.tempMean)) {
-      heat += dailyHeat(row.tempMean, count, baseTemp)
-      days += 1
-    }
+    const tempMean = normals.get(`${month}-${day}`)?.tempMean
+    if (tempMean == null) return null
+    heat += dailyHeat(tempMean, count, baseTemp)
     cursor.setDate(cursor.getDate() + 1)
   }
-  if (days === 0) return null
   return heat
 }
 
@@ -204,27 +202,30 @@ export function accumulateNormals(args: {
 }): NormalSeries {
   const start = new Date(args.plantingDate)
   start.setHours(0, 0, 0, 0)
-  const precipMm: number[] = []
-  const radiationMj: number[] = []
-  const gdd: number[] = []
-  let precip = 0
-  let radiation = 0
-  let heat = 0
+  const daily: (DayNormal | undefined)[] = []
   for (let offset = 0; offset <= args.days; offset++) {
     const date = new Date(start)
     date.setDate(start.getDate() + offset)
     let month = date.getMonth() + 1
     let day = date.getDate()
     if (month === 2 && day === 29) day = 28
-    const row = args.normals.get(monthDayKey(month, day))
-    if (row) {
-      precip += row.precipMm
-      radiation += row.radiationMj
-      heat += dailyHeat(row.tempMean, args.count, args.baseTemp)
-    }
-    precipMm.push(Math.round(precip * 10) / 10)
-    radiationMj.push(Math.round(radiation * 10) / 10)
-    gdd.push(Math.round(heat * 10) / 10)
+    daily.push(args.normals.get(monthDayKey(month, day)))
   }
-  return { precipMm, radiationMj, gdd }
+  return {
+    precipMm: accumulateNormal(daily.map(row => row?.precipMm)),
+    radiationMj: accumulateNormal(daily.map(row => row?.radiationMj)),
+    gdd: accumulateNormal(daily.map(row =>
+      row?.tempMean == null ? null : dailyHeat(row.tempMean, args.count, args.baseTemp))),
+  }
+}
+
+function accumulateNormal(values: (number | null | undefined)[]): number[] | null {
+  const series: number[] = []
+  let total = 0
+  for (const value of values) {
+    if (value == null) return null
+    total += value
+    series.push(Math.round(total * 10) / 10)
+  }
+  return series
 }

@@ -114,7 +114,7 @@ export function daysToTargetGdd(args: {
     const date = new Date(start)
     date.setDate(start.getDate() + offset)
     const row = args.normals.get(monthDayKey(date.getMonth() + 1, date.getDate()))
-    if (row && Number.isFinite(row.tempMean)) {
+    if (row?.tempMean != null) {
       daysWithData += 1
       heat += dailyHeat(row.tempMean, args.count, args.baseTemp)
     }
@@ -235,7 +235,8 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
     const key = `${latitude.toFixed(4)},${longitude.toFixed(4)}`
     const existing = normalCache.get(key)
     if (existing) return existing
-    const pending = getLocationDailyNormals({ latitude, longitude })
+    const pending = getLocationDailyNormals({ latitude, longitude }).then(normals =>
+      normals && [...normals.values()].some(row => row.tempMean != null) ? normals : null)
     normalCache.set(key, pending)
     return pending
   }

@@ -4,9 +4,21 @@ import { test } from 'node:test'
 import React from 'react'
 import { temporarySqlite } from './helpers/temporary-sqlite'
 import { calculateHarvestWindow } from '@/lib/insights/harvest-date-window'
+import type { LocationArchive } from '@/lib/weather-normals'
 
 Object.assign(globalThis, { React })
 process.env.TZ = 'Asia/Tokyo'
+
+function weatherArchive(years: number): LocationArchive {
+  const first = Date.UTC(2016, 0, 1)
+  const end = Date.UTC(2016 + years, 0, 1)
+  const times = Array.from({ length: (end - first) / 86_400_000 }, (_, i) =>
+    new Date(first + i * 86_400_000).toISOString().slice(0, 10))
+  return {
+    times, tempMean: times.map(() => 20), tempMin: null, tempMax: times.map(() => 25),
+    precip: times.map(() => 2), radiation: times.map(() => 10),
+  }
+}
 
 test('生育ナビは終了日に積算を止め、気温が取れないときは0℃日や未到達を出さない', async t => {
   const { db } = await temporarySqlite(t)
@@ -133,6 +145,42 @@ test('生育ナビは終了日に積算を止め、気温が取れないとき�
     archive: { ...archive, times: ['2025-11-17', '2025-11-18'], tempMean: [0, 0] } }).status, 'unreachable')
 })
 
+test('10年平均は要素別に8年以上そろう月日を300日以上必要とする', async () => {
+  const { accumulateNormals, dailyNormalsFromArchive, meanNormalMaxTemp } = await import('@/lib/weather-normals')
+  const archive = weatherArchive(10)
+  const full = dailyNormalsFromArchive(archive)
+  assert.equal(full?.size, 365)
+  assert.deepEqual(full?.get('1-1'), { precipMm: 2, radiationMj: 10, tempMean: 20, tempMax: 25 })
+  assert.equal(dailyNormalsFromArchive(weatherArchive(1)), null)
+  assert.equal(dailyNormalsFromArchive(weatherArchive(7)), null)
+  assert.deepEqual(dailyNormalsFromArchive(weatherArchive(8)), full)
+
+  const wetDay = archive.times.indexOf('2016-01-01')
+  archive.precip[wetDay] = 20
+  assert.equal(dailyNormalsFromArchive(archive)?.get('1-1')?.precipMm, 3.8)
+  archive.precip[wetDay] = null
+  const oneMissing = dailyNormalsFromArchive(archive)
+  assert.deepEqual(oneMissing, full)
+
+  // 雨の有効な月日を299日、最高気温は300日にする。値がある年はどちらも8年。
+  for (let i = 0; i < archive.times.length; i++) {
+    const day = archive.times[i]
+    const keepYear = day < '2024'
+    const keepRain = day.slice(5) <= '10-26'
+    const keepMax = day.slice(5) <= '10-27'
+    archive.precip[i] = keepYear && keepRain ? 2 : null
+    archive.tempMax![i] = keepYear && keepMax ? 25 : null
+  }
+  const partial = dailyNormalsFromArchive(archive)
+  assert.ok(partial)
+  assert.deepEqual(partial.get('1-1'), { precipMm: null, radiationMj: 10, tempMean: 20, tempMax: 25 })
+  assert.equal(meanNormalMaxTemp(partial, ['2026-10-27']), 25)
+  assert.equal(meanNormalMaxTemp(partial, ['2026-10-27', '2026-10-28']), null)
+  assert.deepEqual(accumulateNormals({
+    normals: partial, plantingDate: new Date(2026, 0, 1), days: 1, count: 'simple', baseTemp: 0,
+  }), { precipMm: null, radiationMj: [10, 20], gdd: [20, 40] })
+})
+
 test('地域の降水量は同じ暦日の全日がそろってから比較する', async () => {
   const { getRegionalRainSummary } = await import('../lib/insights/regional-context')
   const now = new Date(2026, 0, 9, 12)
@@ -140,10 +188,9 @@ test('地域の降水量は同じ暦日の全日がそろってから比較す�
   const summarize = (current: number[], previous: number[], normalsMissing?: boolean) => getRegionalRainSummary(point, {
     now, archive: async () => {
       if (normalsMissing == null) return null
-      const times = Array.from({ length: 365 }, (_, i) =>
-        new Date(Date.UTC(2025, 0, i + 1)).toISOString().slice(0, 10))
-      return { times, tempMean: times.map(() => 20), tempMin: null, tempMax: null,
-        precip: times.map((_, i) => normalsMissing && i === 2 ? null : 2), radiation: times.map(() => 10) }
+      const archive = weatherArchive(10)
+      if (normalsMissing) archive.precip = archive.times.map(day => day.endsWith('-01-03') ? null : 2)
+      return archive
     },
     precipitation: async ({ startDate }) => (startDate.getFullYear() === 2026 ? current : previous)
       .map((precipitationMm, i) => ({ date: new Date(startDate.getFullYear(), 0, i + 1), precipitationMm })),
