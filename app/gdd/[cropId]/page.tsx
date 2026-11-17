@@ -132,29 +132,32 @@ export default async function GddCropPage({
     ? await getForecastDailyPrecipitation(weatherPoint, now)
     : []
   let cumulativeGDD = 0
-  const historicalCumulative = historicalTemps.map((day) => {
+  const historicalCumulative: { date: Date; cumulativeGDD: number }[] = []
+  for (const day of historicalTemps) {
     cumulativeGDD += dailyHeat(day.avgTemp, heat.count, heat.baseTemp)
-    return {
+    historicalCumulative.push({
       date: day.date,
       cumulativeGDD: Math.round(cumulativeGDD * 10) / 10,
-    }
-  })
+    })
+  }
   let cumulativeRadiation = 0
-  const radiationCumulative = historicalRadiation.map((day) => {
+  const radiationCumulative: { date: Date; cumulativeRadiationMj: number }[] = []
+  for (const day of historicalRadiation) {
     cumulativeRadiation += day.radiationMj
-    return {
+    radiationCumulative.push({
       date: day.date,
       cumulativeRadiationMj: Math.round(cumulativeRadiation * 10) / 10,
-    }
-  })
+    })
+  }
   let cumulativeRain = 0
-  const rainfallCumulative = historicalRainfall.map((day) => {
+  const rainfallCumulative: { date: Date; cumulativeMm: number }[] = []
+  for (const day of historicalRainfall) {
     cumulativeRain += day.precipitationMm
-    return {
+    rainfallCumulative.push({
       date: day.date,
       cumulativeMm: Math.round(cumulativeRain * 10) / 10,
-    }
-  })
+    })
+  }
   const currentGDD = historicalCumulative.at(-1)?.cumulativeGDD ?? null
   const targetGDD = harvestBasis.gdd ?? 0
   const reference = activeMethod ? { sampleCount: harvestBasis.sampleCount, method: activeMethod } : undefined
