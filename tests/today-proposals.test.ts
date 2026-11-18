@@ -106,7 +106,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
           ...weather,
           async frost(point, date) {
             const origin = await weather.frost(point, date)
-            return origin && { ...origin, source: 'station', stationName: '館山', distanceKm: 3, near: true }
+            return origin && { ...origin, source: 'station', usableYears: 10, stationName: '館山', distanceKm: 3, near: true }
           },
         } })
         const station = observed.confirmationGroups[0][0].selected

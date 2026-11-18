@@ -30,6 +30,8 @@ test('霜と夜の冷えを固定した観測・推計データで確かめる',
 
   const { chooseStation, frostStationLine, readCoolNight, readFarmFrost, readStationFrost } =
     await import('@/lib/jma/frost-record')
+  const { springFrostSentence, autumnFirstFrostSentence, readFarmSpringFrost } =
+    await import('@/lib/jma/frost-record')
   const { summarizeAutumnFirstFrost, summarizeSpringLastFrost } = await import('@/lib/weather-frost')
   t.mock.timers.enable({ apis: ['Date'], now: today })
   const elevation = 120
@@ -109,6 +111,7 @@ test('霜と夜の冷えを固定した観測・推計データで確かめる',
     const observed = await readFarmFrost(utsunomiya, today)
     assert.equal(observed?.source, 'station')
     assert.deepEqual(observed.summary, summary)
+    assert.equal(observed.usableYears, 8)
 
     rows = autumnRows(13, false)
     await setObservations(rows)
@@ -123,6 +126,50 @@ test('霜と夜の冷えを固定した観測・推計データで確かめる',
     assert.equal(estimated?.source, 'estimate')
     assert.deepEqual(estimated.summary, { mean: estimatedDate, earliest: estimatedDate, years: 10 })
     assert.equal(fetch.mock.callCount(), 1)
+  })
+
+  await t.test('観測の霜は記録のそろった年を数え、推計の文は従来どおり', async () => {
+    const springRows = (years: number, frostYears: number) => Array.from({ length: years }, (_, index) => {
+      const year = 2016 + index
+      const days = (Date.UTC(year, 6, 1) - Date.UTC(year, 0, 1)) / 86_400_000
+      return Array.from({ length: days }, (_, day) => ({
+        date: new Date(Date.UTC(year, 0, 1 + day)).toISOString().slice(0, 10),
+        tMin: index < frostYears && day === 60 ? 4 : 5,
+      }))
+    }).flat()
+    await setObservations(springRows(10, 7))
+    const tenYears = await readFarmSpringFrost(utsunomiya)
+    assert.ok(tenYears)
+    assert.match(springFrostSentence(tenYears), /^過去10年の観測では、10年中7年で/)
+
+    await setObservations(springRows(9, 7))
+    const nineYears = await readFarmSpringFrost(utsunomiya)
+    assert.ok(nineYears)
+    assert.match(springFrostSentence(nineYears), /そろった9年では、9年中7年で/)
+    assert.doesNotMatch(springFrostSentence(nineYears), /10年/)
+
+    await setObservations(springRows(9, 0))
+    const noFrost = await readFarmSpringFrost(utsunomiya)
+    assert.ok(noFrost)
+    assert.equal(springFrostSentence(noFrost), 'この観測所の記録のそろった9年では、春に4℃以下になった日はありません')
+
+    const ninthYear = autumnRows(0).slice(0, 139).map(row => ({
+      date: row.date.replace('2016-', '2024-'), tMin: 5,
+    }))
+    await setObservations([...autumnRows(0), ...ninthYear])
+    const autumn = await readFarmFrost(utsunomiya, today)
+    assert.ok(autumn)
+    assert.match(autumnFirstFrostSentence(autumn), /9年中8年で/)
+    assert.doesNotMatch(autumnFirstFrostSentence(autumn), /10年/)
+
+    const location = { stationName: null, distanceKm: null, elevationDiffM: null, near: false }
+    const day = { month: 4, day: 3 }
+    assert.equal(springFrostSentence({
+      ...location, source: 'estimate', summary: { mean: day, latest: day, years: 6 },
+    }), '過去10年の推計では、10年中6年で春に最低気温が4℃以下になり、最後の日の平均は4月3日、いちばん遅い年は4月3日です。近くの観測所の記録が使えないため、推計の気温から出しています')
+    assert.equal(autumnFirstFrostSentence({
+      ...location, source: 'estimate', summary: { mean: estimatedDate, earliest: estimatedDate, years: 6 },
+    }), '秋に最低気温が初めて4℃以下になったのは、10年中6年で、平均11月20日、最も早い年は11月20日です（推計）')
   })
 
   await t.test('T1 夜の最低気温の平均が8月15日以降に13℃を下回る日', async () => {

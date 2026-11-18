@@ -82,7 +82,7 @@ test('例年の霜の理由は作付けの見込みを先に置き、最早日�
       reference: { sampleCount: 1, method: { low: 2400, count: 'simple' } },
       firstFrost: {
         summary: { earliest: { month: 11, day: 14 }, mean: { month: 11, day: 20 }, years: 10 },
-        source: 'station', stationName: '宇都宮', elevationDiffM: 18, distanceKm: 2, near: true,
+        source: 'station', usableYears: 10, stationName: '宇都宮', elevationDiffM: 18, distanceKm: 2, near: true,
       },
       hasSeenRoots: false, harvestWindow: null, harvestWindowReady: true,
     })

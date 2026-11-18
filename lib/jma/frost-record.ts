@@ -22,14 +22,17 @@ export function archiveYears(today = new Date()): { fromYear: number; toYear: nu
   return { fromYear: toYear - FROST_ARCHIVE_YEARS + 1, toYear }
 }
 
-export type FrostOrigin = {
-  summary: FirstFrostSummary
-  source: 'station' | 'estimate'
+type FrostStationDetails = {
   stationName: string | null
   distanceKm: number | null
   elevationDiffM: number | null
   near: boolean
 }
+
+export type FrostOrigin = FrostStationDetails & { summary: FirstFrostSummary } & (
+  | { source: 'station'; usableYears: number }
+  | { source: 'estimate' }
+)
 
 function autumnDays(year: number): string[] {
   const days: string[] = []
@@ -130,6 +133,7 @@ export async function readFarmAutumnFrost(
       return {
         summary: read.summary,
         source: 'station',
+        usableYears: read.usableYears,
         stationName: pick.station.name,
         distanceKm: pick.distanceKm,
         elevationDiffM: pick.elevationDiffM,
@@ -234,14 +238,11 @@ export function readStationSpringFrost(
   return { kind: 'fallback', usableYears: series.usableYears }
 }
 
-export type SpringFrostOrigin = {
-  summary: LastFrostSummary | null
-  source: 'station' | 'estimate' | 'none'
-  stationName: string | null
-  distanceKm: number | null
-  elevationDiffM: number | null
-  near: boolean
-}
+export type SpringFrostOrigin = FrostStationDetails & (
+  | { source: 'station'; summary: LastFrostSummary; usableYears: number }
+  | { source: 'none'; summary: null; usableYears: number }
+  | { source: 'estimate'; summary: LastFrostSummary }
+)
 
 export async function readFarmSpringFrost(
   point?: Partial<WeatherPoint>, loadArchive = loadLocationArchive,
@@ -254,6 +255,7 @@ export async function readFarmSpringFrost(
       return {
         summary: null,
         source: 'none',
+        usableYears: read.usableYears,
         stationName: pick.station.name,
         distanceKm: pick.distanceKm,
         elevationDiffM: pick.elevationDiffM,
@@ -264,6 +266,7 @@ export async function readFarmSpringFrost(
       return {
         summary: read.summary,
         source: 'station',
+        usableYears: read.usableYears,
         stationName: pick.station.name,
         distanceKm: pick.distanceKm,
         elevationDiffM: pick.elevationDiffM,
@@ -293,8 +296,8 @@ export type SpringDateBrief = {
 
 export function toSpringDateBrief(origin: SpringFrostOrigin | null): SpringDateBrief | null {
   if (!origin) return null
-  if (origin.source === 'none' || !origin.summary) {
-    return { latest: null, observed: origin.source !== 'estimate', dateLabel: null }
+  if (origin.source === 'none') {
+    return { latest: null, observed: true, dateLabel: null }
   }
   return {
     latest: origin.summary.latest,
@@ -304,8 +307,11 @@ export function toSpringDateBrief(origin: SpringFrostOrigin | null): SpringDateB
 }
 
 export function springFrostSentence(origin: SpringFrostOrigin): string {
-  if (origin.source === 'none' || !origin.summary) {
-    return 'この地点では、過去10年の観測で春に4℃以下になった日はありません'
+  if (origin.source === 'none') {
+    const period = origin.usableYears === FROST_ARCHIVE_YEARS
+      ? 'この地点では、過去10年の観測で'
+      : `この観測所の記録のそろった${origin.usableYears}年では、`
+    return `${period}春に4℃以下になった日はありません`
   }
   const mean = formatMonthDay(origin.summary.mean)
   const latest = formatMonthDay(origin.summary.latest)
@@ -320,10 +326,13 @@ export function springFrostSentence(origin: SpringFrostOrigin): string {
         : `過去10年の推計では、春に最低気温が最後に4℃以下になったのは平均${mean}、いちばん遅い年は${latest}です`
     return `${body}。近くの観測所の記録が使えないため、推計の気温から出しています`
   }
+  const period = origin.usableYears === FROST_ARCHIVE_YEARS
+    ? '過去10年の観測では'
+    : `この観測所の記録のそろった${origin.usableYears}年では`
   const body =
-    origin.summary.years < FROST_ARCHIVE_YEARS
-      ? `過去10年の観測では、10年中${origin.summary.years}年で春に最低気温が4℃以下になり、最後の日の平均は${mean}、いちばん遅い年は${latest}です${where}`
-      : `過去10年の観測では、春に最低気温が最後に4℃以下になったのは平均${mean}、いちばん遅い年は${latest}です${where}`
+    origin.summary.years < origin.usableYears
+      ? `${period}、${origin.usableYears}年中${origin.summary.years}年で春に最低気温が4℃以下になり、最後の日の平均は${mean}、いちばん遅い年は${latest}です${where}`
+      : `${period}、春に最低気温が最後に4℃以下になったのは平均${mean}、いちばん遅い年は${latest}です${where}`
   if (origin.near) return body
   const elev = origin.elevationDiffM == null ? '' : `（標高差${origin.elevationDiffM}m）`
   return `${body}。観測所は農場から${formatKm(origin.distanceKm ?? 0)}km${elev}離れているので、目安です`
@@ -338,9 +347,10 @@ export function autumnFirstFrostSentence(origin: FrostOrigin): string {
       : origin.source === 'estimate'
         ? '（推計）'
         : ''
-  const years =
-    origin.summary.years < FROST_ARCHIVE_YEARS ? `10年中${origin.summary.years}年で、` : ''
-  return `秋に最低気温が初めて4℃以下になったのは、${years}平均${mean}、最も早い年は${early}です${where}`
+  const usableYears = origin.source === 'station' ? origin.usableYears : FROST_ARCHIVE_YEARS
+  const period = usableYears < FROST_ARCHIVE_YEARS ? `この観測所の記録のそろった${usableYears}年では、` : ''
+  const years = origin.summary.years < usableYears ? `${usableYears}年中${origin.summary.years}年で、` : ''
+  return `${period}秋に最低気温が初めて4℃以下になったのは、${years}平均${mean}、最も早い年は${early}です${where}`
 }
 
 export async function springBriefsForFarms(
