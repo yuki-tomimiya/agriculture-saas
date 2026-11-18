@@ -4,22 +4,21 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from 'react'
 import * as leaflet from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { FarmCoordinates } from '@/lib/farms/coordinates'
+import type { FarmArea } from '@/lib/farms/registration-area'
 import { PREFECTURES, municipalitiesIn } from '@/lib/places/catalog'
 import { MUNICIPALITY_POINT_SOURCE, municipalityMapCenter, prefectureMapCenter } from '@/lib/places/map-center'
 
 const tiles = 'https://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png'
 const attribution = '<a href="https://maps.gsi.go.jp/development/ichiran.html">国土地理院</a>'
 
-export type MapArea = { prefectureCode: string; municipalityCode: string }
-
 export default function FarmLocationMap({
   point, area, disabled, onPick, onAreaChange,
 }: {
   point: FarmCoordinates | null
-  area: MapArea
+  area: FarmArea
   disabled: boolean
   onPick: (point: FarmCoordinates) => void
-  onAreaChange: (area: MapArea) => void
+  onAreaChange: (area: FarmArea) => void
 }) {
   const container = useRef<HTMLDivElement>(null)
   const map = useRef<leaflet.Map | null>(null)

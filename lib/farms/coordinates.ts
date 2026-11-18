@@ -1,5 +1,12 @@
 export type FarmCoordinates = { latitude: number; longitude: number }
 
+export function roundFarmCoordinates(point: FarmCoordinates): FarmCoordinates {
+  return {
+    latitude: Number(point.latitude.toFixed(5)),
+    longitude: Number(point.longitude.toFixed(5)),
+  }
+}
+
 export function readFarmCoordinates(latitude: unknown, longitude: unknown): FarmCoordinates | null {
   const coordinate = (value: unknown) => typeof value === 'number'
     ? value

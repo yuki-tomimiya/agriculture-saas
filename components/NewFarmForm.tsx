@@ -4,8 +4,8 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import FarmPlaceCard from '@/components/FarmPlaceCard'
-import type { MapArea } from '@/components/FarmLocationMap'
-import { readFarmCoordinates, type FarmCoordinates } from '@/lib/farms/coordinates'
+import { readFarmCoordinates, roundFarmCoordinates, type FarmCoordinates } from '@/lib/farms/coordinates'
+import { initialFarmArea, type FarmArea } from '@/lib/farms/registration-area'
 import type { PlaceCard } from '@/lib/farms/place-card'
 import { PREFECTURES, municipalitiesIn } from '@/lib/places/catalog'
 
@@ -25,17 +25,17 @@ type PlaceState = { status: 'idle' | 'locating' } |
   { status: 'ready'; point: FarmCoordinates; card: PlaceCard } |
   { status: 'error'; point: FarmCoordinates; message: string }
 
+const emptyArea: FarmArea = { prefectureCode: '', municipalityCode: '' }
+
 export default function NewFarmForm() {
   const router = useRouter()
   const [place, setPlace] = useState<PlaceState>({ status: 'idle' })
   const [manualOpen, setManualOpen] = useState(false)
   const [mapOpen, setMapOpen] = useState(false)
-  const [mapArea, setMapArea] = useState<MapArea>({ prefectureCode: '', municipalityCode: '' })
+  const [{ mapArea, saveArea }, setAreas] = useState({ mapArea: emptyArea, saveArea: emptyArea })
   const [latitude, setLatitude] = useState('')
   const [longitude, setLongitude] = useState('')
   const [locationError, setLocationError] = useState('')
-  const [prefectureCode, setPrefectureCode] = useState('')
-  const [municipalityCode, setMunicipalityCode] = useState('')
   const [saveError, setSaveError] = useState('')
   const [saving, setSaving] = useState(false)
   const requestNumber = useRef(0)
@@ -72,8 +72,10 @@ export default function NewFarmForm() {
       }
       const card = await response.json() as PlaceCard
       if (controller.signal.aborted || number !== requestNumber.current) return
-      setPrefectureCode(card.suggestion?.prefectureCode ?? '')
-      setMunicipalityCode('')
+      setAreas(areas => ({
+        ...areas,
+        saveArea: initialFarmArea(areas.saveArea, areas.mapArea, card.suggestion?.prefectureCode ?? ''),
+      }))
       setPlace({ status: 'ready', point, card })
     } catch (error) {
       if (controller.signal.aborted || number !== requestNumber.current) return
@@ -83,13 +85,25 @@ export default function NewFarmForm() {
   }
 
   function choosePoint(point: FarmCoordinates) {
-    setLatitude(String(point.latitude))
-    setLongitude(String(point.longitude))
-    void preview(point)
+    const rounded = roundFarmCoordinates(point)
+    setLatitude(String(rounded.latitude))
+    setLongitude(String(rounded.longitude))
+    void preview(rounded)
+  }
+
+  function changeMapArea(area: FarmArea) {
+    setAreas(areas => ({
+      mapArea: area,
+      saveArea: place.status === 'ready' && area.municipalityCode
+        ? initialFarmArea(areas.saveArea, area, '')
+        : areas.saveArea,
+    }))
   }
 
   function toggleMap() {
-    if (!mapOpen && !mapArea.prefectureCode) setMapArea({ prefectureCode, municipalityCode })
+    if (!mapOpen && !mapArea.prefectureCode) {
+      setAreas(areas => ({ ...areas, mapArea: areas.saveArea }))
+    }
     setMapOpen(!mapOpen)
   }
 
@@ -153,8 +167,7 @@ export default function NewFarmForm() {
           ...place.point,
           name: String(fields.get('name') ?? '').trim(),
           description: String(fields.get('description') ?? '').trim() || null,
-          prefectureCode,
-          municipalityCode,
+          ...saveArea,
         }),
       })
       const data = await response.json() as { farm?: { id: string }; error?: string }
@@ -172,6 +185,7 @@ export default function NewFarmForm() {
   }
 
   const suggestion = place.status === 'ready' ? place.card.suggestion : null
+  const { prefectureCode, municipalityCode } = saveArea
   const cities = prefectureCode ? municipalitiesIn(prefectureCode) : []
   const point = 'point' in place ? place.point : null
   return (
@@ -192,7 +206,7 @@ export default function NewFarmForm() {
           {mapOpen && <div className="mt-3 space-y-2">
             <p className="text-sm text-gray-700">地図を押して、農場の位置に印を置きます。</p>
             <FarmLocationMap point={point} onPick={choosePoint} disabled={saving}
-              area={mapArea} onAreaChange={setMapArea} />
+              area={mapArea} onAreaChange={changeMapArea} />
           </div>}
         </div>
         <form id="farm-coordinates" onSubmit={chooseManualLocation} hidden={!manualOpen}>
@@ -237,19 +251,22 @@ export default function NewFarmForm() {
             </label>
             <label className="grid min-w-0 gap-1">都道府県
               <select className="input min-w-0" required value={prefectureCode} onChange={event => {
-                setPrefectureCode(event.target.value)
-                setMunicipalityCode('')
+                const code = event.target.value
+                setAreas(areas => ({ ...areas, saveArea: { prefectureCode: code, municipalityCode: '' } }))
               }}>
                 <option value="">選んでください</option>
                 {PREFECTURES.map(pref => <option key={pref.code} value={pref.code}>{pref.name}</option>)}
               </select>
             </label>
-            {suggestion?.prefectureCode === prefectureCode && <p className="text-sm text-gray-600">
+            {!municipalityCode && suggestion?.prefectureCode === prefectureCode && <p className="text-sm text-gray-600">
               近くの{suggestion.stationName}観測所をもとに、{suggestion.prefectureName}を入れました。違っていたら選び直してください。
             </p>}
             <label className="grid min-w-0 gap-1">市区町村
               <select className="input min-w-0" required disabled={!prefectureCode}
-                value={municipalityCode} onChange={event => setMunicipalityCode(event.target.value)}>
+                value={municipalityCode} onChange={event => {
+                  const code = event.target.value
+                  setAreas(areas => ({ ...areas, saveArea: { ...areas.saveArea, municipalityCode: code } }))
+                }}>
                 <option value="">{prefectureCode ? '選んでください' : '先に都道府県'}</option>
                 {cities.map(city => <option key={city.code} value={city.code}>{city.name}</option>)}
               </select>

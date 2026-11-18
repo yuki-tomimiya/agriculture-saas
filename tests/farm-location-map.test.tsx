@@ -3,6 +3,8 @@ import { test } from 'node:test'
 import { renderWithRouter } from './helpers/next-runtime'
 import municipalities from '@/data/municipalities.json'
 import pointData from '@/data/municipality-points.json'
+import { readFarmCoordinates, roundFarmCoordinates } from '@/lib/farms/coordinates'
+import { initialFarmArea } from '@/lib/farms/registration-area'
 import { municipalityMapCenter, prefectureMapCenter } from '@/lib/places/map-center'
 
 test('農場の新規フォームはサーバーでLeafletを読み込まず描画できる', async () => {
@@ -27,4 +29,21 @@ test('市区町村の代表点は現行の自治体すべてに対応し、日�
   assert.equal(municipalityMapCenter('999999'), null)
   assert.equal(prefectureMapCenter('99'), null)
   assert.ok(prefectureMapCenter('12'))
+})
+
+test('地図・現在地の座標は小数5桁に丸め、手入力の読み取りはその精度を保つ', () => {
+  const point = { latitude: 35.044332761914966, longitude: 139.8399975231934 }
+  assert.deepEqual(roundFarmCoordinates(point), { latitude: 35.04433, longitude: 139.84 })
+  assert.deepEqual(readFarmCoordinates(String(point.latitude), String(point.longitude)), point)
+})
+
+test('保存欄の市区町村が空なら地図の選択を使い、入力済みの市区町村は保つ', () => {
+  const empty = { prefectureCode: '', municipalityCode: '' }
+  const mapArea = { prefectureCode: '12', municipalityCode: '122343' }
+  const savedArea = { prefectureCode: '13', municipalityCode: '131016' }
+  assert.deepEqual(initialFarmArea(empty, mapArea, '13'), mapArea)
+  assert.deepEqual(initialFarmArea(savedArea, mapArea, '12'), savedArea)
+  assert.deepEqual(initialFarmArea(empty, { ...empty, prefectureCode: '12' }, '13'), {
+    prefectureCode: '13', municipalityCode: '',
+  })
 })
