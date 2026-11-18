@@ -19,7 +19,6 @@
     "check-data": "tsx scripts/proposal-check-data.ts",
     "dev": "next dev -H 127.0.0.1 -p 3000",
     "dev:lan": "next dev -H 0.0.0.0 -p 3000",
-    "prebuild": "node scripts/check-build-port.mjs",
     "build": "next build",
     "start": "next start -p 3000",
     "lint": "eslint .",

@@ -136,7 +136,7 @@ lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth
 - 今日の提案の固定出力を更新: `npm run test:update-fixtures`
 - 画面・APIテストのCookieとルーター: `tests/helpers/next-runtime.ts`
 - 提案の確認用データ: `scripts/proposal-check-data.ts`（`npm run check-data -- --help`。指定利用者に3つの形を追加・削除）
-- ビルド: `npm run build`。前に `scripts/check-build-port.mjs` が3000番ポートを確認する
+- ビルド: `npm run build`
 - UI 確認は本番アプリのみ（静的 `ui-preview-*.html` は廃止済み）
 - `.env` / `node_modules` はコミットしない
 - 起動できないとき：`npm install` → `npx prisma generate` → `npx prisma migrate dev`。ポート3000が埋まっていれば `サーバー停止.bat`。`.env` と `prisma/dev.db` があるか確認（旧 SETUP.md の要点。2026-10-07 に統合）
