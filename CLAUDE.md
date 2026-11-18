@@ -37,7 +37,7 @@
 - 起動: `npm run dev` または `アプリを起動.bat`（開く URL は `PROJECT_CONTEXT.md`）
 - 確かめ: `npm run check`（型・lint・テストをまとめて。開発サーバーが動いていても流せる。2026-11-17）
 - DB: `npx prisma migrate dev` / `npx prisma generate`
-- **開発サーバーが動いているあいだに `npm run build` を実行しない**。開発用のキャッシュ（`.next`）が上書きされ、画面の見た目（CSS）が読み込まれなくなる。型の確認は `npx tsc --noEmit` で行う。もし崩れたら、サーバーを止めて `.next` を消し、起動し直す（2026-10-07 に発生）
+- `npm run build` は開発サーバーが動いていても流してよい（2026-11-18）。型の確認は `npx tsc --noEmit`。もし画面の見た目（CSS）が崩れたら、サーバーを止めて `.next` を消し、起動し直す
 
 ## 記録の正本と書き方（重要・指示がなくても自律的に行う）
 
