@@ -93,3 +93,28 @@ test('例年の霜の理由は作付けの見込みを先に置き、最早日�
     assert.doesNotMatch(frost.confirmationLayers.general, /観測所|3,398/)
   }
 })
+
+test('今日の提案の観測所の霜は、記録がそろった9年を理由と地域の欄に使う', () => {
+  const firstFrost = {
+    source: 'station' as const, usableYears: 9,
+    stationName: '宇都宮', elevationDiffM: 18, distanceKm: 2, near: true,
+    summary: { earliest: { month: 11, day: 14 }, mean: { month: 11, day: 20 }, years: 8 },
+  }
+  const args = {
+    today: new Date(2026, 10, 11, 12), forecast: [], currentGdd: 3000, targetGdd: 3398,
+    firstFrost, hasSeenRoots: false, harvestWindow: null, harvestWindowReady: true,
+  }
+  const frost = assessSweetPotatoFrost(args)
+  assert.ok(frost)
+  assert.match(frost.reason, /記録のそろった9年/)
+  assert.match(frost.confirmationReason, /記録のそろった9年/)
+  assert.match(frost.confirmationLayers.regional, /記録のそろった9年では、9年中8年で/)
+  assert.match(frost.generalLine, /9年中8年で/)
+  assert.doesNotMatch(JSON.stringify(frost), /過去10年|10年中/)
+
+  const tenYears = assessSweetPotatoFrost({ ...args, firstFrost: { ...firstFrost, usableYears: 10 } })
+  assert.ok(tenYears)
+  assert.match(tenYears.generalLine, /過去10年の観測では、10年中8年で/)
+  assert.equal(tenYears.confirmationLayers.regional,
+    '宇都宮観測所（農場から2km、標高差18m）の日別値を使っています。過去10年で最低気温が初めて4℃以下になった日の平均は11月20日です。該当したのは8年です。観測所と畑では冷え込みが違うことがあります。窪地や内陸の畑は、これより早く霜がおりることがあります。')
+})

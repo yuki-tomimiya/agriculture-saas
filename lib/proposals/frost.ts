@@ -102,10 +102,13 @@ function frostWhen(origin: FrostOrigin): string {
   }
   const mean = formatMonthDay(frost.mean)
   const where = `（${origin.stationName}観測所・農場から${formatKm(origin.distanceKm ?? 0)}km）`
+  const period = origin.usableYears === FROST_ARCHIVE_YEARS
+    ? '過去10年の観測では'
+    : `この観測所の記録のそろった${origin.usableYears}年では`
   const observed =
-    frost.years < FROST_ARCHIVE_YEARS
-      ? `過去10年の観測では、10年中${frost.years}年で最低気温が初めて4℃以下になり、平均は${mean}、最も早い年は${early}です${where}`
-      : `過去10年の観測では、最低気温が初めて4℃以下になったのは平均${mean}、最も早い年は${early}です${where}`
+    frost.years < origin.usableYears
+      ? `${period}、${origin.usableYears}年中${frost.years}年で最低気温が初めて4℃以下になり、平均は${mean}、最も早い年は${early}です${where}`
+      : `${period}、最低気温が初めて4℃以下になったのは平均${mean}、最も早い年は${early}です${where}`
   if (origin.near) return observed
   const elev = origin.elevationDiffM == null ? '' : `（標高差${origin.elevationDiffM}m）`
   return `${observed}。観測所は農場から${formatKm(origin.distanceKm ?? 0)}km${elev}離れているので、目安です`
@@ -174,7 +177,9 @@ export function assessSweetPotatoFrost(args: {
   const days = daysUntilMonthDay(args.today, frost.earliest)
   if (days > SEASON_LEAD_DAYS) return null
   const when = frostWhen(origin)
-  const reason = `過去10年で、最低気温が最も早く4℃以下になったのは${formatMonthDay(frost.earliest)}です（${origin.source === 'station' ? '観測' : '推計'}）。`
+  const fewerObservedYears = origin.source === 'station' && origin.usableYears < FROST_ARCHIVE_YEARS
+  const period = fewerObservedYears ? `この観測所の記録のそろった${origin.usableYears}年` : '過去10年'
+  const reason = `${period}で、最低気温が最も早く4℃以下になったのは${formatMonthDay(frost.earliest)}です（${origin.source === 'station' ? '観測' : '推計'}）。`
   const note = origin.source === 'station' ? STATION_FROST_NOTE : FORECAST_FROST_NOTE
   const action = digLine(args.hasSeenRoots)
   const window = args.harvestWindow
@@ -192,12 +197,14 @@ export function assessSweetPotatoFrost(args: {
       ? `${target}にはすでに届いています。`
       : `${target}に届く見込みは${formatWindowDates(window)}です。`
     : `${target}には今季届かない見込みです。`
-  const confirmationReason = `${targetTiming}過去10年で最も早く最低気温が4℃以下になった日は${earlyFrost}${formatSeasonDateEnding(days)}`
+  const confirmationReason = `${targetTiming}${period}で最も早く最低気温が4℃以下になった日は${earlyFrost}${formatSeasonDateEnding(days)}`
   const station = origin.source === 'station'
     ? `${origin.stationName}観測所（農場から${formatKm(origin.distanceKm ?? 0)}km${origin.elevationDiffM == null ? '' : `、標高差${origin.elevationDiffM}m`}）の日別値を使っています。`
     : '近くの観測所の記録が使えないため、推計の気温を使っています。'
   const confirmationLayers = {
-    regional: `${station}過去10年で最低気温が初めて4℃以下になった日の平均は${formatMonthDay(frost.mean)}です。${frost.years < FROST_ARCHIVE_YEARS ? `該当したのは${frost.years}年です。` : ''}${note}`,
+    regional: fewerObservedYears
+      ? `${when}。${note}`
+      : `${station}過去10年で最低気温が初めて4℃以下になった日の平均は${formatMonthDay(frost.mean)}です。${frost.years < FROST_ARCHIVE_YEARS ? `該当したのは${frost.years}年です。` : ''}${note}`,
     general: baseSourceLine(),
     conclusion: `${window && args.currentGdd < args.targetGdd ? '見込みの時期より先に霜が来る年があります。' : ''}${action}。`,
   }
