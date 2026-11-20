@@ -20,9 +20,10 @@ const stageLabel: Record<ConfirmationStage, string> = {
 }
 
 const missingLabels: Record<NoConfirmationReason, string> = {
+  'record-only': '記録だけの品目',
+  'no-planting-date': '植えた日が未入力',
   'no-location': '位置が未登録',
   'no-weather': '必要な天気データがありません',
-  'record-only': '記録だけの品目',
   'no-question': '今は聞くことがありません',
 }
 
@@ -293,9 +294,39 @@ function MilestoneQuestion({ group, guidance }: { group: Proposal[]; guidance: G
   </li>
 }
 
-export default function MorningProposals({ data, guidance }: {
+type EmptyState = { farms: { id: string }[]; hasGrowingCrops: boolean }
+
+function EmptyMorning({ state }: { state?: EmptyState }) {
+  if (!state || (state.farms.length > 0 && state.hasGrowingCrops)) {
+    return <p className="morning-empty">今表示する締切・確認事項はありません。</p>
+  }
+  if (state.farms.length === 0) {
+    return <div className="morning-empty space-y-3">
+      <p>農場を登録すると、この土地の霜と気温が見られます</p>
+      <Link href="/farms/new" className="ai-proposal-action ai-proposal-action--primary min-h-11 max-w-full whitespace-normal">
+        農場を登録する
+      </Link>
+    </div>
+  }
+  const farm = state.farms.length === 1 ? state.farms[0] : null
+  return <div className="morning-empty space-y-3">
+    <p>育てているものを登録すると、ここに毎朝の確認が出ます</p>
+    <Link href={farm ? `/crops/new?farmId=${encodeURIComponent(farm.id)}` : '/crops/new'}
+      className="ai-proposal-action ai-proposal-action--primary min-h-11 max-w-full whitespace-normal">
+      育てているものを登録する
+    </Link>
+    <p>この土地のカード（霜・地域区分・土）は農場の詳細で見られます</p>
+    <Link href={farm ? `/farms/${encodeURIComponent(farm.id)}` : '/farms'}
+      className="ai-proposal-action min-h-11 max-w-full whitespace-normal">
+      {farm ? '農場の詳細を見る' : '農場一覧を見る'}
+    </Link>
+  </div>
+}
+
+export default function MorningProposals({ data, guidance, emptyState }: {
   data: Awaited<ReturnType<typeof loadTodayConfirmations>>
   guidance: Guidance
+  emptyState?: EmptyState
 }) {
   const weatherSources = new Set(guidanceProposals(data).map(proposal =>
     proposal.signal?.stationSource ? undefined : proposal.signal?.weatherSource))
@@ -311,7 +342,7 @@ export default function MorningProposals({ data, guidance }: {
             <Link href="/records/field" className="btn btn-primary">畑で見たことを記録する</Link>
           </header>
 
-          {data.count === 0 && <p className="morning-empty">今表示する締切・確認事項はありません。</p>}
+          {data.count === 0 && <EmptyMorning state={emptyState} />}
 
           {data.deadlineCount > 0 && <section className="ai-proposal-group" aria-labelledby="morning-deadlines">
             <h2 id="morning-deadlines" className="ai-proposal-group-title">締切 <span>{data.deadlineCount}件</span></h2>
@@ -336,7 +367,8 @@ export default function MorningProposals({ data, guidance }: {
                 <summary>{missingLabels[reason]}（{crops.length}件）</summary>
                 <ul className="morning-targets">
                   {crops.map(crop => <li key={crop.cropId}>
-                    <Link href={`/crops/${crop.cropId}`} className="ai-proposal-card-link">{crop.cropName}</Link>
+                    <Link href={`/crops/${crop.cropId}${reason === 'no-planting-date' ? '/edit' : ''}`}
+                      className="ai-proposal-card-link">{crop.cropName}</Link>
                     {crop.farmName && ` · ${crop.farmName}`}
                   </li>)}
                 </ul>

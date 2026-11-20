@@ -55,7 +55,7 @@ export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 export type ProposalMilestoneContext = { key: string; observedAt?: Date; afterHarvest?: boolean }
 
 export type ConfirmationStage = 'deadline' | 'season' | 'reached' | 'window'
-export type NoConfirmationReason = 'no-location' | 'no-weather' | 'record-only' | 'no-question'
+export type NoConfirmationReason = 'no-location' | 'no-weather' | 'record-only' | 'no-planting-date' | 'no-question'
 export type ConfirmationCrop = { cropId: string; cropName: string; farmName?: string; reason: NoConfirmationReason }
 export type ProposalSignal = {
   stage: ConfirmationStage | 'organize'
@@ -595,6 +595,7 @@ export async function scoreCrops(
     if (confirmations) {
       let reason: NoConfirmationReason = 'no-question'
       if (advice.recordOnly) reason = 'record-only'
+      else if (!crop.plantingDate) reason = 'no-planting-date'
       else if (!hasWeatherCoordinates(crop.farm)) reason = 'no-location'
       else if (days != null && (!climate?.forecast.length || (basis.view.status === 'active' && currentGDD == null))) reason = 'no-weather'
       confirmationCrops.push({ cropId: crop.id, cropName: crop.name, farmName: crop.farm?.name, reason })

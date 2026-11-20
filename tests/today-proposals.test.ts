@@ -136,7 +136,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
     })
   }
 
-  await t.test('全締切、位置なしで使える節目、確認事項がない4つの理由', async () => {
+  await t.test('全締切、位置なしで使える節目、確認事項がない理由', async () => {
     const user = await db.user.create({ data: { email: 'no-confirmations@example.invalid', password: 'unused' } })
     const place = await db.farm.create({ data: { userId: user.id, name: '位置あり', latitude: 35, longitude: 139 } })
     const noPlace = await db.farm.create({ data: { userId: user.id, name: '位置なし' } })
@@ -145,7 +145,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
       { name: '位置なし', cropKind: 'sweet-potato', farmId: noPlace.id, plantingDate: new Date(2026, 10, 11) },
       { name: '気象データなし', cropKind: 'sweet-potato', farmId: place.id, plantingDate: new Date(2026, 10, 11) },
       { name: '記録だけ', cropKind: 'other', farmId: noPlace.id, plantingDate: planted },
-      { name: '今は聞くことがない', cropKind: 'tomato', farmId: place.id },
+      { name: '植えた日が未入力', cropKind: 'tomato', farmId: place.id },
       { name: '絹糸の記録あり', cropKind: 'sweet-corn', farmId: noPlace.id, plantingDate: new Date(2026, 7, 20) },
     ]
     await db.crop.createMany({ data: crops })
@@ -171,7 +171,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
     assert.equal(result.confirmationGroups[0][0].selected.stage, 'reached')
     assert.deepEqual(Object.fromEntries(Object.entries(result.noConfirmations).map(([reason, crops]) => [reason, crops.map(crop => crop.cropName)])), {
       'no-location': ['位置なし'], 'no-weather': ['気象データなし'],
-      'record-only': ['記録だけ'], 'no-question': ['今は聞くことがない'],
+      'record-only': ['記録だけ'], 'no-planting-date': ['植えた日が未入力'],
     })
     await db.proposalDismissal.create({ data: {
       userId: user.id, cropId: corn.id, trigger: 'harvest-window', remindAfter: new Date(2026, 10, 14),
@@ -180,6 +180,33 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
     assert.equal(afterDismissal.taskGroups.flat().length, 3)
     assert.ok(!afterDismissal.confirmationGroups.flat().some(row => row.selected.trigger === 'harvest-window'))
   })
+  await t.test('植えた日の未入力は位置・天気より先に言い、記録だけを優先する', async () => {
+    const user = await db.user.create({ data: { email: 'planting-date@example.invalid', password: 'unused' } })
+    const place = await db.farm.create({ data: { userId: user.id, name: '位置あり', latitude: 35, longitude: 139 } })
+    const noPlace = await db.farm.create({ data: { userId: user.id, name: '位置なし' } })
+    await db.crop.createMany({ data: [
+      { id: 'undated-location', name: '日付なし位置あり', cropKind: 'tomato', farmId: place.id },
+      { id: 'undated-no-location', name: '日付なし位置なし', cropKind: 'tomato', farmId: noPlace.id },
+      { id: 'undated-record-only', name: '日付なし記録だけ', cropKind: 'other', farmId: noPlace.id },
+      { id: 'dated-no-question', name: '植えたばかり', cropKind: 'cabbage', farmId: place.id, plantingDate: now },
+    ] })
+    const result = await loadTodayConfirmations(user.id, { now, weather: {
+      ...fixedWeather('3'),
+      forecast: async () => [{
+        date: '2026-11-13', dayLabel: '11月13日', weather: '晴れ', weatherCode: 0,
+        maxTemp: 25, minTemp: 15, avgTemp: 20, precipitation: 0, wind: 2,
+      }],
+      accumulatedGdd: async () => 0,
+    } })
+    const ids = (reason: keyof typeof result.noConfirmations) =>
+      result.noConfirmations[reason]?.map(crop => crop.cropId).sort()
+    assert.deepEqual(ids('no-planting-date'), ['undated-location', 'undated-no-location'])
+    assert.deepEqual(ids('record-only'), ['undated-record-only'])
+    assert.deepEqual(ids('no-question'), ['dated-no-question'])
+    assert.equal(result.noConfirmations['no-location'], undefined)
+    assert.equal(result.noConfirmations['no-weather'], undefined)
+  })
+
   await t.test('トマトの例年の冷え込みは、整理ではなく季節の確認事項', async () => {
     const user = await db.user.create({ data: { email: 'cool-night@example.invalid', password: 'unused' } })
     await db.$transaction(tx => addProposalCheckData(tx, proposalCheckData('2', user.id, now)))

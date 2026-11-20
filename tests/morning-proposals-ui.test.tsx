@@ -73,3 +73,38 @@ test('選んだ節目・病害虫にはカードで答え、奥から選ばれ�
   assert.doesNotMatch(remaining, /作付けB|作付けC|>咲いた</)
   assert.doesNotMatch(render(organizeConfirmations([selected], [crop('A')], [])), /id="morning-answers"/)
 })
+
+test('植えた日の未入力の理由から、その作付けの編集へ進める', () => {
+  const data = organizeConfirmations([], [{ ...crop('A'), reason: 'no-planting-date' }], [])
+  const html = renderWithRouter(<MorningProposals data={data} guidance={new Map()} />)
+  assert.match(html, /植えた日が未入力（1件）/)
+  assert.match(html, /href="\/crops\/A\/edit"/)
+  assert.doesNotMatch(html, /href="\/crops\/A"|今は聞くことがありません/)
+})
+
+test('0件なら農場と栽培中の作付けに合わせた登録の入口を表示する', () => {
+  const data = organizeConfirmations([], [], [])
+  const render = (farms: { id: string }[], hasGrowingCrops = false) =>
+    renderWithRouter(<MorningProposals data={data} guidance={new Map()} emptyState={{ farms, hasGrowingCrops }} />)
+  const noFarm = render([])
+  assert.match(noFarm, /農場を登録すると、この土地の霜と気温が見られます/)
+  assert.match(noFarm, /href="\/farms\/new"/)
+  assert.doesNotMatch(noFarm, /href="\/crops\/new/)
+  assert.match(render([], true), /href="\/farms\/new"/)
+  const oneFarm = render([{ id: 'farm-A' }])
+  assert.match(oneFarm, /href="\/crops\/new\?farmId=farm-A"/)
+  assert.match(oneFarm, /href="\/farms\/farm-A"/)
+  assert.match(oneFarm, /この土地のカード（霜・地域区分・土）は農場の詳細で見られます/)
+  const twoFarms = render([{ id: 'farm-A' }, { id: 'farm-B' }])
+  assert.match(twoFarms, /href="\/crops\/new"/)
+  assert.match(twoFarms, /href="\/farms"/)
+  assert.doesNotMatch(twoFarms, /href="\/crops\/new\?farmId=/)
+  const growing = render([{ id: 'farm-A' }], true)
+  assert.match(growing, /今表示する締切・確認事項はありません。/)
+  assert.doesNotMatch(growing, /育てているものを登録すると|この土地のカード/)
+
+  const pending = organizeConfirmations([proposal('A', 'milestone:flower', { stage: 'window', reason: '開花の確認' })], [crop('A')], [])
+  const withQuestion = renderWithRouter(<MorningProposals data={pending} guidance={new Map()}
+    emptyState={{ farms: [], hasGrowingCrops: false }} />)
+  assert.doesNotMatch(withQuestion, /農場を登録すると/)
+})
