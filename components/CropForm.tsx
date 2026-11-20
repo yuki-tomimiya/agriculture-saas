@@ -71,17 +71,19 @@ export default function CropForm({
   cropId,
   initial,
   farms,
+  autoSelectFarm = true,
   springByFarm = {},
 }: {
   mode: 'new' | 'edit'
   cropId?: string
   initial: CropFormInitial
   farms: FarmWithFields[]
+  autoSelectFarm?: boolean
   springByFarm?: Record<string, SpringDateBrief>
 }) {
   const router = useRouter()
   const [form, setForm] = useState(() => {
-    if (initial.farmId || farms.length !== 1) return initial
+    if (initial.farmId || !autoSelectFarm || farms.length !== 1) return initial
     return { ...initial, farmId: farms[0].id }
   })
   const [error, setError] = useState('')
@@ -183,7 +185,7 @@ export default function CropForm({
             </Link>
           </div>
         ) : (
-        <div className="card farm-new-card">
+        <div className="card farm-new-card min-w-0 [overflow-wrap:anywhere]">
           {error && (
             <div className="auth-error" role="alert">
               {error}
@@ -194,7 +196,7 @@ export default function CropForm({
               <label htmlFor="crop-kind" className="label">
                 品目 <span className="farm-new-required">必須</span>
               </label>
-              <select id="crop-kind" className="input" value={form.cropKind} onChange={(e) => applyKind(e.target.value)}>
+              <select id="crop-kind" className="input min-w-0" required value={form.cropKind} onChange={(e) => applyKind(e.target.value)}>
                 <option value="">選んでください</option>
                 {CROP_KINDS.map((item) => (
                   <option key={item.key} value={item.key}>
@@ -210,9 +212,10 @@ export default function CropForm({
               </label>
               <input
                 id="crop-name"
-                className="input"
+                className="input min-w-0"
                 value={form.name}
                 maxLength={200}
+                required={kind?.key === 'other'}
                 placeholder={kind?.key === 'other' ? '作物の名前' : '空なら品目の名前が入ります'}
                 onChange={(e) => patch({ name: e.target.value })}
               />
@@ -222,7 +225,7 @@ export default function CropForm({
               <label htmlFor="crop-variety" className="label">品種</label>
               <input
                 id="crop-variety"
-                className="input"
+                className="input min-w-0"
                 value={form.variety}
                 maxLength={100}
                 placeholder="例：紅はるか"
@@ -236,7 +239,8 @@ export default function CropForm({
               </label>
               <select
                 id="crop-site"
-                className="input"
+                className="input min-w-0"
+                required
                 value={form.growingSite}
                 onChange={(e) => patch({ growingSite: e.target.value })}
               >
@@ -246,65 +250,14 @@ export default function CropForm({
               </select>
             </div>
 
-            {form.growingSite === 'open' && (
-              <fieldset className="auth-field">
-                <legend className="label">
-                  覆い <span className="farm-new-required">必須</span>
-                </legend>
-                {COVER_OPTIONS.map((option) => (
-                  <label key={option.key} className="block text-sm text-gray-800">
-                    <input
-                      type="checkbox"
-                      className="mr-2"
-                      checked={form.covers.includes(option.key)}
-                      disabled={form.coverNone}
-                      onChange={(e) => {
-                        const covers = e.target.checked
-                          ? [...form.covers, option.key]
-                          : form.covers.filter((key) => key !== option.key)
-                        patch({ covers, coverNone: false })
-                      }}
-                    />
-                    {option.label}
-                  </label>
-                ))}
-                <label className="block text-sm text-gray-800">
-                  <input
-                    type="checkbox"
-                    className="mr-2"
-                    checked={form.coverNone}
-                    onChange={(e) => patch({ coverNone: e.target.checked, covers: e.target.checked ? [] : form.covers })}
-                  />
-                  なし
-                </label>
-              </fieldset>
-            )}
-
-            {form.growingSite === 'house' && (
-              <div className="auth-field">
-                <label htmlFor="crop-heating" className="label">
-                  暖房 <span className="farm-new-required">必須</span>
-                </label>
-                <select
-                  id="crop-heating"
-                  className="input"
-                  value={form.heating}
-                  onChange={(e) => patch({ heating: e.target.value })}
-                >
-                  <option value="">選んでください</option>
-                  <option value="yes">あり</option>
-                  <option value="no">なし（雨よけ・無加温）</option>
-                </select>
-              </div>
-            )}
-
             <div className="auth-field">
               <label htmlFor="crop-method" className="label">
                 植え方 <span className="farm-new-required">必須</span>
               </label>
               <select
                 id="crop-method"
-                className="input"
+                className="input min-w-0"
+                required
                 value={form.plantingMethod}
                 onChange={(e) => patch({ plantingMethod: e.target.value })}
               >
@@ -314,7 +267,7 @@ export default function CropForm({
               </select>
             </div>
 
-            <div className="farm-new-row">
+            <div className="grid min-w-0 gap-4 sm:grid-cols-2">
               <div className="auth-field farm-new-half">
                 <label htmlFor="crop-planting" className="label">
                   {plantingDateLabel(form.plantingMethod)}
@@ -322,10 +275,14 @@ export default function CropForm({
                 <input
                   id="crop-planting"
                   type="date"
-                  className="input"
+                  className="input min-w-0"
                   value={form.plantingDate}
+                  aria-describedby={!form.plantingDate ? 'crop-planting-note' : undefined}
                   onChange={(e) => patch({ plantingDate: e.target.value })}
                 />
+                {!form.plantingDate && <p id="crop-planting-note" className="mt-1 text-sm text-amber-800">
+                  植えた日が無いと、今日の提案と生育ナビは出ません
+                </p>}
                 {(springEarly || plantingCondition) && (
                   <p className={`text-sm mt-1 ${springEarly ? 'text-amber-800' : 'text-gray-600'}`}>
                     {springEarly}
@@ -338,40 +295,12 @@ export default function CropForm({
                 <input
                   id="crop-harvest"
                   type="date"
-                  className="input"
+                  className="input min-w-0"
                   value={form.harvestDate}
                   onChange={(e) => patch({ harvestDate: e.target.value })}
                 />
               </div>
             </div>
-
-            <div className="farm-new-row">
-              <div className="auth-field farm-new-half">
-                <label htmlFor="crop-count" className="label">株数（株・本）</label>
-                <input
-                  id="crop-count"
-                  type="number"
-                  min={1}
-                  step={1}
-                  className="input"
-                  value={form.plantCount}
-                  onChange={(e) => patch({ plantCount: e.target.value })}
-                />
-              </div>
-              <div className="auth-field farm-new-half">
-                <label htmlFor="crop-area" className="label">栽培面積（㎡）</label>
-                <input
-                  id="crop-area"
-                  type="number"
-                  min={0}
-                  step="0.1"
-                  className="input"
-                  value={form.areaM2}
-                  onChange={(e) => patch({ areaM2: e.target.value })}
-                />
-              </div>
-            </div>
-            <p className="text-sm text-gray-500">株数か栽培面積のどちらかは必要です。</p>
 
             <div className="auth-field">
               <label htmlFor="crop-farm" className="label">
@@ -379,7 +308,7 @@ export default function CropForm({
               </label>
               <select
                 id="crop-farm"
-                className="input"
+                className="input min-w-0"
                 value={form.farmId}
                 onChange={(e) => patch({ farmId: e.target.value, fieldId: '', fieldUndivided: false })}
                 required
@@ -391,35 +320,120 @@ export default function CropForm({
               </select>
             </div>
 
-            {fields.length > 0 && (
-              <div className="auth-field">
-                <label htmlFor="crop-field" className="label">
-                  圃場 <span className="farm-new-required">必須</span>
-                </label>
-                <select
-                  id="crop-field"
-                  className="input"
-                  value={form.fieldUndivided ? 'undivided' : form.fieldId}
-                  onChange={(e) => {
-                    if (e.target.value === 'undivided') patch({ fieldUndivided: true, fieldId: '' })
-                    else patch({ fieldUndivided: false, fieldId: e.target.value })
-                  }}
-                >
-                  <option value="">選んでください</option>
-                  {fields.map((field) => (
-                    <option key={field.id} value={field.id}>{field.name}</option>
-                  ))}
-                  <option value="undivided">圃場を分けていない</option>
-                </select>
+            <details open={mode === 'edit'} className="min-w-0">
+              <summary className="cursor-pointer rounded-md py-3 text-base font-semibold">
+                あとで入れてもよい
+              </summary>
+              <div className="farm-new-form mt-3 min-w-0">
+                {form.growingSite === 'open' && (
+                  <fieldset className="auth-field">
+                    <legend className="label">
+                      覆い
+                    </legend>
+                    {COVER_OPTIONS.map((option) => (
+                      <label key={option.key} className="block text-sm text-gray-800">
+                        <input
+                          type="checkbox"
+                          className="mr-2"
+                          checked={form.covers.includes(option.key)}
+                          disabled={form.coverNone}
+                          onChange={(e) => {
+                            const covers = e.target.checked
+                              ? [...form.covers, option.key]
+                              : form.covers.filter((key) => key !== option.key)
+                            patch({ covers, coverNone: false })
+                          }}
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                    <label className="block text-sm text-gray-800">
+                      <input
+                        type="checkbox"
+                        className="mr-2"
+                        checked={form.coverNone}
+                        onChange={(e) => patch({ coverNone: e.target.checked, covers: e.target.checked ? [] : form.covers })}
+                      />
+                      なし
+                    </label>
+                  </fieldset>
+                )}
+
+                {form.growingSite === 'house' && (
+                  <div className="auth-field">
+                    <label htmlFor="crop-heating" className="label">
+                      暖房
+                    </label>
+                    <select
+                      id="crop-heating"
+                      className="input min-w-0"
+                      value={form.heating}
+                      onChange={(e) => patch({ heating: e.target.value })}
+                    >
+                      <option value="">選んでください</option>
+                      <option value="yes">あり</option>
+                      <option value="no">なし（雨よけ・無加温）</option>
+                    </select>
+                  </div>
+                )}
+
+                <div className="grid min-w-0 gap-4 sm:grid-cols-2">
+                  <div className="auth-field farm-new-half">
+                    <label htmlFor="crop-count" className="label">株数（株・本）</label>
+                    <input
+                      id="crop-count"
+                      type="number"
+                      min={1}
+                      step={1}
+                      className="input min-w-0"
+                      value={form.plantCount}
+                      onChange={(e) => patch({ plantCount: e.target.value })}
+                    />
+                  </div>
+                  <div className="auth-field farm-new-half">
+                    <label htmlFor="crop-area" className="label">栽培面積（㎡）</label>
+                    <input
+                      id="crop-area"
+                      type="number"
+                      min={0}
+                      step="0.1"
+                      className="input min-w-0"
+                      value={form.areaM2}
+                      onChange={(e) => patch({ areaM2: e.target.value })}
+                    />
+                  </div>
+                </div>
+                {fields.length > 0 && (
+                  <div className="auth-field">
+                    <label htmlFor="crop-field" className="label">
+                      圃場
+                    </label>
+                    <select
+                      id="crop-field"
+                      className="input min-w-0"
+                      value={form.fieldUndivided ? 'undivided' : form.fieldId}
+                      onChange={(e) => {
+                        if (e.target.value === 'undivided') patch({ fieldUndivided: true, fieldId: '' })
+                        else patch({ fieldUndivided: false, fieldId: e.target.value })
+                      }}
+                    >
+                      <option value="">選んでください</option>
+                      {fields.map((field) => (
+                        <option key={field.id} value={field.id}>{field.name}</option>
+                      ))}
+                      <option value="undivided">圃場を分けていない</option>
+                    </select>
+                  </div>
+                )}
               </div>
-            )}
+            </details>
 
             {mode === 'edit' && (
               <div className="auth-field">
                 <label htmlFor="crop-status" className="label">状態</label>
                 <select
                   id="crop-status"
-                  className="input"
+                  className="input min-w-0"
                   value={form.status}
                   onChange={(e) => patch({ status: e.target.value })}
                 >
@@ -430,8 +444,8 @@ export default function CropForm({
               </div>
             )}
 
-            <div className="farm-new-actions">
-              <button type="submit" disabled={loading} className="btn btn-primary farm-new-submit">
+            <div className="farm-new-actions flex-wrap">
+              <button type="submit" disabled={loading} className="btn btn-primary farm-new-submit !min-w-0 max-w-full whitespace-normal">
                 {loading ? '保存中...' : mode === 'edit' ? '更新する' : '登録する'}
               </button>
               <Link href={mode === 'edit' ? `/crops/${cropId}` : '/crops'} className="btn btn-outline">

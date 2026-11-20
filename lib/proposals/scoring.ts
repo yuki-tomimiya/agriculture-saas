@@ -1206,10 +1206,14 @@ export async function scoreCrops(
       plantingMethod: true,
       plantCount: true,
       areaM2: true,
+      fieldId: true,
+      fieldUndivided: true,
+      farm: { select: { _count: { select: { fields: true } } } },
       outcome: { select: { id: true } },
     },
   })
-  const missingCount = missingConditions.filter((crop) => conditionsMissing(crop)).length
+  const missingCount = missingConditions.filter((crop) =>
+    conditionsMissing(crop, (crop.farm?._count.fields ?? 0) > 0)).length
   const missingResults = missingConditions.filter((crop) => outcomeMissing(crop)).length
   if (missingResults > 0 && !isProposalDismissed(dismissed, 'result-missing')) {
     cards.push({

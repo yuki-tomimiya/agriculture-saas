@@ -7,9 +7,12 @@ type FarmWithFields = { id: string; name: string; fields: { id: string; name: st
 export default function CropNewForm({
   farms,
   springByFarm,
+  initialFarmId,
 }: {
   farms: FarmWithFields[]
   springByFarm: Record<string, SpringDateBrief>
+  initialFarmId?: string
 }) {
-  return <CropForm mode="new" initial={emptyCropForm()} farms={farms} springByFarm={springByFarm} />
+  return <CropForm mode="new" initial={{ ...emptyCropForm(), farmId: initialFarmId ?? '' }}
+    autoSelectFarm={initialFarmId === undefined} farms={farms} springByFarm={springByFarm} />
 }

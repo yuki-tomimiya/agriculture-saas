@@ -40,7 +40,7 @@ export const COVER_OPTIONS = [
 
 export const RECORD_ONLY_NOTE = 'この品目はまだ助言の対象外です。記録は貯まります。'
 export const CONDITIONS_PROMPT =
-  '育て方の型・植え方を選んでください（あとで同じ条件の作付けと比べるために使います）'
+  '覆い・暖房・株数か栽培面積・圃場の未入力の欄を入れてください（あとで同じ条件の作付けと比べるために使います）'
 
 /** 自分の記録をまとめる品目。欄が空の古い作付けだけ呼び名。その他は呼び名が同じものだけ。 */
 export function compareSubject(crop: { cropKind?: string | null; name: string }): { key: string; label: string } {
@@ -217,11 +217,14 @@ export function conditionsMissing(crop: {
   plantingMethod?: string | null
   plantCount?: number | null
   areaM2?: number | null
-}): boolean {
+  fieldId?: string | null
+  fieldUndivided?: boolean
+}, farmHasFields = false): boolean {
   if (!crop.growingSite || !crop.plantingMethod) return true
   if (crop.growingSite === 'open' && !crop.covers) return true
   if (crop.growingSite === 'house' && !crop.heating) return true
   if (crop.plantCount == null && crop.areaM2 == null) return true
+  if (farmHasFields && !crop.fieldId && !crop.fieldUndivided) return true
   return false
 }
 
@@ -240,7 +243,6 @@ export type CropConditionInput = {
 
 export function parseCropConditions(
   body: Record<string, unknown>,
-  options: { farmHasFields: boolean }
 ): { error: string } | { value: CropConditionInput } {
   const cropKind = typeof body.cropKind === 'string' ? body.cropKind : ''
   const kind = cropKindByKey(cropKind)
@@ -259,10 +261,9 @@ export function parseCropConditions(
     const selected = Array.isArray(body.covers) ? body.covers.filter((item) => typeof item === 'string') : []
     const none = body.coverNone === true || selected.includes('none')
     covers = none ? 'none' : formatCovers(selected.filter((key) => key !== 'none'))
-    if (!covers) return { error: '露地の覆いを選んでください。無いときは「なし」を選んでください' }
   } else {
     heating = body.heating === 'yes' || body.heating === 'no' ? body.heating : null
-    if (!heating) return { error: 'ハウスの暖房を選んでください' }
+    if (body.heating != null && body.heating !== '' && !heating) return { error: 'ハウスの暖房を選んでください' }
   }
 
   const plantingMethod =
@@ -273,13 +274,9 @@ export function parseCropConditions(
   const areaM2 = parseOptionalNumber(body.areaM2)
   if (plantCount === 'bad') return { error: '株数は1以上の整数にしてください' }
   if (areaM2 === 'bad') return { error: '栽培面積は0より大きい数にしてください' }
-  if (plantCount == null && areaM2 == null) return { error: '株数か栽培面積のどちらかを入力してください' }
 
   const fieldUndivided = body.fieldUndivided === true
   const fieldId = typeof body.fieldId === 'string' && body.fieldId.trim() ? body.fieldId.trim() : null
-  if (options.farmHasFields && !fieldId && !fieldUndivided) {
-    return { error: '圃場を選んでください。分けていないときは「圃場を分けていない」を選んでください' }
-  }
 
   return {
     value: {

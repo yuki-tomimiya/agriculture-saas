@@ -39,7 +39,7 @@ export default async function CropDetailPage({
   const { id } = await params
 
   const include = {
-    farm: true,
+    farm: { include: { _count: { select: { fields: true } } } },
     field: true,
     harvests: { orderBy: { date: 'desc' as const }, take: 20 },
     outcome: true,
@@ -96,7 +96,7 @@ export default async function CropDetailPage({
     recordOnly: advice.recordOnly,
     milestones: crop.milestones,
   })
-  const missingConditions = conditionsMissing(crop)
+  const missingConditions = conditionsMissing(crop, (crop.farm?._count.fields ?? 0) > 0)
   const missingResult = outcomeMissing(crop)
 
   return (

@@ -116,6 +116,10 @@ export default async function FarmDetailPage({
         <div className="flex flex-wrap gap-4 items-start justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">{farm.name}</h1>
+            <Link href={`/crops/new?farmId=${encodeURIComponent(farm.id)}`}
+              className="btn btn-primary max-w-full whitespace-normal !px-3 !py-3 text-center">
+              この農場で育てているものを登録
+            </Link>
             {farm.description && (
               <p className="text-gray-600 max-w-2xl">{farm.description}</p>
             )}

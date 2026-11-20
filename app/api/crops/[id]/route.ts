@@ -48,7 +48,6 @@ export async function PATCH(
       return NextResponse.json({ error: '農場を選んでください' }, { status: 400 })
     }
 
-    let farmHasFields = false
     let farmFields: { id: string }[] = []
     if ((editingConditions || farmId !== undefined) && nextFarmId) {
       const farm = await prisma.farm.findFirst({
@@ -58,11 +57,10 @@ export async function PATCH(
       if (!farm) {
         return NextResponse.json({ error: '指定した農場が見つかりません' }, { status: 400 })
       }
-      farmHasFields = farm.fields.length > 0
       farmFields = farm.fields
     }
 
-    const parsed = editingConditions ? parseCropConditions(body, { farmHasFields }) : null
+    const parsed = editingConditions ? parseCropConditions(body) : null
     if (parsed && 'error' in parsed) {
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }

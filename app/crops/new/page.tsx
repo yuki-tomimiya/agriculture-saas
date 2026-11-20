@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation'
 import CropNewForm from './CropNewForm'
 import { springBriefsForFarms } from '@/lib/jma/frost-record'
 
-export default async function NewCropPage() {
+export default async function NewCropPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ farmId?: string | string[] }>
+}) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -25,6 +29,9 @@ export default async function NewCropPage() {
     fields: f.fields.map((field) => ({ id: field.id, name: field.name })),
   }))
   const springByFarm = await springBriefsForFarms(farms)
+  const { farmId } = await searchParams
+  const initialFarmId = farmId === undefined ? undefined
+    : typeof farmId === 'string' && farms.some(farm => farm.id === farmId) ? farmId : ''
 
-  return <CropNewForm farms={farmsWithFields} springByFarm={springByFarm} />
+  return <CropNewForm farms={farmsWithFields} springByFarm={springByFarm} initialFarmId={initialFarmId} />
 }

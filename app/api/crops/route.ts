@@ -23,7 +23,6 @@ export async function POST(request: NextRequest) {
     const plantingDateStr = body.plantingDate
     const harvestDateStr = body.harvestDate
 
-    let farmHasFields = false
     let farmFields: { id: string }[] = []
     if (farmId) {
       const farm = await prisma.farm.findFirst({
@@ -33,11 +32,10 @@ export async function POST(request: NextRequest) {
       if (!farm) {
         return NextResponse.json({ error: '指定した農場が見つかりません' }, { status: 400 })
       }
-      farmHasFields = farm.fields.length > 0
       farmFields = farm.fields
     }
 
-    const parsed = parseCropConditions(body, { farmHasFields })
+    const parsed = parseCropConditions(body)
     if ('error' in parsed) {
       return NextResponse.json({ error: parsed.error }, { status: 400 })
     }
