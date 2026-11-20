@@ -60,7 +60,9 @@ export default function FarmLocationMap({
   }, [])
 
   useEffect(() => {
-    if (center) map.current?.setView([center.latitude, center.longitude], center.zoom)
+    if (center) {
+      map.current?.setView([center.latitude, center.longitude], center.zoom, { animate: false })
+    }
   }, [center])
 
   useEffect(() => {
