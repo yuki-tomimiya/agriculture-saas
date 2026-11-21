@@ -40,7 +40,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | `/records` | 記録の入口（作業・農薬・収穫・販売。施肥は作業のタブ） |
 | `/records/field` | 畑で見たことの記録。入口は今日の提案と作付け詳細。選択肢は `lib/crops/field-observations.ts`、保存は節目・病害虫の既存API |
 | `/farms/new` | 農場の新規登録。場所を指定し、「この土地のカード」を見てから保存する |
-| `/crops/new` | 作付けの登録。`?farmId=` で本人の農場を初期選択する。`components/CropForm.tsx` を編集画面と共用 |
+| `/crops/new` | 作付けの登録。`?farmId=` で本人の農場を初期選択し、戻る先にする。保存後は作付けの詳細へ（`lib/crops/navigation.ts`）。`components/CropForm.tsx` を編集画面と共用 |
 | `/soil` | 土壌診断（農場管理の下。写真・圃場あり。詳細ページはなし） |
 | `/insights` | 振り返りと計画（入口カード。来年の計画を含む） |
 | `/insights/compare` | 作付け比較（あなた） |
