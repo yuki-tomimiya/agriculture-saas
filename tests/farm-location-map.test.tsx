@@ -3,7 +3,7 @@ import { test } from 'node:test'
 import { renderWithRouter } from './helpers/next-runtime'
 import municipalities from '@/data/municipalities.json'
 import pointData from '@/data/municipality-points.json'
-import { readFarmCoordinates, roundFarmCoordinates } from '@/lib/farms/coordinates'
+import { isWithinJapanBounds, readFarmCoordinates, roundFarmCoordinates } from '@/lib/farms/coordinates'
 import { initialFarmArea } from '@/lib/farms/registration-area'
 import { municipalityMapCenter, prefectureMapCenter } from '@/lib/places/map-center'
 
@@ -20,8 +20,7 @@ test('市区町村の代表点は現行の自治体すべてに対応し、日�
   assert.equal(Object.keys(pointData.points).length, 1741)
   assert.deepEqual(Object.keys(pointData.points).sort(), municipalities.municipalities.map(item => item.code).sort())
   for (const [latitude, longitude] of Object.values(pointData.points)) {
-    assert.ok(latitude >= 20 && latitude <= 46)
-    assert.ok(longitude >= 122 && longitude <= 154)
+    assert.ok(isWithinJapanBounds({ latitude, longitude }))
   }
   const [latitude, longitude] = pointData.points['122050']
   assert.deepEqual(municipalityMapCenter('122050'), { latitude, longitude })

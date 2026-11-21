@@ -24,7 +24,7 @@ export function proposalCheckData(scenario: ProposalCheckScenario, userId: strin
   const crop = (key: string, farmId: string, label: string, cropKind: string, age: number): Prisma.CropCreateManyInput =>
     ({
       id: id(key), farmId, name: name(label), cropKind, growingSite: 'open', covers: 'none',
-      plantingMethod: 'transplant', plantCount: 10, plantingDate: daysAgo(now, age),
+      plantingMethod: 'transplant', plantCount: 10, plantingDate: daysAgo(now, age), createdAt: now,
       variety: cropKind === 'sweet-potato' ? '紅はるか' : null,
     })
   const farms = scenario === '3' ? [farm('farm', '位置未登録の農場')] : [farm('farm', '館山農場', tateyama)]

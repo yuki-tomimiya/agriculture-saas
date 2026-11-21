@@ -296,7 +296,16 @@ function MilestoneQuestion({ group, guidance }: { group: Proposal[]; guidance: G
 
 type EmptyState = { farms: { id: string }[]; hasGrowingCrops: boolean }
 
-function EmptyMorning({ state }: { state?: EmptyState }) {
+function EmptyMorning({ state, undated }: { state?: EmptyState; undated: { cropId: string }[] }) {
+  if (state?.farms.length !== 0 && undated.length > 0) {
+    return <div className="morning-empty space-y-3">
+      <p>植えた日を入れると、ここに毎朝の確認が出ます</p>
+      {undated.length === 1 && <Link href={`/crops/${undated[0].cropId}/edit`}
+        className="ai-proposal-action ai-proposal-action--primary min-h-11 max-w-full whitespace-normal">
+        植えた日を入れる
+      </Link>}
+    </div>
+  }
   if (!state || (state.farms.length > 0 && state.hasGrowingCrops)) {
     return <p className="morning-empty">今表示する締切・確認事項はありません。</p>
   }
@@ -331,6 +340,7 @@ export default function MorningProposals({ data, guidance, emptyState }: {
   const weatherSources = new Set(guidanceProposals(data).map(proposal =>
     proposal.signal?.stationSource ? undefined : proposal.signal?.weatherSource))
   const noConfirmationReasons = Object.keys(missingLabels) as NoConfirmationReason[]
+  const undated = data.noConfirmations['no-planting-date'] ?? []
 
   return (
     <div className="dashboard-page min-h-screen flex">
@@ -342,7 +352,7 @@ export default function MorningProposals({ data, guidance, emptyState }: {
             <Link href="/records/field" className="btn btn-primary">畑で見たことを記録する</Link>
           </header>
 
-          {data.count === 0 && <EmptyMorning state={emptyState} />}
+          {data.count === 0 && <EmptyMorning state={emptyState} undated={undated} />}
 
           {data.deadlineCount > 0 && <section className="ai-proposal-group" aria-labelledby="morning-deadlines">
             <h2 id="morning-deadlines" className="ai-proposal-group-title">締切 <span>{data.deadlineCount}件</span></h2>
@@ -363,7 +373,8 @@ export default function MorningProposals({ data, guidance, emptyState }: {
             <h2 id="morning-no-checks" className="ai-proposal-group-title">確認事項がない作付け</h2>
             {noConfirmationReasons.map(reason => {
               const crops = data.noConfirmations[reason]
-              return crops?.length ? <details key={reason} className="morning-disclosure">
+              return crops?.length ? <details key={reason} className="morning-disclosure"
+                open={data.count === 0 && emptyState?.farms.length !== 0 && reason === 'no-planting-date' && crops.length > 1}>
                 <summary>{missingLabels[reason]}（{crops.length}件）</summary>
                 <ul className="morning-targets">
                   {crops.map(crop => <li key={crop.cropId}>

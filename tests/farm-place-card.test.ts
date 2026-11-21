@@ -19,7 +19,7 @@ test('保存前の土地カードはログインを確かめ、情報のある�
   await db.user.create({ data: { id: 'test-user', email: 'place-card@example.invalid', password: 'unused' } })
 
   const chiba = { latitude: 34.9966, longitude: 139.8697 }
-  const noWeather = { latitude: 0, longitude: 0 }
+  const noWeather = { latitude: 35.12345, longitude: 139.12345 }
   const missingSoil = async (): Promise<SoilLookupResult> =>
     ({ status: 'data_unavailable', reason: '未配備' })
   const timeouts = new WeakMap<AbortSignal, number>()
@@ -38,7 +38,7 @@ test('保存前の土地カードはログインを確かめ、情報のある�
       return Response.json({ elevation: [10] })
     }
     assert.ok(url.pathname.endsWith('/archive'))
-    if (url.searchParams.get('latitude') === '0.0000') {
+    if (url.searchParams.get('latitude') === noWeather.latitude.toFixed(4)) {
       archiveCallsForRetryPoint++
       assert.equal(timeout, 30_000)
       if (!retryPointAvailable) return new Response(null, { status: 503 })

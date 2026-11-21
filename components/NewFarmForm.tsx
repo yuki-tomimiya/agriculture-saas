@@ -199,7 +199,7 @@ export default function NewFarmForm() {
             aria-controls="farm-map" aria-expanded={mapOpen} disabled={saving}
             onClick={toggleMap}>{mapOpen ? '地図を閉じる' : '地図で選ぶ'}</button>
           <button className="btn btn-outline max-w-full whitespace-normal !px-2" type="button"
-            aria-controls="farm-coordinates" aria-expanded={manualOpen}
+            aria-controls="farm-coordinates" aria-expanded={manualOpen} disabled={saving}
             onClick={() => setManualOpen(!manualOpen)}>緯度・経度を入れる</button>
         </div>
         <div id="farm-map" hidden={!mapOpen}>

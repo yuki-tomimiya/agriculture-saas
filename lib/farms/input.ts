@@ -1,5 +1,6 @@
 import type { Farm } from '@prisma/client'
 import { parseFarmPlace } from '../places/catalog'
+import { isWithinJapanBounds, JAPAN_LOCATION_ERROR } from './coordinates'
 type Data = Pick<Farm, 'name' | 'description' | 'latitude' | 'longitude' | 'prefectureCode' | 'municipalityCode'>
 
 /** PATCHで省略された座標や説明を、空欄と取り違えない。 */
@@ -20,6 +21,10 @@ export function parseFarmInput(body: Record<string, unknown>, existing?: Data): 
     if (!Number.isFinite(number) || Math.abs(number) > (key === 'latitude' ? 90 : 180)) return { error: '緯度・経度が範囲外です' }
     data[key] = number
   }
+  if (!isWithinJapanBounds({
+    latitude: data.latitude === undefined ? existing?.latitude : data.latitude,
+    longitude: data.longitude === undefined ? existing?.longitude : data.longitude,
+  })) return { error: JAPAN_LOCATION_ERROR }
   if (!existing || Object.hasOwn(body, 'prefectureCode') || Object.hasOwn(body, 'municipalityCode')) {
     const place = parseFarmPlace({ prefectureCode: existing?.prefectureCode, municipalityCode: existing?.municipalityCode, ...body })
     if ('error' in place) return place

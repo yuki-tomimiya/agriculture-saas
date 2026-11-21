@@ -44,8 +44,19 @@ test('今日の提案のページは本人の農場と栽培中の作付けだ�
   assert.match(await render(), /育てているものを登録すると、ここに毎朝の確認が出ます/)
   await db.crop.update({ where: { id: crop.id }, data: { status: 'growing' } })
   const undated = await render()
-  assert.match(undated, /今表示する締切・確認事項はありません。/)
+  assert.match(undated, /植えた日を入れると、ここに毎朝の確認が出ます/)
+  assert.doesNotMatch(undated, /今表示する締切・確認事項はありません。/)
   assert.match(undated, /植えた日が未入力（1件）/)
   assert.ok(undated.includes(`href="/crops/${crop.id}/edit"`))
   assert.doesNotMatch(undated, /育てているものを登録すると|位置が未登録/)
+  assert.doesNotMatch(undated, /<details[^>]*open=[^>]*><summary>植えた日が未入力/)
+
+  const second = await db.crop.create({ data: {
+    farmId: 'own-farm', name: '植えた日が空のナス', cropKind: 'eggplant', status: 'growing',
+  } })
+  const twoUndated = await render()
+  assert.match(twoUndated, /植えた日を入れると、ここに毎朝の確認が出ます/)
+  assert.match(twoUndated, /<details[^>]*open=""[^>]*><summary>植えた日が未入力（2件）/)
+  assert.ok(twoUndated.includes(`href="/crops/${second.id}/edit"`))
+  assert.doesNotMatch(twoUndated, /今表示する締切・確認事項はありません。/)
 })

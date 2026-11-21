@@ -792,8 +792,10 @@ export async function scoreCrops(
       })
     }
 
-    if (!hasHarvest && crop.workRecords.length <= 2 && days >= 90) {
-      const severe = days >= 140
+    // 台帳 I4。途中の作付けを登録した日からも数え、登録直後を記録の停滞にしない。
+    const neglectedDays = Math.min(days, daysSince(crop.createdAt, today) ?? 0)
+    if (!hasHarvest && crop.workRecords.length <= 2 && neglectedDays >= 90) {
+      const severe = neglectedDays >= 140
       hits.push({
         trigger: 'neglected-crop',
         signal: { stage: 'organize' },
@@ -1004,8 +1006,8 @@ export async function scoreCrops(
             ? `収穫予定日 ${new Date(crop.harvestDate).toLocaleDateString('ja-JP')} を過ぎています。`
             : ''
       const personalText =
-        hit.trigger === 'sale-missing'
-          ? personal
+        hit.trigger === 'sale-missing' || hit.trigger === 'neglected-crop'
+          ? (hit.trigger === 'neglected-crop' ? personal || measuredLine : personal)
           : hit.trigger === 'season-finish'
             ? `${personal ? `${personal} ` : ''}${measuredLine}${finishReason ? ` ${finishReason}` : ''}`
             : personal

@@ -101,7 +101,7 @@ test('固定した日付・天気・記録から出る今日の提案', async t 
         assert.equal(selected.proposal.layers.personal, null)
         assert.ok(answer.confirmationGroups[0][0].others.some(card => card.trigger === 'milestone:test-dig'))
         assert.ok(legacy.some(card => card.trigger === 'frost-season' && /3,407℃日/.test(card.title)))
-        assert.deepEqual(legacy.map(card => card.trigger), ['result-missing', 'milestone:test-dig', 'frost-season', 'neglected-crop'])
+        assert.deepEqual(legacy.map(card => card.trigger), ['result-missing', 'milestone:test-dig', 'frost-season'])
         const observed = await loadTodayConfirmations(user.id, { now, weather: {
           ...weather,
           async frost(point, date) {
