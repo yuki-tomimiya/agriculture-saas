@@ -306,7 +306,7 @@ export function toSpringDateBrief(origin: SpringFrostOrigin | null): SpringDateB
   }
 }
 
-export function springFrostSentence(origin: SpringFrostOrigin): string {
+export function springFrostSentence(origin: SpringFrostOrigin, { withStationDistance = false } = {}): string {
   if (origin.source === 'none') {
     const period = origin.usableYears === FROST_ARCHIVE_YEARS
       ? 'この地点では、過去10年の観測で'
@@ -317,7 +317,9 @@ export function springFrostSentence(origin: SpringFrostOrigin): string {
   const latest = formatMonthDay(origin.summary.latest)
   const where =
     origin.stationName != null
-      ? `（${origin.stationName}観測所・農場から${formatKm(origin.distanceKm ?? 0)}km）`
+      ? withStationDistance
+        ? `（${origin.stationName}観測所・農場から${formatKm(origin.distanceKm ?? 0)}km）`
+        : `（${origin.stationName}観測所）`
       : ''
   if (origin.source === 'estimate') {
     const body =
@@ -334,6 +336,7 @@ export function springFrostSentence(origin: SpringFrostOrigin): string {
       ? `${period}、${origin.usableYears}年中${origin.summary.years}年で春に最低気温が4℃以下になり、最後の日の平均は${mean}、いちばん遅い年は${latest}です${where}`
       : `${period}、春に最低気温が最後に4℃以下になったのは平均${mean}、いちばん遅い年は${latest}です${where}`
   if (origin.near) return body
+  if (!withStationDistance) return `${body}。観測所が農場から離れているため、目安です`
   const elev = origin.elevationDiffM == null ? '' : `（標高差${origin.elevationDiffM}m）`
   return `${body}。観測所は農場から${formatKm(origin.distanceKm ?? 0)}km${elev}離れているので、目安です`
 }
@@ -348,7 +351,8 @@ export function autumnFirstFrostSentence(origin: FrostOrigin): string {
         ? '（推計）'
         : ''
   const usableYears = origin.source === 'station' ? origin.usableYears : FROST_ARCHIVE_YEARS
-  const period = usableYears < FROST_ARCHIVE_YEARS ? `この観測所の記録のそろった${usableYears}年では、` : ''
+  const period = origin.source !== 'station' ? '' : usableYears < FROST_ARCHIVE_YEARS
+    ? `この観測所の記録のそろった${usableYears}年では、` : '過去10年の観測では、'
   const years = origin.summary.years < usableYears ? `${usableYears}年中${origin.summary.years}年で、` : ''
   return `${period}秋に最低気温が初めて4℃以下になったのは、${years}平均${mean}、最も早い年は${early}です${where}`
 }

@@ -28,6 +28,9 @@ export type CropConfirmation = {
 }
 
 export function organizeConfirmations(proposals: Proposal[], crops: ConfirmationCrop[], pestQuestions: PestQuestion[]) {
+  // 植える前は、地域の時期・前年の病害虫の履歴があっても確認にしない。
+  const later = new Set(crops.filter(crop => crop.reason === 'planting-later').map(crop => crop.cropId))
+  const currentPestQuestions = pestQuestions.filter(question => !later.has(question.cropId))
   const byCrop = new Map<string, Confirmation[]>()
   function add(cropId: string, item: Confirmation) {
     const list = byCrop.get(cropId) ?? []
@@ -60,7 +63,7 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
     }
   }
 
-  for (const question of pestQuestions) {
+  for (const question of currentPestQuestions) {
     add(question.cropId, {
       kind: 'pest', stage: 'window', trigger: pestTrigger(question.pest.key), question,
       reason: question.timing ?? 'この品目の見回りの時期です。',
@@ -105,7 +108,7 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
     .map(group => group.filter(proposal =>
       proposal.relatedCropId && selectedTriggers.get(proposal.relatedCropId) !== proposal.trigger))
     .filter(group => group.length > 0)
-  const remainingPestGroups = groupPestQuestions(pestQuestions.filter(question =>
+  const remainingPestGroups = groupPestQuestions(currentPestQuestions.filter(question =>
     selectedTriggers.get(question.cropId) !== pestTrigger(question.pest.key)))
   const taskGroups = [...tasks.values()]
   const deadlineCount = taskGroups.length + deadlineGroups.length

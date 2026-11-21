@@ -94,7 +94,7 @@ test('0件なら農場と栽培中の作付けに合わせた登録の入口を�
   const oneFarm = render([{ id: 'farm-A' }])
   assert.match(oneFarm, /href="\/crops\/new\?farmId=farm-A"/)
   assert.match(oneFarm, /href="\/farms\/farm-A"/)
-  assert.match(oneFarm, /この土地のカード（霜・地域区分・土）は農場の詳細で見られます/)
+  assert.match(oneFarm, /霜・地域区分・土は、農場の詳細で見られます/)
   const twoFarms = render([{ id: 'farm-A' }, { id: 'farm-B' }])
   assert.match(twoFarms, /href="\/crops\/new"/)
   assert.match(twoFarms, /href="\/farms"/)

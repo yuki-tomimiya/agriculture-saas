@@ -55,8 +55,8 @@ export type ProposalUrgency = 'today' | 'thisWeek' | 'watch'
 export type ProposalMilestoneContext = { key: string; observedAt?: Date; afterHarvest?: boolean }
 
 export type ConfirmationStage = 'deadline' | 'season' | 'reached' | 'window'
-export type NoConfirmationReason = 'no-location' | 'no-weather' | 'record-only' | 'no-planting-date' | 'no-question'
-export type ConfirmationCrop = { cropId: string; cropName: string; farmName?: string; reason: NoConfirmationReason }
+export type NoConfirmationReason = 'no-location' | 'no-weather' | 'record-only' | 'no-planting-date' | 'planting-later' | 'no-question'
+export type ConfirmationCrop = { cropId: string; cropName: string; farmName?: string; reason: NoConfirmationReason; plantingDate?: string }
 export type ProposalSignal = {
   stage: ConfirmationStage | 'organize'
   reason?: string
@@ -596,9 +596,14 @@ export async function scoreCrops(
       let reason: NoConfirmationReason = 'no-question'
       if (advice.recordOnly) reason = 'record-only'
       else if (!crop.plantingDate) reason = 'no-planting-date'
+      else if (days === null) reason = 'planting-later'
       else if (!hasWeatherCoordinates(crop.farm)) reason = 'no-location'
       else if (days != null && (!climate?.forecast.length || (basis.view.status === 'active' && currentGDD == null))) reason = 'no-weather'
-      confirmationCrops.push({ cropId: crop.id, cropName: crop.name, farmName: crop.farm?.name, reason })
+      confirmationCrops.push({ cropId: crop.id, cropName: crop.name, farmName: crop.farm?.name, reason,
+        ...(reason === 'planting-later' && crop.plantingDate ? {
+          plantingDate: formatMonthDay({ month: crop.plantingDate.getMonth() + 1, day: crop.plantingDate.getDate() }),
+        } : {}),
+      })
     }
     if (days === null) continue
     const windowResult = basis.view.status === 'active' && !basis.view.startDate && climate?.archive && currentGDD != null && targetGDD > 0
@@ -1215,8 +1220,9 @@ export async function scoreCrops(
       outcome: { select: { id: true } },
     },
   })
-  const missingCount = missingConditions.filter((crop) =>
-    conditionsMissing(crop, (crop.farm?._count.fields ?? 0) > 0)).length
+  const incomplete = missingConditions.filter((crop) =>
+    conditionsMissing(crop, (crop.farm?._count.fields ?? 0) > 0))
+  const missingCount = incomplete.length
   const missingResults = missingConditions.filter((crop) => outcomeMissing(crop)).length
   if (missingResults > 0 && !isProposalDismissed(dismissed, 'result-missing')) {
     cards.push({
@@ -1241,6 +1247,7 @@ export async function scoreCrops(
       urgency: 'today',
       score: 50,
       trigger: 'conditions-missing',
+      ...(missingCount === 1 ? { cropId: incomplete[0].id } : {}),
       signal: { stage: 'organize' },
       title: `${missingCount}件の作付けで、育て方の型などが未入力です`,
       conclusion: CONDITIONS_PROMPT,

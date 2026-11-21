@@ -6,6 +6,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import { formatHarvestAmount } from '@/lib/crops/harvest'
+import { EmptyMorning } from './ai-proposal/MorningProposals'
 
 function DashboardKpi({
   title,
@@ -173,6 +174,8 @@ export default async function DashboardPage() {
             </Link>
           </div>
         </div>
+
+        {farms === 0 && <EmptyMorning state={{ farms: [], hasGrowingCrops: false }} />}
 
         {/* クイック追加リンク */}
         <div className="farms-filter-bar" style={{ marginBottom: '1.5rem' }}>

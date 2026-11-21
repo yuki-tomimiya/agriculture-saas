@@ -22,6 +22,7 @@ const stageLabel: Record<ConfirmationStage, string> = {
 const missingLabels: Record<NoConfirmationReason, string> = {
   'record-only': '記録だけの品目',
   'no-planting-date': '植えた日が未入力',
+  'planting-later': '植える日がまだ先',
   'no-location': '位置が未登録',
   'no-weather': '必要な天気データがありません',
   'no-question': '今は聞くことがありません',
@@ -54,7 +55,9 @@ function ProposalActions({ proposal }: { proposal: Proposal }) {
   if (trigger === 'season-finish' && relatedCropId) {
     return <ProposalSeasonActions cropId={relatedCropId} farmId={relatedFarmId} trigger={trigger} />
   }
-  const organizationLink = trigger ? organizationLinks[trigger] : undefined
+  const organizationLink = trigger === 'conditions-missing' && relatedCropId
+    ? { href: `/crops/${relatedCropId}/edit`, label: '育て方を入れる' }
+    : trigger ? organizationLinks[trigger] : undefined
   return <div className="ai-proposal-actions">
     {organizationLink && <Link href={organizationLink.href} className="ai-proposal-action">{organizationLink.label}</Link>}
     {(action?.taskType || action?.kind === 'sale' || (relatedCropId && action?.kind === 'work')) && (
@@ -296,7 +299,7 @@ function MilestoneQuestion({ group, guidance }: { group: Proposal[]; guidance: G
 
 type EmptyState = { farms: { id: string }[]; hasGrowingCrops: boolean }
 
-function EmptyMorning({ state, undated }: { state?: EmptyState; undated: { cropId: string }[] }) {
+export function EmptyMorning({ state, undated = [] }: { state?: EmptyState; undated?: { cropId: string }[] }) {
   if (state?.farms.length !== 0 && undated.length > 0) {
     return <div className="morning-empty space-y-3">
       <p>植えた日を入れると、ここに毎朝の確認が出ます</p>
@@ -324,7 +327,7 @@ function EmptyMorning({ state, undated }: { state?: EmptyState; undated: { cropI
       className="ai-proposal-action ai-proposal-action--primary min-h-11 max-w-full whitespace-normal">
       育てているものを登録する
     </Link>
-    <p>この土地のカード（霜・地域区分・土）は農場の詳細で見られます</p>
+    <p>霜・地域区分・土は、農場の詳細で見られます</p>
     <Link href={farm ? `/farms/${encodeURIComponent(farm.id)}` : '/farms'}
       className="ai-proposal-action min-h-11 max-w-full whitespace-normal">
       {farm ? '農場の詳細を見る' : '農場一覧を見る'}
@@ -381,6 +384,7 @@ export default function MorningProposals({ data, guidance, emptyState }: {
                     <Link href={`/crops/${crop.cropId}${reason === 'no-planting-date' ? '/edit' : ''}`}
                       className="ai-proposal-card-link">{crop.cropName}</Link>
                     {crop.farmName && ` · ${crop.farmName}`}
+                    {reason === 'planting-later' && crop.plantingDate && ` · ${crop.plantingDate}から`}
                   </li>)}
                 </ul>
               </details> : null

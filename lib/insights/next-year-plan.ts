@@ -620,7 +620,8 @@ export async function getNextYearPlans(userId: string): Promise<NextYearPlanCard
         windowLate,
         workHints,
         workCount: crop.workRecords.length,
-        springLine: showPlanting && condition?.lateFrostAdvice && springOrigin ? springFrostSentence(springOrigin) : null,
+        springLine: showPlanting && condition?.lateFrostAdvice && springOrigin
+          ? springFrostSentence(springOrigin, { withStationDistance: true }) : null,
         springSource: springOrigin?.source ?? null,
         plantingCondition: condition ? `${condition.text}（${condition.scopeLabel}）` : null,
         springEarlyNote,

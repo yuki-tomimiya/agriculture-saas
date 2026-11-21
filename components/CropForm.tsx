@@ -11,6 +11,7 @@ import {
   plantingDateLabel,
 } from '@/lib/crops/conditions'
 import { CROP_KINDS } from '@/lib/crops/conditions'
+import { cropSaveHref } from '@/lib/crops/navigation'
 
 type FarmWithFields = { id: string; name: string; fields: { id: string; name: string }[] }
 
@@ -73,6 +74,7 @@ export default function CropForm({
   farms,
   autoSelectFarm = true,
   springByFarm = {},
+  returnFarmId,
 }: {
   mode: 'new' | 'edit'
   cropId?: string
@@ -80,6 +82,7 @@ export default function CropForm({
   farms: FarmWithFields[]
   autoSelectFarm?: boolean
   springByFarm?: Record<string, SpringDateBrief>
+  returnFarmId?: string
 }) {
   const router = useRouter()
   const [form, setForm] = useState(() => {
@@ -88,6 +91,7 @@ export default function CropForm({
   })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const backHref = mode === 'edit' ? `/crops/${cropId}` : returnFarmId ? `/farms/${returnFarmId}` : '/crops'
 
   const kind = cropKindByKey(form.cropKind)
   const selectedFarm = form.farmId ? farms.find((farm) => farm.id === form.farmId) : null
@@ -148,13 +152,8 @@ export default function CropForm({
         setLoading(false)
         return
       }
-      if (mode === 'edit' && initial.status === 'growing' && (form.status === 'harvested' || form.status === 'completed')) {
-        router.push(`/crops/${cropId}/retrospective?from=status`)
-      } else if (mode === 'edit') {
-        router.push(`/crops/${cropId}`)
-      } else {
-        router.push('/crops')
-      }
+      router.push(cropSaveHref({ mode, cropId: mode === 'new' ? data.crop.id : cropId!,
+        initialStatus: initial.status, status: form.status }))
       router.refresh()
     } catch {
       setError('エラーが発生しました')
@@ -168,8 +167,8 @@ export default function CropForm({
       <main className="dashboard-main farms-page form-column-page">
         <div className="farms-header">
           <div className="farms-header-text">
-            <Link href={mode === 'edit' ? `/crops/${cropId}` : '/crops'} className="farm-new-back">
-              ← {mode === 'edit' ? '作物詳細' : '作物一覧'}
+            <Link href={backHref} className="farm-new-back">
+              ← {mode === 'edit' ? '作物詳細' : returnFarmId ? '農場の詳細' : '作物一覧'}
             </Link>
             <h1 className="farms-title">{mode === 'edit' ? '作物を編集' : '新規作物を追加'}</h1>
             <p className="farms-subtitle">品目と育て方を選んで登録します。呼び名は空でも、品目の名前が入ります。</p>
@@ -448,7 +447,7 @@ export default function CropForm({
               <button type="submit" disabled={loading} className="btn btn-primary farm-new-submit !min-w-0 max-w-full whitespace-normal">
                 {loading ? '保存中...' : mode === 'edit' ? '更新する' : '登録する'}
               </button>
-              <Link href={mode === 'edit' ? `/crops/${cropId}` : '/crops'} className="btn btn-outline">
+              <Link href={backHref} className="btn btn-outline">
                 キャンセル
               </Link>
             </div>

@@ -14,5 +14,5 @@ export default function CropNewForm({
   initialFarmId?: string
 }) {
   return <CropForm mode="new" initial={{ ...emptyCropForm(), farmId: initialFarmId ?? '' }}
-    autoSelectFarm={initialFarmId === undefined} farms={farms} springByFarm={springByFarm} />
+    autoSelectFarm={initialFarmId === undefined} returnFarmId={initialFarmId || undefined} farms={farms} springByFarm={springByFarm} />
 }

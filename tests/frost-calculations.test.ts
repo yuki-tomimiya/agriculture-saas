@@ -140,7 +140,13 @@ test('霜と夜の冷えを固定した観測・推計データで確かめる',
     await setObservations(springRows(10, 7))
     const tenYears = await readFarmSpringFrost(utsunomiya)
     assert.ok(tenYears)
+    assert.ok(tenYears.source === 'station')
     assert.match(springFrostSentence(tenYears), /^過去10年の観測では、10年中7年で/)
+    assert.doesNotMatch(springFrostSentence(tenYears), /km/)
+    assert.doesNotMatch(springFrostSentence({ ...tenYears, near: false, distanceKm: 40 }), /km/)
+    const distant = { ...tenYears, near: false, distanceKm: 40, elevationDiffM: 200 }
+    assert.match(springFrostSentence(distant, { withStationDistance: true }), /観測所・農場から40km/)
+    assert.match(springFrostSentence(distant, { withStationDistance: true }), /40km（標高差200m）離れているので、目安です/)
 
     await setObservations(springRows(9, 7))
     const nineYears = await readFarmSpringFrost(utsunomiya)
@@ -159,8 +165,10 @@ test('霜と夜の冷えを固定した観測・推計データで確かめる',
     await setObservations([...autumnRows(0), ...ninthYear])
     const autumn = await readFarmFrost(utsunomiya, today)
     assert.ok(autumn)
+    assert.ok(autumn.source === 'station')
     assert.match(autumnFirstFrostSentence(autumn), /9年中8年で/)
     assert.doesNotMatch(autumnFirstFrostSentence(autumn), /10年/)
+    assert.match(autumnFirstFrostSentence({ ...autumn, usableYears: 10 }), /^過去10年の観測では、秋に.*10年中8年で/)
 
     const location = { stationName: null, distanceKm: null, elevationDiffM: null, near: false }
     const day = { month: 4, day: 3 }

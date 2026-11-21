@@ -20,13 +20,14 @@ export default function FarmPlaceCard({
   const { frost, normal, soil, missing } = card
   const observed = frost.autumn?.source === 'station' || frost.spring?.source === 'station'
   const estimated = frost.autumn?.source === 'estimate' || frost.spring?.source === 'estimate'
+  const unavailable = missing.filter(item => item !== 'estimated_frost')
   return (
     <section aria-labelledby="land-card-heading" className="rounded-lg border border-green-200 bg-green-50/40 p-2 sm:p-4">
       <h2 id="land-card-heading" className="text-lg font-semibold">この土地のカード</h2>
-      {missing.length > 0 && (
+      {unavailable.length > 0 && (
         <p className="mt-2 text-sm text-gray-700">
           <strong>この場所でまだ出ないもの</strong>{' '}
-          {missing.map(item => item === 'soil' && soil.status === 'ambiguous'
+          {unavailable.map(item => item === 'soil' && soil.status === 'ambiguous'
             ? '土壌図の区画の境目などのため、土の種類を1つに絞れません。'
             : missingNotes[item]).join('')}
         </p>
@@ -41,6 +42,7 @@ export default function FarmPlaceCard({
           {frost.stationLine && <p className="mt-1 text-sm">{frost.stationLine}</p>}
           {frost.autumn && <p className="mt-1 text-sm">{frost.autumn.text}</p>}
           {frost.spring && <p className="mt-1 text-sm">{frost.spring.text}</p>}
+          {estimated && <p className="mt-1 text-sm">{missingNotes.estimated_frost}</p>}
           {observed && <JmaDataSource />}
           {estimated && <CompactWeatherDataSource />}
           {frost.usesElevation && <WeatherDataSource kind="elevation" />}

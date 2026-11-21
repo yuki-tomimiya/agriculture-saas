@@ -108,6 +108,7 @@ test('農場の指定・任意の条件の保存・後からの案内を一時DB
         renderWithRouter(await FarmDetailPage({ params: Promise.resolve({ id }) })))
       assert.ok(farm.includes(`href="/crops/new?farmId=${id}"`))
       const html = await page(id)
+      assert.equal(html.split(`href="/farms/${id}"`).length - 1, 2, '戻るとキャンセルは来た農場へ')
       const select = html.match(/<select[^>]*id="crop-farm"[\s\S]*?<\/select>/)?.[0] ?? ''
       assert.ok(select.includes(`<option value="${id}" selected="">`))
       assert.equal(html.includes('東京の圃場'), id === 'tokyo')
@@ -117,6 +118,7 @@ test('農場の指定・任意の条件の保存・後からの案内を一時DB
       const select = html.match(/<select[^>]*id="crop-farm"[\s\S]*?<\/select>/)?.[0] ?? ''
       assert.match(select, /<option value="" selected="">/)
       assert.doesNotMatch(html, /他の人の農場|他の人の圃場/)
+      assert.ok(html.includes('href="/crops"'))
     }
     const singleFarm = await page('tateyama', 'other')
     assert.match(singleFarm.match(/<select[^>]*id="crop-farm"[\s\S]*?<\/select>/)?.[0] ?? '',

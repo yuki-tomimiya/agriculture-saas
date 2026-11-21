@@ -190,6 +190,7 @@ export default function NewFarmForm() {
   const point = 'point' in place ? place.point : null
   return (
     <div className="min-w-0 space-y-5 [overflow-wrap:anywhere]">
+      <p className="text-sm text-gray-700">場所を選ぶと、保存の前にこの土地の霜・気温・土が見られます。名前はあとで入れます。</p>
       <section aria-labelledby="farm-location-heading">
         <h2 id="farm-location-heading" className="text-lg font-semibold">場所を選ぶ</h2>
         <div className="mt-3 flex flex-wrap gap-2">

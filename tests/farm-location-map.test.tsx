@@ -13,6 +13,7 @@ test('農場の新規フォームはサーバーでLeafletを読み込まず描�
   const html = renderWithRouter(<NewFarmForm />)
   assert.match(html, /地図で選ぶ/)
   assert.match(html, /現在地を使う/)
+  assert.match(html, /場所を選ぶと、保存の前にこの土地の霜・気温・土が見られます。名前はあとで入れます。/)
   assert.doesNotMatch(html, /農場の場所を選ぶ地図|leaflet-container/)
 })
 

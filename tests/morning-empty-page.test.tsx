@@ -30,7 +30,7 @@ test('今日の提案のページは本人の農場と栽培中の作付けだ�
   const oneFarm = await render()
   assert.match(oneFarm, /href="\/crops\/new\?farmId=own-farm"/)
   assert.match(oneFarm, /href="\/farms\/own-farm"/)
-  assert.match(oneFarm, /この土地のカード（霜・地域区分・土）は農場の詳細で見られます/)
+  assert.match(oneFarm, /霜・地域区分・土は、農場の詳細で見られます/)
 
   await db.farm.create({ data: { id: 'own-farm-2', userId: 'owner', name: '本人の別の農場' } })
   const twoFarms = await render()
