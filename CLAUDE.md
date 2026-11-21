@@ -112,3 +112,4 @@
 - 未ログイン: `getCurrentUser()` → `redirect('/auth/signin')`
 - `.env` / `node_modules` はコミットしない
 - テストユーザー: yuki.tomimiya@icloud.com
+- 確認用アカウント（開発用のデータベースだけ）：メールとパスワードは `.env.test.local`（git に入れない）。メインが画面の確かめでログインに使ってよい。値はチャットや文書に書かない。確かめに入れた農場・作付けは終わったら消す（2026-11-21 ユーザー）
