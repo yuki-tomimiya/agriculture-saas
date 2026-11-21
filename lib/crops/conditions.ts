@@ -16,6 +16,8 @@ export const CROP_KINDS: CropKindDef[] = [
   { key: 'sweet-potato', label: 'さつまいも', recordOnly: false, benchmarkName: 'さつまいも' },
   { key: 'sweet-corn', label: 'スイートコーン', recordOnly: false, benchmarkName: 'スイートコーン' },
   { key: 'cabbage', label: 'キャベツ', recordOnly: false, benchmarkName: 'キャベツ' },
+  { key: 'chinese-cabbage', label: 'はくさい', recordOnly: false, benchmarkName: 'はくさい' },
+  { key: 'carrot', label: 'にんじん', recordOnly: false, benchmarkName: 'にんじん' },
   { key: 'daikon', label: 'ダイコン', recordOnly: false, benchmarkName: 'ダイコン' },
   { key: 'onion', label: '玉ねぎ', recordOnly: false, benchmarkName: '玉ねぎ' },
   { key: 'potato', label: 'ジャガイモ', recordOnly: false, benchmarkName: 'ジャガイモ' },

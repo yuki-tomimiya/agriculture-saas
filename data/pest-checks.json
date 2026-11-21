@@ -1173,5 +1173,127 @@
       }
     ],
     "seasons": []
+  },
+  {
+    "key": "chinese-cabbage:cabbageworm",
+    "cropKind": "chinese-cabbage",
+    "name": "アオムシ",
+    "question": "はくさいにアオムシは出ていませんか？",
+    "marker": "葉脈が残るように葉が大きく食べられ、ふんがたまる",
+    "appearance": null,
+    "searchCrop": "はくさい",
+    "searchPest": "アオムシ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "26",
+        "text": "数が少なければ幼虫を手で取る",
+        "sources": [
+          {
+            "publisher": "京都府農林センター",
+            "title": "野菜の病害虫 モンシロチョウ",
+            "year": "表示なし",
+            "page": "PDF 1枚目",
+            "url": "https://www.pref.kyoto.jp/nougijyutsu/documents/1355376223675_1.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "chinese-cabbage:diamondback",
+    "cropKind": "chinese-cabbage",
+    "name": "コナガ",
+    "question": "はくさいにコナガは出ていませんか？",
+    "marker": "葉の表皮を残したかすり状の食べあとから、網目のような穴が広がる",
+    "appearance": null,
+    "searchCrop": "はくさい",
+    "searchPest": "コナガ",
+    "measures": [],
+    "seasons": [
+      {
+        "code": "08",
+        "months": [
+          5,
+          6,
+          9
+        ],
+        "label": "コナガは5〜6月に最も多く、9月ごろから再び増えます",
+        "source": {
+          "publisher": "茨城県病害虫防除所",
+          "title": "アブラナ科野菜－コナガ",
+          "year": "2023-05-19更新",
+          "page": "HTML・発生及び被害の状況と発生条件",
+          "url": "https://www.pref.ibaraki.jp/nourinsuisan/nosose/byobo/boujosidou/shiryoshitsu/shiryo-konaga.html"
+        }
+      }
+    ]
+  },
+  {
+    "key": "chinese-cabbage:soft-rot",
+    "cropKind": "chinese-cabbage",
+    "name": "軟腐病",
+    "question": "はくさいに軟腐病は出ていませんか？",
+    "marker": "葉や葉柄が水にぬれたようになり、柔らかく腐って灰褐色になり、臭いがする",
+    "appearance": null,
+    "searchCrop": "はくさい",
+    "searchPest": "軟腐病",
+    "measures": [
+      {
+        "scope": "general",
+        "text": "畑の水はけをよくし、水がたまる畑では畝を高くします。",
+        "sources": [
+          {
+            "publisher": "秋田県",
+            "title": "野菜栽培技術指針 はくさい",
+            "year": "2007",
+            "page": "p.183（PDF12枚目）",
+            "url": "https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-12.pdf"
+          },
+          {
+            "publisher": "鹿児島県",
+            "title": "有機百培 はくさい",
+            "year": "2019",
+            "page": "p.94（PDF4枚目）",
+            "url": "https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143851-1.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "carrot:black-leaf-blight",
+    "cropKind": "carrot",
+    "name": "黒葉枯病",
+    "question": "にんじんに黒葉枯病は出ていませんか？",
+    "marker": "葉や葉柄に黒褐色の小さな楕円の斑点ができ、黒いかびがつき、葉の縁が巻いて枯れる",
+    "appearance": null,
+    "searchCrop": "にんじん",
+    "searchPest": "黒葉枯病",
+    "measures": [
+      {
+        "scope": "general",
+        "text": "乾燥を防ぎ、肥料切れさせないようにします。",
+        "sources": [
+          {
+            "publisher": "秋田県",
+            "title": "野菜栽培技術指針 にんじん",
+            "year": "2007",
+            "page": "p.287（PDF10枚目）",
+            "url": "https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-7.pdf"
+          },
+          {
+            "publisher": "鹿児島県",
+            "title": "有機百培 にんじん",
+            "year": "2019",
+            "page": "p.64（PDF14枚目）",
+            "url": "https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143757-1.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
   }
 ]

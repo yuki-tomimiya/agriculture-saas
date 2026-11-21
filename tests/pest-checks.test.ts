@@ -99,9 +99,9 @@ test('畑で見た日をさかのぼって記録しても、再質問の間隔�
   assert.ok(on('2026-12-08', { ...check, present: false }))
 })
 
-test('24組に選択名・目印があり、採用した出典にURLがある', () => {
-  assert.equal(pests.length, 24)
-  assert.equal(new Set(pests.map(pest => pest.cropKind)).size, 17)
+test('28組に選択名・目印があり、採用した出典にURLがある', () => {
+  assert.equal(pests.length, 28)
+  assert.equal(new Set(pests.map(pest => pest.cropKind)).size, 19)
   for (const pest of pests) {
     assert.ok(pest.searchCrop && pest.searchPest && pest.marker)
     assert.doesNotMatch([pest.marker, pest.question, ...pest.measures.map(m => m.text)].join(' '), /無農薬/)

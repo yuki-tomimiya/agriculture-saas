@@ -18,6 +18,21 @@ export type PlantingCondition = {
 
 const CONDITIONS: PlantingCondition[] = [
   {
+    kindKey: 'chinese-cabbage', plantingMethod: 'transplant',
+    text: '鹿児島県の資料では、セルトレイの苗は本葉3〜4枚（育てて20〜25日）で植えます。まくのが遅れると葉の数が足りず、球が充実しない・結球しないことがあります。',
+    scopeLabel: '鹿児島県',
+  },
+  {
+    kindKey: 'chinese-cabbage', plantingMethod: 'direct',
+    text: '鹿児島県の資料では、まくのが遅れると葉の数が足りず、球が充実しない・結球しないことがあります。',
+    scopeLabel: '鹿児島県',
+  },
+  {
+    kindKey: 'carrot', plantingMethod: 'direct',
+    text: '土に水分のあるときにまきます。乾いていれば水をやってからまくと、発芽がそろいます。',
+    scopeLabel: '一般',
+  },
+  {
     kindKey: 'onion', plantingMethod: 'transplant',
     text: '大きすぎる苗や早すぎる植え付けは、とう立ちしやすくなります。宮城県の資料では、草丈25〜30cmの苗が目安です。', scopeLabel: '一般',
   },
@@ -121,7 +136,8 @@ export function plantingConditionForKind(
   growingSite?: string | null
 ): PlantingCondition | null {
   if (!kindKey) return null
-  const condition = CONDITIONS.find((row) => row.kindKey === kindKey)
+  const condition = CONDITIONS.find((row) => row.kindKey === kindKey &&
+    (!plantingMethod || !row.plantingMethod || row.plantingMethod === plantingMethod))
   if (!condition) return null
   if (growingSite === 'house' && !condition.showInHouse) return null
   if (plantingMethod && condition.plantingMethod && plantingMethod !== condition.plantingMethod) return null

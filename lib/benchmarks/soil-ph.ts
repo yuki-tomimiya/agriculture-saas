@@ -29,6 +29,8 @@ export type SoilPhRange = {
 }
 
 export const SOIL_PH_RANGES: readonly SoilPhRange[] = [
+  { name: 'はくさい', keywords: ['はくさい', 'ハクサイ', '白菜'], min: 6.0, max: 6.5, adviseLow: true, source: 'maff' },
+  { name: 'にんじん', keywords: ['にんじん', 'ニンジン', '人参'], min: 5.5, max: 6.5, adviseLow: true, source: 'maff' },
   { name: 'ホウレンソウ', keywords: ['ホウレンソウ', 'ほうれん草', 'ほうれんそう'], min: 6.5, max: 7.0, adviseLow: true, source: 'maff' },
   { name: 'トマト', keywords: ['トマト', 'とまと', 'tomato'], min: 6.0, max: 6.5, adviseLow: true, source: 'maff' },
   { name: 'ナス', keywords: ['ナス', 'なす', '茄子'], min: 6.0, max: 6.5, adviseLow: true, source: 'maff' },

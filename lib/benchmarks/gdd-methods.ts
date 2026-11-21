@@ -181,6 +181,8 @@ export const GDD_FAQ_ROWS: {
 ]
 
 export const GDD_NONE_CROPS = [
+  'はくさい',
+  'にんじん',
   'ナス',
   'ピーマン',
   'キュウリ',
@@ -195,6 +197,8 @@ export const GDD_NONE_CROPS = [
 ] as const
 
 const JUDGMENTS: { keys: string[]; words: string[]; cue: string }[] = [
+  { keys: ['chinese-cabbage'], words: ['はくさい', 'ハクサイ', '白菜'], cue: '球の固さ' },
+  { keys: ['carrot'], words: ['にんじん', 'ニンジン', '人参'], cue: '根の太り' },
   { keys: ['eggplant'], words: ['ナス', 'なす'], cue: '実の大きさ' },
   { keys: ['pepper'], words: ['ピーマン'], cue: '実の大きさ' },
   { keys: ['cucumber'], words: ['キュウリ', 'きゅうり'], cue: '実の長さ' },

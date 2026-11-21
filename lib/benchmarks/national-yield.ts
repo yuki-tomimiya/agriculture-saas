@@ -25,6 +25,9 @@ type YieldRow = {
 }
 
 const ROWS: readonly YieldRow[] = [
+  // 令和6年産・表1 Sheet１のR列（10a当たり収量「６」）。はくさい47行・にんじん25行。
+  { keywords: ['はくさい', 'ハクサイ', '白菜'], label: 'はくさい', single: 5410 },
+  { keywords: ['にんじん', 'ニンジン', '人参'], label: 'にんじん', single: 3320 },
   { keywords: ['トマト', 'とまと'], label: 'トマト', seasons: [{ label: '冬春', kgPer10a: 10200 }, { label: '夏秋', kgPer10a: 4230 }], fruitNote: true },
   { keywords: ['キュウリ', 'きゅうり'], label: 'キュウリ', seasons: [{ label: '冬春', kgPer10a: 10700 }, { label: '夏秋', kgPer10a: 3600 }], fruitNote: true },
   { keywords: ['ナス', 'なす'], label: 'ナス', seasons: [{ label: '冬春', kgPer10a: 10700 }, { label: '夏秋', kgPer10a: 2640 }], fruitNote: true },

@@ -19,6 +19,14 @@ export type CropBenchmark = {
 
 export const CROP_BENCHMARKS: CropBenchmark[] = [
   {
+    keywords: ['はくさい', 'ハクサイ', '白菜'], displayName: 'はくさい',
+    yieldHint: '', monthlyWorkHints: {}, generalTips: [],
+  },
+  {
+    keywords: ['にんじん', 'ニンジン', '人参'], displayName: 'にんじん',
+    yieldHint: '', monthlyWorkHints: {}, generalTips: [],
+  },
+  {
     keywords: ['トマト', 'とまと', 'tomato'],
     displayName: 'トマト',
     yieldHint: '中小規模の目安：1作付けあたりおおよそ 80〜200kg（規模・品種で大きく変動）',

@@ -20,6 +20,7 @@ export const MILESTONE_SOURCE_CHIBA = {
 }
 
 export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
+  { label: '鹿児島県「有機百培」はくさい p.93〜94', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143851-1.pdf' },
   { label: '宮城県「みやぎの野菜指導指針」たまねぎ（平成18年3月）p.271', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_19.pdf' },
   { label: '農研機構「タマネギ栽培マニュアル」p.4', url: 'https://www.naro.go.jp/publicity_report/publication/files/Onion_Manual.pdf' },
   { label: '鹿児島県「有機百培」葉茎菜類 p.104', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143851-1.pdf' },
@@ -195,6 +196,7 @@ const LETTUCE_HARVEST = '外葉が外へ開き、球の重さが400〜500g前後
 const NEGI_DIG = '暖かい時期は20〜30日、寒い時期は30〜40日を目安に試し掘りし、白い部分が25〜30cm以上になったか確かめてから収穫します。'
 /** 葉菜の窓と出典の区分は台帳C6（葉菜5品目の行）。表示文は他品目と同じ形。 */
 const LEAF_WINDOW = `作型・季節によって日数が異なる。${WINDOW_USE}`
+const CARROT_HARVEST = '太ったものから収穫します。収穫が遅れると裂根しやすくなります。秋田県の資料では、立っていた葉が半分以上開き、下の葉が地面をはうころです。鹿児島県の資料では、1本の平均の重さ150〜200gが目安です。'
 
 /**
  * 窓の出典は台帳 C6。さつまいも活着・キュウリ摘心は出典なしの暫定。
@@ -202,6 +204,30 @@ const LEAF_WINDOW = `作型・季節によって日数が異なる。${WINDOW_US
  * 試し掘りは資料の収穫目安の下限（さつまいもは2,400℃日）の85%以上。
  */
 const MILESTONES: MilestoneDef[] = [
+  {
+    key: 'chinese-cabbage-firm', cropLabel: 'はくさい',
+    match: (name, variety) => nameIncludes(name, variety, ['はくさい', 'ハクサイ', '白菜']),
+    question: '球の上を押すと、固くしまってきましたか？', term: '球のしまり', yesLabel: 'しまってきた',
+    ifYes: '球がしまったものから収穫します。',
+    conditional: '球の上を押して固くしまっていれば、しまったものから収穫します。',
+    recordedLine: (days) => `球のしまりを確かめてから${Math.max(0, days)}日です。しまったものから収穫します。`,
+    sourceLabel: '秋田県「野菜栽培技術指針」はくさい p.183／鹿児島県「有機百培」はくさい p.94',
+    howTo: ['球の上を押して、固くしまってきたかを確かめます。'],
+    window: { kind: 'days', from: 40, to: 150 },
+    windowNote: `植えた日から40〜150日（秋田・鹿児島の栽培暦と品種の日数から設定。苗は育苗の日数を引いた。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
+  {
+    key: 'carrot-root', cropLabel: 'にんじん',
+    match: (name, variety) => nameIncludes(name, variety, ['にんじん', 'ニンジン', '人参']),
+    question: '1〜2本抜いてみて、根が太ってきましたか？', term: '根の太り', yesLabel: '太ってきた',
+    ifYes: CARROT_HARVEST,
+    conditional: `根が太っていれば、${CARROT_HARVEST}`,
+    recordedLine: (days) => `根の太りを確かめてから${Math.max(0, days)}日です。${CARROT_HARVEST}`,
+    sourceLabel: '秋田県「野菜栽培技術指針」にんじん p.286〜287／鹿児島県「有機百培」にんじん p.64',
+    howTo: ['1〜2本抜いて、根の太りを確かめます。'],
+    window: { kind: 'days', from: 90, to: 190 },
+    windowNote: `まいた日から90〜190日（秋田の90〜130日・鹿児島の秋まき180日前後から設定。${LEAF_WINDOW}）`, skipWhenHarvest: true,
+  },
   {
     key: 'onion-lodging', cropLabel: '玉ねぎ', match: isOnion,
     question: '葉が倒れてきましたか？', term: '葉の倒伏', yesLabel: '倒れてきた',
