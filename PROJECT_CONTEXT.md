@@ -20,7 +20,7 @@
 
 ## 技術スタック
 
-Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css` / Leaflet / Prisma / 自前認証（`lib/auth.ts`） / 気象 Open-Meteo（`lib/weather-forecast.ts`）
+Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css` / Leaflet / Prisma / 自前認証（`lib/auth.ts`・`lib/auth-session.ts`） / 気象 Open-Meteo（`lib/weather-forecast.ts`）
 
 内部名: `package.json` の `agriculture-saas`（ユーザー向け表示には使わない）
 
@@ -61,6 +61,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 
 | 領域 | パス |
 |------|------|
+| ログインと送信元の確認 | `Session`（`prisma/schema.prisma`）、発行・失効は `lib/auth-session.ts`。画面の入口は `lib/auth.ts` の `getCurrentUser`、APIの入口は `lib/user-id-cookie.ts` の `readUserIdCookie`。ログアウトは `app/api/auth/logout/route.ts` と `components/Navbar.tsx`。送信元は `proxy.ts` → `lib/request-origin.ts`（設定名 `TILLTOL_ORIGIN`）、新規登録の検証は `lib/auth-validation.ts`（台帳 I25・I26）。確認は `tests/auth-session.test.tsx`・`tests/request-origin.test.ts`・`tests/auth-migration.test.ts` |
 | 今日の提案 | `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。台帳 I2・I17）、`app/dashboard/ai-proposal/page.tsx`（取得）、同じフォルダの `MorningProposals.tsx`（画面と回答の配置）、`app/dashboard/page.tsx`（件数）、`app/api/proposals/dismiss/` |
 | 提案の組み立て | `lib/proposals/scoring.ts`（候補）、`lib/proposals/presentation.ts` の `loadTodayConfirmations(userId, { now, weather })`（選択とグループ化）。気象の取得口は `lib/proposals/weather.ts`。カレンダーは `lib/ai-proposal.ts` の `getTodayProposals` |
 | 提案の答え合わせ | `tests/today-proposals.test.ts` と `tests/fixtures/today-proposals/`。3つの形は `scripts/proposal-check-scenarios.ts` |
@@ -130,7 +131,7 @@ lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth
 ## 開発時の注意
 
 - 未ログイン: `getCurrentUser()` → `redirect('/auth/signin')`
-- 利用者IDのCookieの読み取り: `lib/user-id-cookie.ts` の `readUserIdCookie()`
+- APIのセッションからの本人確認: `lib/user-id-cookie.ts` の `readUserIdCookie()`（`lib/auth-session.ts`で検証）
 - 起動: `npm run dev` または `アプリを起動.bat`（`http://127.0.0.1:3000`）。LANから確認するときは `npm run dev:lan`
 - テスト: `npm test`（`tests/` 内の `.test.ts`・`.test.tsx`）。コードの確認: `npm run lint`（`eslint.config.mjs`）
 - 型・lint・テストを順に確認: `npm run check`
