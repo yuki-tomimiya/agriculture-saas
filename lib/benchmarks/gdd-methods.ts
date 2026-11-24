@@ -214,6 +214,13 @@ const JUDGMENTS: { keys: string[]; words: string[]; cue: string }[] = [
   { keys: ['potato'], words: ['ジャガイモ', 'じゃがいも', 'ばれいしょ'], cue: '茎葉の色' },
 ]
 
+export function harvestJudgment(args: { name: string; variety?: string | null; cropKind?: string | null }): string | null {
+  const row = JUDGMENTS.find(row => args.cropKind
+    ? row.keys.includes(args.cropKind)
+    : matchesWords(args.name, args.variety, row.words))
+  return row?.cue ?? null
+}
+
 function haystack(name: string, variety?: string | null): string {
   return normalizeCropNameForMatch(`${name}${variety ?? ''}`)
 }

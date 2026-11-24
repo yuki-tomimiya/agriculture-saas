@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import WeatherDataSource from '@/components/WeatherDataSource'
 import { formatDegreeDays, formatHarvestGddTarget, type HarvestGddReference } from '@/lib/gdd'
+import { harvestJudgment } from '@/lib/benchmarks/gdd-methods'
 
 type CropForGDD = {
   id: string
@@ -8,6 +9,7 @@ type CropForGDD = {
   variety: string | null
   plantingDate: Date | null
   baseTemperature: number | null
+  cropKind?: string | null
 } | null
 
 type ProjectionPoint = { date: Date; cumulativeGDD: number }
@@ -217,6 +219,8 @@ export default function GDDChart({
     projectedProgressPct != null ? Math.min(100, projectedProgressPct) : null
 
   const basisLabel = formatDegreeDays(formatHarvestGddTarget(targetGDD, harvestReference))
+  const comparisonLabel = basisLabel.replace(/（[^）]*）$/, '')
+  const judgment = crop ? harvestJudgment(crop) : null
   const actualLabel = viewingPastCrop ? '終了時点' : '現在'
 
   return (
@@ -229,7 +233,7 @@ export default function GDDChart({
       <p className="dashboard-section-sub">
         上段は実績（緑）{hasProjection && 'と数値予報モデルの計算（青破線）'}
         {hasLastYear ? '、前回作付け（灰）' : ''}
-        の累積推移{showHarvestTarget ? '、下段はこの基準までの進捗を表示します。' : 'を表示します。'}
+        の累積推移{showHarvestTarget ? `、下段は${comparisonLabel}に対する積算温度の割合を表示します。` : 'を表示します。'}
         {!crop && ' 作物一覧で植え付け日を登録した作物がここに表示されます。'}
         {crop && !hasHistory && ' この作物の農場に緯度・経度を登録すると、実データに基づく推移が表示されます。'}
       </p>
@@ -419,12 +423,12 @@ export default function GDDChart({
 
       {showHarvestTarget && (
       <div className="dashboard-gdd-summary">
-        <p className="dashboard-gdd-summary-title">基準までの進捗</p>
+        <p className="dashboard-gdd-summary-title">収穫の目安に対する積算温度の割合</p>
         <p className="dashboard-gdd-summary-text">
-          進捗（現在）：<span className="font-semibold">{currentProgressPct.toFixed(1)}%</span>
+          {actualLabel}の積算温度は、{comparisonLabel}の <span className="font-semibold">{currentProgressPct.toFixed(1)}%</span>
           {projectedProgressPct != null && (
             <>
-              {' '}／ {projectionLabel}：<span className="font-semibold">{projectedProgressPct.toFixed(1)}%</span>
+              {' '}／ {projectionLabel}の積算温度は、{comparisonLabel}の <span className="font-semibold">{projectedProgressPct.toFixed(1)}%</span>
             </>
           )}
         </p>
@@ -454,6 +458,7 @@ export default function GDDChart({
         </div>
       </div>
       )}
+      {judgment && <p className="dashboard-gdd-note">収穫は{judgment}を見て決めます。</p>}
       <p className="dashboard-gdd-note">
         ※ 日々の気温データと連携すると積算温度が自動で更新されます。詳細な作物比較は生育ナビで確認できます。
       </p>

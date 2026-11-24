@@ -14,6 +14,7 @@ import QuestionLink from './QuestionLink'
 import type { CropConfirmation, loadTodayConfirmations } from '@/lib/proposals/presentation'
 import type { ConfirmationStage, NoConfirmationReason } from '@/lib/proposals/scoring'
 import { pestTrigger } from '@/lib/pests/catalog'
+import { Fragment, type ReactNode } from 'react'
 
 const stageLabel: Record<ConfirmationStage, string> = {
   deadline: '締切', season: '例年の時期', reached: '目安に到達', window: '見て確かめる時期',
@@ -45,32 +46,33 @@ function confirmationTitle(item: Confirmation) {
   return item.kind === 'proposal' ? item.proposal.title : item.question.pest.question
 }
 
-function ProposalActions({ proposal }: { proposal: Proposal }) {
+function proposalActions(proposal: Proposal): { key: string; node: ReactNode }[] {
   const { action, trigger, relatedCropId, relatedFarmId, relatedTaskId, lines } = proposal
   if (relatedTaskId) {
-    return <div className="ai-proposal-actions">
-      <Link href={`/tasks/${relatedTaskId}`} className="ai-proposal-action ai-proposal-action--primary">タスクを見る</Link>
-    </div>
+    return [{ key: `/tasks/${relatedTaskId}`, node: <Link href={`/tasks/${relatedTaskId}`} className="ai-proposal-action ai-proposal-action--primary">タスクを見る</Link> }]
   }
   if (trigger === 'season-finish' && relatedCropId) {
-    return <ProposalSeasonActions cropId={relatedCropId} farmId={relatedFarmId} trigger={trigger} />
+    return [{ key: `finish:${relatedCropId}`, node: <ProposalSeasonActions cropId={relatedCropId} farmId={relatedFarmId} trigger={trigger} /> }]
   }
   const organizationLink = trigger === 'conditions-missing' && relatedCropId
     ? { href: `/crops/${relatedCropId}/edit`, label: '育て方を入れる' }
     : trigger ? organizationLinks[trigger] : undefined
-  return <div className="ai-proposal-actions">
-    {organizationLink && <Link href={organizationLink.href} className="ai-proposal-action">{organizationLink.label}</Link>}
-    {(action?.taskType || action?.kind === 'sale' || (relatedCropId && action?.kind === 'work')) && (
-      <Link href={recordHref(proposal)} className="ai-proposal-action ai-proposal-action--primary">記録する</Link>
-    )}
-    {action && <Link href={taskHref(proposal)} className="ai-proposal-action">タスクにする</Link>}
-    {trigger === 'neglected-crop' && relatedCropId && (
-      <Link href={`/crops/${relatedCropId}/edit`} className="ai-proposal-action">作付けの状態を変える</Link>
-    )}
-    {trigger && !isFrostTrigger(trigger) && (
-      <ProposalDismissButton trigger={trigger} cropId={relatedCropId} cropIds={lines?.map(line => line.cropId)} />
-    )}
-  </div>
+  const items: { key: string; node: ReactNode }[] = []
+  const link = (href: string, label: string, primary = false) => items.push({ key: href,
+    node: <Link href={href} className={`ai-proposal-action${primary ? ' ai-proposal-action--primary' : ''}`}>{label}</Link> })
+  if (organizationLink) link(organizationLink.href, organizationLink.label)
+  if (action?.taskType || action?.kind === 'sale' || (relatedCropId && action?.kind === 'work')) link(recordHref(proposal), '記録する', true)
+  if (action) link(taskHref(proposal), 'タスクにする')
+  if (trigger === 'neglected-crop' && relatedCropId) link(`/crops/${relatedCropId}/edit`, '作付けの状態を変える')
+  if (trigger && !isFrostTrigger(trigger)) items.push({
+    key: `dismiss:${trigger}:${lines?.map(line => line.cropId).sort().join(',') ?? relatedCropId ?? ''}`,
+    node: <ProposalDismissButton trigger={trigger} cropId={relatedCropId} cropIds={lines?.map(line => line.cropId)} />,
+  })
+  return items
+}
+
+function ProposalActions({ proposal }: { proposal: Proposal }) {
+  return <div className="ai-proposal-actions">{proposalActions(proposal).map(item => <Fragment key={item.key}>{item.node}</Fragment>)}</div>
 }
 
 function ProposalEvidence({ proposal, records, showWeatherCredit }: {
@@ -95,10 +97,11 @@ function ProposalEvidence({ proposal, records, showWeatherCredit }: {
   </>
 }
 
-function ProposalDetail({ proposal, guidance, showWeatherCredit = true }: {
+function ProposalDetail({ proposal, guidance, showWeatherCredit = true, showActions = true }: {
   proposal: Proposal
   guidance: Guidance
   showWeatherCredit?: boolean
+  showActions?: boolean
 }) {
   const records = guidance.get(proposal.id)
   return <div className="ai-proposal-card-body">
@@ -113,7 +116,7 @@ function ProposalDetail({ proposal, guidance, showWeatherCredit = true }: {
           </li>)}
         </ul>
       )}
-      <ProposalActions proposal={proposal} />
+      {showActions && <ProposalActions proposal={proposal} />}
       <div className="ai-proposal-card-links">
         {proposal.relatedCropId && <Link href={`/crops/${proposal.relatedCropId}`} className="ai-proposal-card-link">作付けを見る →</Link>}
         {proposal.relatedCropId && <Link href={`/gdd/${proposal.relatedCropId}`} className="ai-proposal-card-link">生育ナビで見る →</Link>}
@@ -177,7 +180,7 @@ function ConfirmationDetail({ item, guidance, selected = false }: {
       {!selected && <QuestionLink id={questionId(item.trigger)} />}
     </>
   }
-  return <ProposalDetail proposal={proposal} guidance={guidance} showWeatherCredit={!selected} />
+  return <ProposalDetail proposal={proposal} guidance={guidance} showWeatherCredit={!selected} showActions={!selected} />
 }
 
 function OtherChecks({ items, guidance }: { items: Confirmation[]; guidance: Guidance }) {
@@ -201,6 +204,15 @@ function ConfirmationCard({ rows, guidance }: { rows: CropConfirmation[]; guidan
   const deadline = selected.stage === 'deadline'
   const sharedReason = rows.every(row => row.selected.reason === selected.reason)
   const proposals = rows.flatMap(row => row.selected.kind === 'proposal' ? [row.selected.proposal] : [])
+  const seenActions = new Set<string>()
+  const actions = new Map(rows.map(row => [row.crop.cropId,
+    row.selected.kind === 'proposal' && !row.selected.proposal.milestone
+      ? proposalActions(row.selected.proposal).filter(item => {
+          if (seenActions.has(item.key)) return false
+          seenActions.add(item.key)
+          return true
+        }) : [],
+  ]))
   return <article className={deadline ? 'morning-card morning-deadline' : 'morning-card'}>
     <div className="morning-heading">
       <div>
@@ -218,6 +230,9 @@ function ConfirmationCard({ rows, guidance }: { rows: CropConfirmation[]; guidan
               {item.kind === 'pest' && <PestQuestionRow question={item.question} inline />}
               {milestone && <MilestoneAskActions cropId={crop.cropId} milestoneKey={milestone.key}
                 trigger={item.trigger} yesLabel={milestone.yesLabel} variant="row" />}
+              {!!actions.get(crop.cropId)?.length && <div className="ai-proposal-actions">
+                {actions.get(crop.cropId)!.map(action => <Fragment key={action.key}>{action.node}</Fragment>)}
+              </div>}
             </li>
           })}
         </ul>

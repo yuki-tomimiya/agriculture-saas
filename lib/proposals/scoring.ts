@@ -854,7 +854,11 @@ export async function scoreCrops(
         urgency: frost.urgency,
         score: withinWeek ? 96 : frost.trigger === 'frost-forecast' ? 88 : 84,
         trigger: frost.trigger,
-        title: confirmations ? '霜の前に収穫を考えましょう' : frost.title,
+        title: confirmations
+          ? frost.deadline
+            ? `${formatMonthDay({ month: Number(frost.deadline.slice(5, 7)), day: Number(frost.deadline.slice(8, 10)) })}の冷え込みの前に収穫を考えましょう`
+            : '霜の前に収穫を考えましょう'
+          : frost.title,
         signal: {
           stage: frost.deadline ? 'deadline' : 'season',
           reason: confirmations ? frost.confirmationReason : frost.reason,
