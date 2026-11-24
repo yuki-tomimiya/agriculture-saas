@@ -18,6 +18,16 @@ export type PlantingCondition = {
 
 const CONDITIONS: PlantingCondition[] = [
   {
+    kindKey: 'pumpkin', plantingMethod: 'transplant',
+    text: '本葉3〜4枚の苗を植えます。鹿児島県の資料では、育てて35日ほどの苗です。',
+    scopeLabel: '一般（育苗の日数は鹿児島県）',
+  },
+  {
+    kindKey: 'taro',
+    text: '秋田県の資料では、晩霜のおそれがなくなったら早めに植えると、収量が多くなります。',
+    scopeLabel: '秋田県',
+  },
+  {
     kindKey: 'chinese-cabbage', plantingMethod: 'transplant',
     text: '鹿児島県の資料では、セルトレイの苗は本葉3〜4枚（育てて20〜25日）で植えます。まくのが遅れると葉の数が足りず、球が充実しない・結球しないことがあります。',
     scopeLabel: '鹿児島県',

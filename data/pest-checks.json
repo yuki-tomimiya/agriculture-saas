@@ -1295,5 +1295,141 @@
       }
     ],
     "seasons": []
+  },
+  {
+    "key": "pumpkin:powdery-mildew",
+    "cropKind": "pumpkin",
+    "name": "うどんこ病",
+    "question": "かぼちゃにうどんこ病は出ていませんか？",
+    "marker": "葉全体が白っぽいかびで覆われる",
+    "appearance": null,
+    "searchCrop": "かぼちゃ",
+    "searchPest": "うどんこ病",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "05",
+        "text": "秋田県の資料では、肥料が多すぎたり密に植えたりすると出やすくなります。",
+        "sources": [
+          {
+            "publisher": "秋田県",
+            "title": "野菜栽培技術指針 カボチャ",
+            "year": "2007",
+            "page": "p.103（PDF4枚目）",
+            "url": "https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-4.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "pumpkin:phytophthora",
+    "cropKind": "pumpkin",
+    "name": "疫病",
+    "question": "かぼちゃに疫病は出ていませんか？",
+    "marker": "株元の茎があめ色になって細くくびれる。実は皮が黒く柔らかくなり、白いかびが出る",
+    "appearance": null,
+    "searchCrop": "かぼちゃ",
+    "searchPest": "疫病",
+    "measures": [
+      {
+        "scope": "general",
+        "text": "畑の水はけをよくし、水がたまる畑では畝を高くします。",
+        "sources": [
+          {
+            "publisher": "秋田県",
+            "title": "野菜栽培技術指針 カボチャ",
+            "year": "2007",
+            "page": "p.103（PDF4枚目）",
+            "url": "https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-4.pdf"
+          },
+          {
+            "publisher": "鹿児島県",
+            "title": "有機百培 かぼちゃ",
+            "year": "2019",
+            "page": "p.76（PDF10枚目）",
+            "url": "https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143824-1.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "taro:common-cutworm",
+    "cropKind": "taro",
+    "name": "ハスモンヨトウ",
+    "question": "さといもにハスモンヨトウはいませんか？",
+    "marker": "葉が食べられて網の目のようになる。ふ化した直後は、真ん中に卵のかたまりの毛が残る",
+    "appearance": null,
+    "searchCrop": "さといも",
+    "searchPest": "ハスモンヨトウ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "46",
+        "text": "鹿児島県の資料では、出始めに卵や幼虫を取ります。",
+        "sources": [
+          {
+            "publisher": "鹿児島県",
+            "title": "有機百培 さといも",
+            "year": "2019",
+            "page": "p.56（PDF6枚目）",
+            "url": "https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143757-1.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": [
+      {
+        "code": "05",
+        "months": [
+          8,
+          9
+        ],
+        "label": "秋田県の資料では、ハスモンヨトウは8月から9月に出ます",
+        "source": {
+          "publisher": "秋田県",
+          "title": "野菜栽培技術指針 サトイモ",
+          "year": "2007",
+          "page": "p.298（PDF21枚目）",
+          "url": "https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-7.pdf"
+        }
+      }
+    ]
+  },
+  {
+    "key": "taro:dry-rot",
+    "cropKind": "taro",
+    "name": "乾腐病",
+    "question": "さといもに乾腐病は出ていませんか？",
+    "marker": "葉脈がしおれ、縞のように褐色になる",
+    "appearance": null,
+    "searchCrop": "さといも",
+    "searchPest": "乾腐病",
+    "measures": [
+      {
+        "scope": "general",
+        "text": "健全な種いもを使い、連作を避けます。",
+        "sources": [
+          {
+            "publisher": "秋田県",
+            "title": "野菜栽培技術指針 サトイモ",
+            "year": "2007",
+            "page": "p.298（PDF21枚目）",
+            "url": "https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-7.pdf"
+          },
+          {
+            "publisher": "鹿児島県",
+            "title": "有機百培 さといも",
+            "year": "2019",
+            "page": "p.56（PDF6枚目）",
+            "url": "https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143757-1.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
   }
 ]

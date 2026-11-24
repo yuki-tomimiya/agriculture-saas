@@ -25,6 +25,9 @@ type YieldRow = {
 }
 
 const ROWS: readonly YieldRow[] = [
+  // 令和6年産・表1 Sheet１のR列。かぼちゃ102行・さといも38行（台帳 G2）。
+  { keywords: ['かぼちゃ', 'カボチャ', '南瓜'], label: 'かぼちゃ', single: 1210 },
+  { keywords: ['さといも', 'サトイモ', '里芋'], label: 'さといも', single: 1280 },
   // 令和6年産・表1 Sheet１のR列（10a当たり収量「６」）。はくさい47行・にんじん25行。
   { keywords: ['はくさい', 'ハクサイ', '白菜'], label: 'はくさい', single: 5410 },
   { keywords: ['にんじん', 'ニンジン', '人参'], label: 'にんじん', single: 3320 },

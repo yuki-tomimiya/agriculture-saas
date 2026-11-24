@@ -29,6 +29,8 @@ export type SoilPhRange = {
 }
 
 export const SOIL_PH_RANGES: readonly SoilPhRange[] = [
+  // 台帳 E1。さといもは国の表の2つの欄にあるため、ここには入れない。
+  { name: 'かぼちゃ', keywords: ['かぼちゃ', 'カボチャ', '南瓜'], min: 6.0, max: 6.5, adviseLow: true, source: 'maff' },
   { name: 'はくさい', keywords: ['はくさい', 'ハクサイ', '白菜'], min: 6.0, max: 6.5, adviseLow: true, source: 'maff' },
   { name: 'にんじん', keywords: ['にんじん', 'ニンジン', '人参'], min: 5.5, max: 6.5, adviseLow: true, source: 'maff' },
   { name: 'ホウレンソウ', keywords: ['ホウレンソウ', 'ほうれん草', 'ほうれんそう'], min: 6.5, max: 7.0, adviseLow: true, source: 'maff' },

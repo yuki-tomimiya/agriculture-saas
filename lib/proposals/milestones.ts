@@ -20,6 +20,8 @@ export const MILESTONE_SOURCE_CHIBA = {
 }
 
 export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
+  { label: '秋田県「野菜栽培技術指針」カボチャ p.103', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-4.pdf' },
+  { label: '鹿児島県「有機百培」かぼちゃ p.75〜76', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143824-1.pdf' },
   { label: '鹿児島県「有機百培」はくさい p.93〜94', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143851-1.pdf' },
   { label: '宮城県「みやぎの野菜指導指針」たまねぎ（平成18年3月）p.271', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/pdf/miyagi_yasai18_19.pdf' },
   { label: '農研機構「タマネギ栽培マニュアル」p.4', url: 'https://www.naro.go.jp/publicity_report/publication/files/Onion_Manual.pdf' },
@@ -204,6 +206,23 @@ const CARROT_HARVEST = '太ったものから収穫します。収穫が遅れ�
  * 試し掘りは資料の収穫目安の下限（さつまいもは2,400℃日）の85%以上。
  */
 const MILESTONES: MilestoneDef[] = [
+  {
+    key: 'pumpkin-stalk-cracks', cropLabel: 'かぼちゃ',
+    match: (name, variety) => nameIncludes(name, variety, ['かぼちゃ', 'カボチャ', '南瓜']),
+    question: 'なり首（実の付け根の軸）に、コルクのようなひびが入ってきましたか？',
+    term: 'なり首のひび', yesLabel: 'ひびが入ってきた',
+    ifYes: 'ひびの入ったものから収穫します。',
+    conditional: 'なり首にコルクのようなひびが入っていれば、ひびの入ったものから収穫します。',
+    recordedLine: days => `なり首のひびを確かめてから${Math.max(0, days)}日です。ひびの入ったものから収穫します。`,
+    sourceLabel: '秋田県「野菜栽培技術指針」カボチャ p.103／鹿児島県「有機百培」かぼちゃ p.75〜76',
+    howTo: [
+      '秋田県の資料では、ひびが5〜6本以上入ったころが適期で、数個を試し切りして、果肉が黄色く種が充実していれば収穫します。',
+      '鹿児島県の資料では、交配から50日前後（秋は55日前後）が収穫の目安です。',
+    ],
+    window: { kind: 'days', from: 60, to: 150 },
+    windowNote: `植えた日から60〜150日（秋田・鹿児島の栽培暦から設定。直まきは育苗の日数を足した。${WINDOW_USE}）`,
+    skipWhenHarvest: true,
+  },
   {
     key: 'chinese-cabbage-firm', cropLabel: 'はくさい',
     match: (name, variety) => nameIncludes(name, variety, ['はくさい', 'ハクサイ', '白菜']),
