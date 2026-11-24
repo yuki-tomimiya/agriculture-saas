@@ -1,22 +1,11 @@
-import { prisma } from './prisma'
 import bcrypt from 'bcryptjs'
-import { readUserIdCookie } from './user-id-cookie'
+import { readSessionUser } from './auth-session'
 
 export async function getCurrentUser() {
   try {
-    const userId = await readUserIdCookie()
-
-    if (!userId) {
-      return null
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    })
-
-    return user
-  } catch (e) {
-    console.error('getCurrentUser:', e)
+    return await readSessionUser()
+  } catch {
+    console.error('getCurrentUser: セッションを確認できませんでした')
     return null
   }
 }

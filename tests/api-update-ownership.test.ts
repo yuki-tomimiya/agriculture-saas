@@ -1,4 +1,5 @@
 import { withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { execFileSync } from 'node:child_process'
 import { mkdtemp, rm } from 'node:fs/promises'
@@ -38,10 +39,10 @@ async function testDatabase(t: TestContext) {
 
 type Update = (request: NextRequest, context: { params: Promise<{ id: string }> }) => Promise<Response>
 
-function update(handler: Update, method: 'PATCH' | 'PUT', id: string, body: object, cookie = 'userId=owner') {
+function update(handler: Update, method: 'PATCH' | 'PUT', id: string, body: object, cookie = '') {
   const request = new NextRequest(`http://localhost/api/test/${id}`, {
     method,
-    headers: { cookie, 'content-type': 'application/json' },
+    headers: { cookie, origin: 'http://127.0.0.1:3000', 'content-type': 'application/json' },
     body: JSON.stringify(body),
   })
   return withRequestCookies(request.cookies, () => handler(request, { params: Promise.resolve({ id }) }))
@@ -81,8 +82,9 @@ test('更新APIは変更先の農場・作付けの持ち主を確かめる', as
     userId: 'owner', farmId: 'farm-a', cropId: 'crop-a', productName: '肥料', amount: 1,
     appliedAt: new Date('2026-11-12T00:00:00Z'),
   } })
-  const cropPatch = (body: object) => update(patchCrop, 'PATCH', 'crop-a', body)
-  const fertilizerPut = (body: object) => update(putFertilizer, 'PUT', fertilizer.id, body)
+  const session = await testSession(db, 'owner')
+  const cropPatch = (body: object) => update(patchCrop, 'PATCH', 'crop-a', body, session.header)
+  const fertilizerPut = (body: object) => update(putFertilizer, 'PUT', fertilizer.id, body, session.header)
   const cropLinks = () => db.crop.findUniqueOrThrow({
     where: { id: 'crop-a' }, select: { farmId: true, fieldId: true, userId: true, fieldUndivided: true },
   })
@@ -90,7 +92,7 @@ test('更新APIは変更先の農場・作付けの持ち主を確かめる', as
     where: { id: fertilizer.id }, select: { cropId: true, farmId: true },
   })
 
-  await t.test('userIdのCookieが無ければ更新APIは従来の401を返す', async () => {
+  await t.test('セッションのCookieが無ければ更新APIは従来の401を返す', async () => {
     const results = await Promise.all([
       update(patchCrop, 'PATCH', 'crop-a', {}, ''),
       update(putFertilizer, 'PUT', fertilizer.id, {}, ''),

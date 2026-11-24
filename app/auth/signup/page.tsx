@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { newPasswordError } from '@/lib/auth-validation'
 
 export default function SignUpPage() {
   const router = useRouter()
@@ -15,6 +16,11 @@ export default function SignUpPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    const passwordError = newPasswordError(password)
+    if (passwordError) {
+      setError(passwordError)
+      return
+    }
     setLoading(true)
 
     try {
@@ -95,10 +101,15 @@ export default function SignUpPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                minLength={6}
+                minLength={15}
+                autoComplete="new-password"
+                aria-describedby="password-help"
                 className="input"
                 placeholder="••••••••"
               />
+              <p id="password-help" className="text-sm text-gray-600 mt-2">
+                15文字以上で、長い合言葉でもかまいません。UTF-8で72バイトまで（日本語は1文字で複数バイトになります）。
+              </p>
             </div>
 
             <button

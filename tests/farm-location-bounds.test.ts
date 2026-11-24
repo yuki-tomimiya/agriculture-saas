@@ -1,4 +1,5 @@
 import { withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { NextRequest } from 'next/server'
@@ -19,10 +20,11 @@ test('農場の保存と土地カードは日本の外を拒否し、部分更�
   await db.user.create({ data: { id: 'owner', email: 'bounds@example.invalid', password: 'unused' } })
   const farm = await db.farm.create({ data: { id: 'farm', userId: 'owner', name: '本人の農場', latitude: 34.99, longitude: 139.87 } })
   const point = { latitude: 35, longitude: 39.9 }
+  const session = await testSession(db, 'owner')
   const invoke = (handler: (request: NextRequest) => Promise<Response>, method: string, body: object) => {
     const request = new NextRequest('http://localhost/api/farms', { method,
       headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
-    return withRequestCookies({ get: () => ({ value: 'owner' }) }, () => handler(request))
+    return withRequestCookies(session, () => handler(request))
   }
   for (const response of [
     await invoke(createFarm, 'POST', { name: '範囲外', ...point }),

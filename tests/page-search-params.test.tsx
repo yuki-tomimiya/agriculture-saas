@@ -3,6 +3,7 @@ import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import React from 'react'
 import { temporarySqlite } from './helpers/temporary-sqlite'
+import { testSession } from './helpers/session'
 
 Object.assign(globalThis, { React })
 
@@ -45,7 +46,7 @@ test('画面がURLの条件を受け取る', async t => {
     await db.workRecord.create({ data: { id: key, farmId, cropId, date, taskType: '除草' } })
   }
 
-  const cookies = { get: (name: string) => name === 'userId' ? { value: userId } : undefined }
+  const cookies = await testSession(db, userId)
   const render = (page: () => Promise<React.ReactElement>) =>
     withRequestCookies(cookies, async () => renderWithRouter(await page()))
 

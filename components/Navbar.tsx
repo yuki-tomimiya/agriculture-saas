@@ -3,9 +3,26 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import TilltolLogo from '@/components/TilltolLogo'
+import { useState } from 'react'
 
 export default function Navbar() {
   const pathname = usePathname()
+  const [loggingOut, setLoggingOut] = useState(false)
+  const [error, setError] = useState('')
+
+  const logout = async () => {
+    setLoggingOut(true)
+    setError('')
+    try {
+      const response = await fetch('/api/auth/logout', { method: 'POST' })
+      if (!response.ok) throw new Error('logout failed')
+      // Router Cacheに残った本人の画面も破棄する。
+      window.location.replace('/auth/signin')
+    } catch {
+      setError('ログアウトできませんでした。もう一度お試しください')
+      setLoggingOut(false)
+    }
+  }
 
   const isAuthPage = pathname?.startsWith('/auth')
   const isHomePage = pathname === '/'
@@ -21,9 +38,12 @@ export default function Navbar() {
           <TilltolLogo size={28} />
           <span>Tilltol</span>
         </Link>
-        <Link href="/auth/signin" className="app-header-logout">
-          ログアウト
-        </Link>
+        <div>
+          <button type="button" className="app-header-logout" onClick={logout} disabled={loggingOut}>
+            {loggingOut ? 'ログアウト中…' : 'ログアウト'}
+          </button>
+          {error && <p role="alert">{error}</p>}
+        </div>
       </div>
     </header>
   )

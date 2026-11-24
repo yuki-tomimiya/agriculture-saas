@@ -1,4 +1,5 @@
 import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { NextRequest } from 'next/server'
@@ -87,11 +88,12 @@ test('農場の指定・任意の条件の保存・後からの案内を一時DB
     { id: 'tokyo-field', farmId: 'tokyo', name: '東京の圃場' },
     { id: 'other-field', farmId: 'other-farm', name: '他の人の圃場' },
   ] })
-  const cookies = (userId = 'owner') => ({ get: (name: string) => name === 'userId' ? { value: userId } : undefined })
+  const sessions = { owner: await testSession(db, 'owner'), other: await testSession(db, 'other') }
+  const cookies = (userId = 'owner') => sessions[userId as keyof typeof sessions]
   const page = (farmId: string, userId = 'owner') => withRequestCookies(cookies(userId), async () =>
     renderWithRouter(await NewCropPage({ searchParams: Promise.resolve({ farmId }) })))
   const request = (url: string, method: string, body: object) => new NextRequest(url, {
-    method, headers: { cookie: 'userId=owner', 'content-type': 'application/json' }, body: JSON.stringify(body),
+    method, headers: { cookie: sessions.owner.header, origin: 'http://127.0.0.1:3000', 'content-type': 'application/json' }, body: JSON.stringify(body),
   })
   const create = (body: object) => {
     const req = request('http://localhost/api/crops', 'POST', body)

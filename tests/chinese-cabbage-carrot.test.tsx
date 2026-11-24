@@ -1,4 +1,5 @@
 import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { cropKindByKey, adviceNames } from '@/lib/crops/conditions'
@@ -106,9 +107,10 @@ test('登録の選択肢と作付けの詳細に3つのポイントを描く', a
   assert.match(form, /value="chinese-cabbage">はくさい/)
   assert.match(form, /value="carrot">にんじん/)
   await db.farm.create({ data: { id: 'farm', userId: 'owner', name: '東京の農場' } })
+  const session = await testSession(db, 'owner')
   for (const [id, name] of [['chinese-cabbage', 'はくさい'], ['carrot', 'にんじん']]) {
     await db.crop.create({ data: { id, name, cropKind: id, farmId: 'farm', growingSite: 'open', plantingMethod: 'direct' } })
-    const html = await withRequestCookies({ get: name => name === 'userId' ? { value: 'owner' } : undefined }, async () =>
+    const html = await withRequestCookies(session, async () =>
       renderWithRouter(await CropDetail({ params: Promise.resolve({ id }) })))
     assert.match(html, /品目のポイント/)
     const points = html.match(/<h2[^>]*>この品目のポイント<\/h2>[\s\S]*?<\/ul>/)?.[0] ?? ''

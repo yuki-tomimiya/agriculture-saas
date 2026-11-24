@@ -116,13 +116,13 @@ test('土壌画面と今日の提案が同じ現在の土を使い、区分変�
   const farm = farmFixture()
   const diagnosis = { id: 'diagnosis', farmId: 'farm', farm, diagnosedAt: new Date(2026, 9, 1), ec: .2, nitrogen: 0, phosphorus: 76,
     potassium: null, ph: null, timing: '作付け前', notes: null, photoPath: null, field: null }
-  const originals = { crop: prisma.crop.findMany, diagnosis: prisma.soilDiagnosis.findMany, farms: prisma.farm.findMany, count: prisma.farm.count, user: prisma.user.findUnique }
+  const originals = { crop: prisma.crop.findMany, diagnosis: prisma.soilDiagnosis.findMany, farms: prisma.farm.findMany, count: prisma.farm.count, session: prisma.session.findUnique }
   prisma.crop.findMany = (async () => []) as any
   prisma.soilDiagnosis.findMany = (async () => [diagnosis]) as any
   prisma.farm.findMany = (async () => [farm]) as any
   prisma.farm.count = (async () => 0) as any
-  prisma.user.findUnique = (async () => ({ id: 'user' })) as any
-  const page = async () => withRequestCookies({ get: () => ({ value: 'user' }) },
+  prisma.session.findUnique = (async () => ({ user: { id: 'user' }, expiresAt: new Date('2100-01-01') })) as any
+  const page = async () => withRequestCookies({ get: name => name === 'tilltol-session' ? { value: 'a'.repeat(64) } : undefined },
     async () => renderWithRouter(await SoilPage({})))
   try {
     let html = await page(); assert.match(html, /上限 75/); assert.match(html, /地図の目安/)
@@ -153,6 +153,6 @@ test('土壌画面と今日の提案が同じ現在の土を使い、区分変�
     assert.equal(soilClassificationForFarm(farm).group, 'fallback')
   } finally {
     prisma.crop.findMany = originals.crop; prisma.soilDiagnosis.findMany = originals.diagnosis
-    prisma.farm.findMany = originals.farms; prisma.farm.count = originals.count; prisma.user.findUnique = originals.user
+    prisma.farm.findMany = originals.farms; prisma.farm.count = originals.count; prisma.session.findUnique = originals.session
   }
 })

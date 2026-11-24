@@ -21,8 +21,8 @@ test('3画面の初期表示、画面別Cookie、農場での絞り込みと0件
     _count: { harvests: 2, tasks: 1, workRecords: 10 },
   }
   let empty = false
-  const originals = { user: prisma.user.findUnique, farm: prisma.farm.findMany, crop: prisma.crop.findMany }
-  prisma.user.findUnique = (async () => ({ id: 'user' })) as unknown as typeof prisma.user.findUnique
+  const originals = { session: prisma.session.findUnique, farm: prisma.farm.findMany, crop: prisma.crop.findMany }
+  prisma.session.findUnique = (async () => ({ user: { id: 'user' }, expiresAt: new Date('2100-01-01') })) as unknown as typeof prisma.session.findUnique
   prisma.farm.findMany = (async () => empty ? [] : [farm]) as unknown as typeof prisma.farm.findMany
   prisma.crop.findMany = (async (args: { where: { AND: [{ AND: { farmId?: string }[] }, { status: unknown }] }; orderBy: unknown }) => {
     const [scope, status] = args.where.AND
@@ -34,7 +34,7 @@ test('3画面の初期表示、画面別Cookie、農場での絞り込みと0件
   const searchParams = Promise.resolve({ farmId: 'farm-a' })
   const render = (page: () => Promise<React.ReactElement>, cookieName?: string) =>
     withRequestCookies({ get: name =>
-      name === 'userId' ? { value: 'user' } : name === cookieName ? { value: 'tiles' } : undefined,
+      name === 'tilltol-session' ? { value: 'a'.repeat(64) } : name === cookieName ? { value: 'tiles' } : undefined,
     }, async () => renderWithRouter(await page()))
 
   try {
@@ -61,7 +61,7 @@ test('3画面の初期表示、画面別Cookie、農場での絞り込みと0件
       }
     }
   } finally {
-    prisma.user.findUnique = originals.user
+    prisma.session.findUnique = originals.session
     prisma.farm.findMany = originals.farm
     prisma.crop.findMany = originals.crop
   }

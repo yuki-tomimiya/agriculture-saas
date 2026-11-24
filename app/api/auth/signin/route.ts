@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyPassword } from '@/lib/auth'
-import { cookies } from 'next/headers'
+import { startSession } from '@/lib/auth-session'
+import { validEmail } from '@/lib/auth-validation'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, password } = await request.json()
+    const body: unknown = await request.json()
+    const { email, password } = body && typeof body === 'object' ? body as Record<string, unknown> : {}
 
-    if (!email || !password) {
+    if (!validEmail(email) || typeof password !== 'string' || !password) {
       return NextResponse.json(
         { error: 'メールアドレスとパスワードは必須です' },
         { status: 400 }
@@ -36,18 +38,11 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // CookieにユーザーIDを設定
-    const cookieStore = await cookies()
-    cookieStore.set('userId', user.id, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7日
-    })
+    await startSession(user.id)
 
     return NextResponse.json({ success: true, user: { id: user.id, email: user.email, name: user.name } })
-  } catch (error) {
-    console.error('Signin error:', error)
+  } catch {
+    console.error('Signin: ログイン処理に失敗しました')
     return NextResponse.json(
       { error: 'サーバーエラーが発生しました' },
       { status: 500 }

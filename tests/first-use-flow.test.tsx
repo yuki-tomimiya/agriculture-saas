@@ -1,4 +1,5 @@
 import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { temporarySqlite } from './helpers/temporary-sqlite'
@@ -45,7 +46,7 @@ test('農場0件のダッシュボードと、未入力1件・複数件の編集
   const { default: MorningProposals } = await import('@/app/dashboard/ai-proposal/MorningProposals')
   const { loadTodayConfirmations } = await import('@/lib/proposals/presentation')
   await db.user.create({ data: { id: 'owner', email: 'onboarding@example.invalid', password: 'unused' } })
-  const cookies = { get: (name: string) => name === 'userId' ? { value: 'owner' } : undefined }
+  const cookies = await testSession(db, 'owner')
   const dashboard = () => withRequestCookies(cookies, async () => renderWithRouter(await Dashboard()))
   assert.match(await dashboard(), /農場を登録すると、この土地の霜と気温が見られます/)
   assert.match(await dashboard(), />農場を登録する<\/a>/)

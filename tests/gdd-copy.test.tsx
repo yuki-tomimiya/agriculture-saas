@@ -1,4 +1,5 @@
 import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import React from 'react'
@@ -59,8 +60,9 @@ test('生育ナビの単位と到達の文の位置をそろえ、ダッシュ�
       precipitation_sum: zeros, shortwave_radiation_sum: zeros, sunshine_duration: zeros,
     } }))
   })
+  const sessions = { owner: await testSession(db, 'owner'), empty: await testSession(db, 'empty') }
   const render = (userId: string, page: () => Promise<React.ReactElement>) =>
-    withRequestCookies({ get: name => name === 'userId' ? { value: userId } : undefined },
+    withRequestCookies(sessions[userId as keyof typeof sessions],
       async () => renderWithRouter(await page()))
   const renderCrop = (cropId: string) => render('owner', () => GddCropPage({ params: Promise.resolve({ cropId }) }))
   const range = /目安は2,400〜3,000℃日（宮城・北海道）。/

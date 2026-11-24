@@ -1,4 +1,5 @@
 import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { temporarySqlite } from './helpers/temporary-sqlite'
@@ -17,9 +18,8 @@ test('今日の提案のページは本人の農場と栽培中の作付けだ�
   ] })
   await db.farm.create({ data: { id: 'other-farm', userId: 'other', name: '他の人の農場' } })
   await db.crop.create({ data: { farmId: 'other-farm', name: '他の人の作付け', status: 'growing' } })
-  const render = () => withRequestCookies({
-    get: name => name === 'userId' ? { value: 'owner' } : undefined,
-  }, async () => renderWithRouter(await AiProposalPage()))
+  const session = await testSession(db, 'owner')
+  const render = () => withRequestCookies(session, async () => renderWithRouter(await AiProposalPage()))
 
   const noFarm = await render()
   assert.match(noFarm, /農場を登録すると、この土地の霜と気温が見られます/)

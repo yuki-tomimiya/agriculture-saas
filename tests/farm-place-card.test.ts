@@ -4,6 +4,7 @@ import { pickNearestStation } from '@/lib/jma/stations'
 import type { SoilLookupResult } from '@/lib/soil-map/lookup'
 import { withRequestCookies } from './helpers/next-runtime'
 import { temporarySqlite } from './helpers/temporary-sqlite'
+import { testSession } from './helpers/session'
 
 test('保存前の土地カードはログインを確かめ、情報のある項目を返して農場を作らない', async t => {
   const { db } = await temporarySqlite(t)
@@ -17,6 +18,7 @@ test('保存前の土地カードはログインを確かめ、情報のある�
   const { OPEN_METEO_TIMEOUT_MS } = await import('@/lib/open-meteo/fetch')
   t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 17, 12) })
   await db.user.create({ data: { id: 'test-user', email: 'place-card@example.invalid', password: 'unused' } })
+  const session = await testSession(db, 'test-user')
 
   const chiba = { latitude: 34.9966, longitude: 139.8697 }
   const noWeather = { latitude: 35.12345, longitude: 139.12345 }
@@ -57,7 +59,7 @@ test('保存前の土地カードはログインを確かめ、情報のある�
     } })
   })
   const request = (payload: unknown, userId?: string) => withRequestCookies(
-    { get: name => name === 'userId' && userId ? { value: userId } : undefined },
+    userId === 'test-user' ? session : { get: () => undefined },
     () => POST(new Request('http://127.0.0.1:3000/api/farms/place-card', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

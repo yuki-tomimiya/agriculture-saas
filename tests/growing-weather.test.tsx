@@ -1,4 +1,5 @@
 import { renderWithRouter, withRequestCookies } from './helpers/next-runtime'
+import { testSession } from './helpers/session'
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import React from 'react'
@@ -73,8 +74,9 @@ test('生育ナビは終了日に積算を止め、気温が取れないとき�
       shortwave_radiation_sum: time.map(() => 10), sunshine_duration: time.map(() => null),
     } }))
   })
+  const session = await testSession(db, 'user')
   const render = (cropId: string): Promise<string> =>
-    withRequestCookies({ get: name => name === 'userId' ? { value: 'user' } : undefined },
+    withRequestCookies(session,
       async () => renderWithRouter(await GddCropPage({ params: Promise.resolve({ cropId }) })))
   const cardWithTitle = (html: string, title: string) =>
     html.split('</section>').find(section => section.includes(title)) ?? ''
