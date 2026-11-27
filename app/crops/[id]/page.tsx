@@ -301,6 +301,8 @@ export default async function CropDetailPage({
           id: row.id, observedDay: japanDateKey(row.observedAt), createdAt: +row.createdAt,
           locations: row.locations, symptoms: row.symptoms, extent: row.extent, notes: row.notes,
           hasPhoto: Boolean(row.photoName),
+          followUpResult: row.followUpResult,
+          followedUpDay: row.followedUpAt && japanDateKey(row.followedUpAt),
           selectedPestName: row.selectedPestKey && (findPest(row.selectedPestKey)?.name ?? row.selectedPestKey),
         }))} />
         <CropMilestones

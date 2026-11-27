@@ -10,6 +10,7 @@ import { isFrostTrigger } from '@/lib/proposals/frost'
 import type { ProposalRecordGuidance } from '@/lib/proposals/record-guidance'
 import { FertilizerStandards, RecordGuidance } from '@/components/ProposalRecordGuidance'
 import PestQuestion, { PestQuestionRow } from './PestQuestion'
+import ConcernFollowUpAnswer from './ConcernFollowUpAnswer'
 import QuestionLink from './QuestionLink'
 import type { CropConfirmation, loadTodayConfirmations } from '@/lib/proposals/presentation'
 import type { ConfirmationStage, NoConfirmationReason } from '@/lib/proposals/scoring'
@@ -43,6 +44,7 @@ function questionId(trigger: string) {
 }
 
 function confirmationTitle(item: Confirmation) {
+  if (item.kind === 'concern') return item.concern.title
   return item.kind === 'proposal' ? item.proposal.title : item.question.pest.question
 }
 
@@ -162,6 +164,7 @@ function ConfirmationDetail({ item, guidance, selected = false }: {
   guidance: Guidance
   selected?: boolean
 }) {
+  if (item.kind === 'concern') return selected ? null : <ConcernFollowUpAnswer key={item.concern.id} concern={item.concern} />
   if (item.kind === 'pest') {
     const { pest, timingSource } = item.question
     return <>
@@ -228,6 +231,7 @@ function ConfirmationCard({ rows, guidance }: { rows: CropConfirmation[]; guidan
               <p className="font-semibold">{crop.cropName}{crop.farmName && ` · ${crop.farmName}`}</p>
               {entry?.harvestFrom && <RecordGuidance entry={{ harvestFrom: entry.harvestFrom }} />}
               {item.kind === 'pest' && <PestQuestionRow question={item.question} inline />}
+              {item.kind === 'concern' && <ConcernFollowUpAnswer key={item.concern.id} concern={item.concern} />}
               {milestone && <MilestoneAskActions cropId={crop.cropId} milestoneKey={milestone.key}
                 trigger={item.trigger} yesLabel={milestone.yesLabel} variant="row" />}
               {!!actions.get(crop.cropId)?.length && <div className="ai-proposal-actions">

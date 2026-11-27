@@ -247,6 +247,9 @@ function proposalAnswer(proposal: Proposal) {
 }
 
 function confirmationAnswer(item: Confirmation) {
+  if (item.kind === 'concern') {
+    return { stage: item.stage, reason: item.reason, trigger: item.trigger, title: item.concern.title }
+  }
   return {
     stage: item.stage, reason: item.reason,
     ...(item.kind === 'proposal' ? proposalAnswer(item.proposal) : {

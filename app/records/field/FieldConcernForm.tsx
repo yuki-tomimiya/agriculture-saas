@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from 'react'
 import PestAdvice, { type PestAdviceData } from '@/components/PestAdvice'
+import ConcernConsultation from '@/components/ConcernConsultation'
 import {
   concernApiHref, concernExtents, concernLocations, concernNotesLimit, concernPhotoLimit, concernPhotoTypes, concernSymptoms,
 } from '@/lib/crops/field-concerns'
@@ -140,11 +141,7 @@ export function FieldConcernResult({ result, chosenKey, advice, pending, error, 
       {error && <p role="alert" className="text-red-700">{error}</p>}
       {advice && <PestAdvice advice={advice} />}
     </section>}
-    <section className="space-y-1">
-      <h2 className="font-semibold">相談先</h2>
-      {result.forecast && <p><a className="underline" href={result.forecast.url}>{result.forecast.officeName}</a></p>}
-      <p>近くの普及指導センターや JA の営農指導員に、この記録（日付・場所・様子・写真）を見せて相談できます。</p>
-    </section>
+    <ConcernConsultation forecast={result.forecast} />
     <p>数日あとにもう一度見て、広がっていれば記録すると、相談のときに役立ちます。</p>
   </section>
 }

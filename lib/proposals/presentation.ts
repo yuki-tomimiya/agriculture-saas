@@ -3,17 +3,21 @@ import { loadPestQuestions } from '@/lib/pests/service'
 import { groupPestQuestions } from '@/lib/pests/presentation'
 import type { ConfirmationCrop, ConfirmationStage, NoConfirmationReason } from '@/lib/proposals/scoring'
 import { pestTrigger } from '@/lib/pests/catalog'
+import { loadConcernFollowUps } from './concern-follow-up'
 
 export type PestQuestion = Awaited<ReturnType<typeof loadPestQuestions>>[number]
+export type ConcernFollowUp = Awaited<ReturnType<typeof loadConcernFollowUps>>[number]
 
 type Confirmation = { stage: ConfirmationStage; reason: string; trigger: string } & (
-  { kind: 'proposal'; proposal: Proposal } | { kind: 'pest'; question: PestQuestion }
+  { kind: 'proposal'; proposal: Proposal } | { kind: 'pest'; question: PestQuestion } | { kind: 'concern'; concern: ConcernFollowUp }
 )
 
 const stageOrder: Record<ConfirmationStage, number> = { deadline: 0, season: 1, reached: 2, window: 3 }
 
 function compareConfirmations(a: Confirmation, b: Confirmation) {
   return stageOrder[a.stage] - stageOrder[b.stage] ||
+    Number(b.kind === 'concern') - Number(a.kind === 'concern') ||
+    (a.kind === 'concern' && b.kind === 'concern' ? a.concern.observedDay.localeCompare(b.concern.observedDay) : 0) ||
     (a.kind === 'proposal' ? a.proposal.signal?.deadline ?? '' : '').localeCompare(
       b.kind === 'proposal' ? b.proposal.signal?.deadline ?? '' : '',
     ) ||
@@ -27,7 +31,7 @@ export type CropConfirmation = {
   others: Confirmation[]
 }
 
-export function organizeConfirmations(proposals: Proposal[], crops: ConfirmationCrop[], pestQuestions: PestQuestion[]) {
+export function organizeConfirmations(proposals: Proposal[], crops: ConfirmationCrop[], pestQuestions: PestQuestion[], concerns: ConcernFollowUp[] = []) {
   // 植える前は、地域の時期・前年の病害虫の履歴があっても確認にしない。
   const later = new Set(crops.filter(crop => crop.reason === 'planting-later').map(crop => crop.cropId))
   const currentPestQuestions = pestQuestions.filter(question => !later.has(question.cropId))
@@ -67,6 +71,13 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
     add(question.cropId, {
       kind: 'pest', stage: 'window', trigger: pestTrigger(question.pest.key), question,
       reason: question.timing ?? 'この品目の見回りの時期です。',
+    })
+  }
+
+  for (const concern of concerns) {
+    add(concern.cropId, {
+      kind: 'concern', stage: 'window', trigger: `concern:${concern.id}`, concern,
+      reason: '畑で見たことの記録を見返すための確認です。',
     })
   }
 
@@ -122,9 +133,10 @@ export function organizeConfirmations(proposals: Proposal[], crops: Confirmation
 }
 
 export async function loadTodayConfirmations(userId: string, { now = new Date(), weather }: ProposalOptions = {}) {
-  const [{ proposals, crops }, pestQuestions] = await Promise.all([
+  const [{ proposals, crops }, pestQuestions, concerns] = await Promise.all([
     loadProposalCandidates(userId, { now, weather }, true),
     loadPestQuestions(userId, now),
+    loadConcernFollowUps(userId, now),
   ])
-  return organizeConfirmations(proposals, crops, pestQuestions)
+  return organizeConfirmations(proposals, crops, pestQuestions, concerns)
 }

@@ -3,7 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import PestAdvice, { type PestAdviceData } from '@/components/PestAdvice'
-import { concernApiHref, concernChoiceLabel, concernExtents, concernLabel, concernLocations, concernSymptoms } from '@/lib/crops/field-concerns'
+import {
+  concernApiHref, concernChoiceLabel, concernChoiceLabels, concernExtents, concernFollowUpResults,
+  concernLabel, concernLocations, concernMonthDay, concernSymptoms,
+} from '@/lib/crops/field-concerns'
 
 type Observation = { id: string; observedDay: string; createdAt: number; notes: string | null }
 type Row = Observation & { name: string; present: boolean }
@@ -13,6 +16,8 @@ type Concern = Observation & {
   extent: string | null
   hasPhoto: boolean
   selectedPestName: string | null
+  followUpResult: string | null
+  followedUpDay: string | null
 }
 
 function PestCheckRow({ cropId, row, today }: { cropId: string; row: Row; today: string }) {
@@ -70,9 +75,10 @@ function ConcernRow({ cropId, row }: { cropId: string; row: Concern }) {
   const [error, setError] = useState('')
   const url = concernApiHref(cropId, row.id)
   const photo = url + '/photo'
-  const locations = row.locations.split(',').map(key => concernChoiceLabel(concernLocations, key)).filter(Boolean).join('、')
-  const symptoms = row.symptoms.split(',').map(key => concernChoiceLabel(concernSymptoms, key)).filter(Boolean).join('、')
+  const locations = concernChoiceLabels(concernLocations, row.locations).join('、')
+  const symptoms = concernChoiceLabels(concernSymptoms, row.symptoms).join('、')
   const extent = row.extent && concernChoiceLabel(concernExtents, row.extent)
+  const followUp = row.followUpResult && concernChoiceLabel(concernFollowUpResults, row.followUpResult)
 
   async function remove() {
     if (!window.confirm('この記録を削除しますか？')) return
@@ -104,6 +110,7 @@ function ConcernRow({ cropId, row }: { cropId: string; row: Concern }) {
       <img className="h-24 w-auto max-w-full rounded object-contain" src={photo} alt="記録した写真を開く" loading="lazy" />
     </a>}
     {row.selectedPestName && <p>近いものとして選んだ病害虫　{row.selectedPestName}</p>}
+    {followUp && <p>その後：{followUp}{row.followedUpDay && <>（<time dateTime={row.followedUpDay}>{concernMonthDay(row.followedUpDay)}</time>）</>}</p>}
     <div><button className="ai-proposal-action" type="button" disabled={pending} onClick={remove}>削除</button></div>
     {error && <p role="alert">{error}</p>}
   </li>

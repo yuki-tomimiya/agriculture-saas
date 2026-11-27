@@ -29,6 +29,24 @@ export const concernExtents = {
   widespread: '畑の広い範囲',
 }
 
+export const concernFollowUpResults = {
+  spread: '広がった',
+  unchanged: '変わらない',
+  improved: 'おさまった',
+}
+
+export function concernMonthDay(day: string) {
+  const [, month, date] = day.split('-').map(Number)
+  return `${month}月${date}日`
+}
+
+export function concernChoiceLabels(choices: Record<string, string>, keys: string) {
+  return keys.split(',').flatMap(key => {
+    const label = concernChoiceLabel(choices, key)
+    return label ? [label] : []
+  })
+}
+
 export function concernFormHref(cropId: string) {
   return '/records/field?' + new URLSearchParams({ cropId, observation: concernSelection })
 }
