@@ -38,7 +38,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | `/faq/[slug]` | 1つの質問の答え |
 | `/plan` | 来年の計画（振り返りと計画のカード。詳細ページはなし） |
 | `/records` | 記録の入口（作業・農薬・収穫・販売。施肥は作業のタブ） |
-| `/records/field` | 畑で見たことの記録。入口は今日の提案と作付け詳細。選択肢は `lib/crops/field-observations.ts`、保存は節目・病害虫の既存API |
+| `/records/field` | 畑で見たことの記録。入口は今日の提案と作付け詳細。節目・病害虫の選択肢は `lib/crops/field-observations.ts`。名前が分からない異変の入力は `app/records/field/FieldConcernForm.tsx` |
 | `/farms/new` | 農場の新規登録。場所を指定し、「この土地のカード」を見てから保存する |
 | `/crops/new` | 作付けの登録。`?farmId=` で本人の農場を初期選択し、戻る先にする。保存後は作付けの詳細へ（`lib/crops/navigation.ts`）。`components/CropForm.tsx` を編集画面と共用 |
 | `/soil` | 土壌診断（農場管理の下。写真・圃場あり。詳細ページはなし） |
@@ -82,6 +82,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | この土地のカード | 受け口は `app/api/farms/place-card/route.ts`、組み立ては `lib/farms/place-card.ts`、入力と表示は `components/NewFarmForm.tsx`・`components/FarmPlaceCard.tsx`、地図は `components/FarmLocationMap.tsx` |
 | 今日の提案の施肥・収穫日の補足 | 記録の取得と作付けごとの対応は `lib/proposals/record-guidance.ts`、県の資料リンクは `data/fertilizer-standards.json` と `lib/fertilizer-standards.ts`（台帳 E13・F2） |
 | 病害虫の見回り | モデルは `PestCheck`、保存と編集は `app/api/crops/[id]/pest-checks/route.ts`。品目別データと指針の入口は `data/pest-checks.json`・`data/pest-defense-guides.json`。問いかけの時期と選択は `lib/pests/selection.ts`、助言取得は `lib/pests/service.ts`、表示は `app/dashboard/ai-proposal/PestQuestion.tsx` と `components/CropPestChecks.tsx`（台帳 F3〜F9・I15） |
+| 名前が分からない異変の記録 | モデルは `FieldConcern`、選択肢は `lib/crops/field-concerns.ts`、APIは `app/api/crops/[id]/field-concerns/`、写真の保存先は `data/field-photos/` |
 | 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」・農薬の記録・今日の提案の病害虫の回答後（台帳 F1） |
 | 農薬の収穫日・回数 | `lib/pesticide-safety.ts`、`components/PesticideUsage.tsx`、`components/PesticideUsageField.tsx`、`app/pesticides/`、`app/crops/[id]/page.tsx`、`app/harvests/new/`（台帳 F2）。計算の確認は `tests/pesticide-safety.test.ts` |
 | 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`、`components/GDDChart.tsx`（割合と比較対象の表示）、`lib/gdd.ts`。収穫の見分けの言葉は `lib/benchmarks/gdd-methods.ts` の `harvestJudgment`。終了日の共通処理は `lib/insights/harvest-gdd-basis.ts` の `cropHeatEndDate`。目安は `lib/benchmarks/gdd-methods.ts`（台帳 B1c〜B1f） |
