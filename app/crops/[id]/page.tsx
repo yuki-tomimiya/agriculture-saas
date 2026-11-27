@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import CropDeleteButton from '@/components/CropDeleteButton'
 import CropPestChecks from '@/components/CropPestChecks'
+import { concernFormHref } from '@/lib/crops/field-concerns'
 import { findPest } from '@/lib/pests/catalog'
 import CropMilestones from '@/components/CropMilestones'
 import { milestoneFormItems } from '@/lib/proposals/milestones'
@@ -44,6 +45,7 @@ export default async function CropDetailPage({
     harvests: { orderBy: { date: 'desc' as const }, take: 20 },
     outcome: true,
     pestChecks: { orderBy: [{ observedAt: 'desc' as const }, { createdAt: 'desc' as const }] },
+    fieldConcerns: true,
     milestones: { orderBy: { observedAt: 'asc' as const } },
     tasks: { orderBy: { dueDate: 'asc' as const } },
     _count: {
@@ -102,7 +104,7 @@ export default async function CropDetailPage({
   return (
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
-      <main className="flex-1 ml-64 px-6 py-8">
+      <main className="min-w-0 flex-1 ml-64 px-6 py-8 [overflow-wrap:anywhere]">
         <div className="mb-6">
           <Link href="/crops" className="text-sm text-gray-500 hover:text-gray-700">
             ← {crop.status === 'growing' ? '作物一覧（栽培中）' : '作物一覧'}
@@ -131,11 +133,14 @@ export default async function CropDetailPage({
             </span>
           </div>
           <div className="flex gap-2 flex-wrap">
-            {crop.status === 'growing' && (
-              <Link href={`/records/field?cropId=${encodeURIComponent(crop.id)}`} className="btn btn-outline">
+            {crop.status === 'growing' && <>
+              <Link href={`/records/field?cropId=${encodeURIComponent(crop.id)}`} className="btn btn-outline max-w-full whitespace-normal">
                 畑で見たことを記録する
               </Link>
-            )}
+              <Link href={concernFormHref(crop.id)} className="btn btn-outline max-w-full whitespace-normal">
+                ほかに気になることがある
+              </Link>
+            </>}
             {crop.status !== 'growing' && (
               <Link href={`/crops/${id}/retrospective`} className="btn btn-primary">
                 今シーズンの振り返り
@@ -291,7 +296,12 @@ export default async function CropDetailPage({
 
         <CropPestChecks cropId={id} today={japanDateKey(new Date())} rows={crop.pestChecks.map(row => ({
           id: row.id, name: findPest(row.pestKey)?.name ?? row.pestKey,
-          observedDay: japanDateKey(row.observedAt), present: row.present, notes: row.notes,
+          observedDay: japanDateKey(row.observedAt), createdAt: +row.createdAt, present: row.present, notes: row.notes,
+        }))} concerns={crop.fieldConcerns.map(row => ({
+          id: row.id, observedDay: japanDateKey(row.observedAt), createdAt: +row.createdAt,
+          locations: row.locations, symptoms: row.symptoms, extent: row.extent, notes: row.notes,
+          hasPhoto: Boolean(row.photoName),
+          selectedPestName: row.selectedPestKey && (findPest(row.selectedPestKey)?.name ?? row.selectedPestKey),
         }))} />
         <CropMilestones
           cropId={crop.id}

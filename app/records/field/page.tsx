@@ -8,12 +8,12 @@ import { redirect } from 'next/navigation'
 import FieldObservationForm from './FieldObservationForm'
 
 export default async function FieldObservationPage({ searchParams }: {
-  searchParams: Promise<{ cropId?: string }>
+  searchParams: Promise<{ cropId?: string; observation?: string }>
 }) {
   const user = await getCurrentUser()
   if (!user) redirect('/auth/signin')
 
-  const { cropId } = await searchParams
+  const { cropId, observation } = await searchParams
   const crops = await prisma.crop.findMany({
     where: { status: 'growing', OR: [{ userId: user.id }, { farm: { userId: user.id } }] },
     select: {
@@ -35,7 +35,7 @@ export default async function FieldObservationPage({ searchParams }: {
       <main className="dashboard-main farms-page">
         <div className="form-column-page mx-auto w-full max-w-lg">
           <h1 className="farms-title mb-4 break-words">畑で見たことを記録する</h1>
-          <FieldObservationForm crops={options} initialCropId={cropId} today={japanDateKey(new Date())} />
+          <FieldObservationForm crops={options} initialCropId={cropId} initialObservation={observation} today={japanDateKey(new Date())} />
         </div>
       </main>
     </div>

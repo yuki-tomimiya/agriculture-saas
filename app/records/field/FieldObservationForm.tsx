@@ -4,8 +4,10 @@ import { useState, type FormEvent } from 'react'
 import Link from 'next/link'
 import PestAdvice, { type PestAdviceData } from '@/components/PestAdvice'
 import { FertilizerStandards, RecordGuidance } from '@/components/ProposalRecordGuidance'
+import { concernLabel, concernSelection } from '@/lib/crops/field-concerns'
 import type { fieldObservationOptions } from '@/lib/crops/field-observations'
 import type { CropRecordGuidance, ProposalRecordGuidance } from '@/lib/proposals/record-guidance'
+import FieldConcernForm from './FieldConcernForm'
 
 type CropOption = { id: string; label: string } & ReturnType<typeof fieldObservationOptions>
 type SaveResult = {
@@ -15,9 +17,10 @@ type SaveResult = {
 }
 const control = 'min-h-11 w-full min-w-0 rounded-md border border-gray-300 bg-white px-3 py-2 text-base'
 
-export default function FieldObservationForm({ crops, initialCropId, today }: {
+export default function FieldObservationForm({ crops, initialCropId, initialObservation, today }: {
   crops: CropOption[]
   initialCropId?: string
+  initialObservation?: string
   today: string
 }) {
   const [cropId, setCropId] = useState(crops.some(item => item.id === initialCropId) ? initialCropId : '')
@@ -37,6 +40,7 @@ export default function FieldObservationForm({ crops, initialCropId, today }: {
         </select>
       </label>
       {crop && <ObservationFields key={crop.id} crop={crop} today={today} pending={pending} setPending={setPending}
+        initialConcern={crop.id === initialCropId && initialObservation === concernSelection}
         savedDates={savedDates[crop.id]} rememberDate={(key, date) => setSavedDates(previous => ({
           ...previous, [crop.id]: { ...previous[crop.id], [key]: date },
         }))} />}
@@ -44,27 +48,25 @@ export default function FieldObservationForm({ crops, initialCropId, today }: {
   )
 }
 
-function ObservationFields({ crop, today, pending, setPending, savedDates, rememberDate }: {
+function ObservationFields({ crop, today, pending, setPending, initialConcern, savedDates, rememberDate }: {
   crop: CropOption
   today: string
   pending: boolean
   setPending: (pending: boolean) => void
+  initialConcern: boolean
   savedDates?: Record<string, string>
   rememberDate: (key: string, date: string) => void
 }) {
-  const [selected, setSelected] = useState('')
+  const [selected, setSelected] = useState(initialConcern ? concernSelection : '')
   const milestone = crop.milestones.find(item => item.key === selected)
   const pest = crop.pests.find(item => item.key === selected)
-
-  if (!crop.milestones.length && !crop.pests.length) return (
-    <p>この作付けで選べる節目や病害虫はありません。 <Link href="/records" className="underline">作業・農薬などの記録へ</Link></p>
-  )
 
   return <>
     <label className="block space-y-1">
       <span className="block font-medium">見たもの</span>
       <select className={control} value={selected} disabled={pending} onChange={event => setSelected(event.target.value)}>
         <option value="">見たものを選ぶ</option>
+        <option value={concernSelection}>{concernLabel}</option>
         {!!crop.milestones.length && <optgroup label="生育の節目">
           {crop.milestones.map(item => {
             const date = savedDates?.[item.key] ?? item.observedAt
@@ -76,6 +78,7 @@ function ObservationFields({ crop, today, pending, setPending, savedDates, remem
         </optgroup>}
       </select>
     </label>
+    {selected === concernSelection && <FieldConcernForm cropId={crop.id} today={today} pending={pending} setPending={setPending} />}
     {(milestone || pest) && <ObservationSaveForm key={selected} cropId={crop.id} today={today}
       milestone={milestone} pest={pest} pending={pending} setPending={setPending}
       savedDate={savedDates?.[selected] ?? milestone?.observedAt} rememberDate={rememberDate} />}

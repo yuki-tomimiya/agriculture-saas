@@ -18,6 +18,7 @@ dist/
 
 # 土壌診断の分析表（ローカルだけ。共有しない）
 data/soil-photos/
+data/field-photos/
 
 # Database (local SQLite)
 *.db

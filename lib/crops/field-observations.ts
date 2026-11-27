@@ -1,5 +1,5 @@
 import { adviceNames } from '@/lib/crops/conditions'
-import { pests } from '@/lib/pests/catalog'
+import { fieldObservationPests } from '@/lib/pests/field-observations'
 import { milestoneFormItems, type MilestoneRecord } from '@/lib/proposals/milestones'
 
 const observationLabels: Record<string, string> = {
@@ -65,8 +65,6 @@ export function fieldObservationOptions(crop: {
         label: observationLabels[item.key] ?? item.term,
         reportedAdvice: reportedMilestoneAdvice(item.key, item.ifYes),
       })),
-    pests: pests.filter(pest => pest.cropKind === crop.cropKind).map(pest => ({
-      key: pest.key, name: pest.name, marker: pest.marker, appearanceUrl: pest.appearance?.url,
-    })),
+    pests: fieldObservationPests(crop),
   }
 }

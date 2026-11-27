@@ -89,7 +89,7 @@ export default function CropMilestones({
             <div className="flex flex-wrap items-center gap-2 mt-3">
               <input
                 type="date"
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                className="min-w-0 max-w-full border border-gray-300 rounded px-2 py-1 text-sm"
                 value={dates[item.key] ?? todayInputValue()}
                 max={todayInputValue()}
                 onChange={(event) => setDates((current) => ({ ...current, [item.key]: event.target.value }))}

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
+import { concernFormHref } from '@/lib/crops/field-concerns'
 import { pestTrigger } from '@/lib/pests/catalog'
 import type { PestQuestion as Question } from '@/lib/proposals/presentation'
 import PestAdvice, { type PestAdviceData } from '@/components/PestAdvice'
@@ -37,13 +39,14 @@ export function PestQuestionRow({ question, inline = false }: { question: Questi
     }
   }
 
-  const notesInput = <textarea aria-label="見回りのメモ" maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} />
+  const inputWidth = 'block w-full min-w-0 max-w-full'
+  const notesInput = <textarea className={inputWidth} aria-label="見回りのメモ" maxLength={500} value={notes} onChange={e => setNotes(e.target.value)} />
 
-  return <div className="space-y-2 border-t py-2">
+  return <div className="min-w-0 space-y-2 border-t py-2 [overflow-wrap:anywhere]">
     {!inline && <p className="ai-proposal-card-meta">{cropName}{farmName && ` · ${farmName}`}</p>}
     {!inline && timing && <p className="text-sm">{timing} {timingSource && <a className="underline" href={timingSource}>時期の出典</a>}</p>}
     {answer === null ? <>
-      <label className="text-sm">見た日 <input type="date" value={date} max={today}
+      <label className="block text-sm">見た日 <input className={inputWidth} type="date" value={date} max={today}
         onChange={e => setDate(e.target.value)} /></label>
       {inline ? <label className="block text-sm">メモ（任意）{notesInput}</label> : <details className="text-sm">
         <summary>メモを添える</summary>
@@ -57,6 +60,7 @@ export function PestQuestionRow({ question, inline = false }: { question: Questi
     </> : <p role="status">{answer === 'later' ? 'あとで確認するようにしました。' : `${answer ? '「いた」' : '「いなかった」'}を記録しました。`}</p>}
     {error && <p role="alert">{error}</p>}
     {advice && <PestAdvice advice={advice} />}
+    <Link className="inline-block underline" href={concernFormHref(cropId)}>ほかに気になることがある</Link>
   </div>
 }
 

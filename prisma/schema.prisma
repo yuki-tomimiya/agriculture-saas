@@ -140,6 +140,7 @@ model Crop {
   proposalDismissals ProposalDismissal[]
   milestones         CropMilestone[]
   pestChecks         PestCheck[]
+  fieldConcerns      FieldConcern[]
   outcome            CropOutcome?
 }
 
@@ -153,6 +154,24 @@ model PestCheck {
   present    Boolean
   notes      String?
   createdAt  DateTime @default(now())
+
+  @@index([cropId, observedAt])
+}
+
+model FieldConcern {
+  id               String   @id @default(cuid())
+  cropId           String
+  crop             Crop     @relation(fields: [cropId], references: [id], onDelete: Cascade)
+  observedAt       DateTime
+  locations        String
+  symptoms         String
+  extent           String?
+  notes            String?
+  photoName        String?
+  selectedPestKey  String?
+  followUpResult   String?
+  followedUpAt     DateTime?
+  createdAt        DateTime @default(now())
 
   @@index([cropId, observedAt])
 }

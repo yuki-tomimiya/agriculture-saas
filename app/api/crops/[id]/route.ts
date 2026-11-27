@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { readUserIdCookie } from '@/lib/user-id-cookie'
 import { prisma } from '@/lib/prisma'
+import { removeFieldConcernPhoto } from '@/lib/crops/field-concern-photos'
 import { parseCropConditions } from '@/lib/crops/conditions'
 
 export async function PATCH(
@@ -143,17 +144,18 @@ export async function DELETE(
       return NextResponse.json({ error: 'ログインが必要です' }, { status: 401 })
     }
     const { id } = await params
-    const existing = await prisma.crop.findFirst({
-      where: {
-        id,
-        OR: [{ userId }, { farm: { userId } }],
-      },
-      select: { id: true },
+    const existing = await prisma.$transaction(async tx => {
+      const crop = await tx.crop.findFirst({
+        where: { id, OR: [{ userId }, { farm: { userId } }] },
+        select: { id: true, fieldConcerns: { select: { photoName: true } } },
+      })
+      if (crop) await tx.crop.delete({ where: { id: crop.id } })
+      return crop
     })
     if (!existing) {
       return NextResponse.json({ error: '作物が見つかりません' }, { status: 404 })
     }
-    await prisma.crop.delete({ where: { id: existing.id } })
+    await Promise.all(existing.fieldConcerns.map(row => removeFieldConcernPhoto(row.photoName)))
     return NextResponse.json({ ok: true })
   } catch (error) {
     console.error('Crop delete error:', error)
