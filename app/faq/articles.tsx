@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import WeatherDataSource from '@/components/WeatherDataSource'
 import { GDD_FAQ_ROWS, GDD_NONE_CROPS } from '@/lib/benchmarks/gdd-methods'
-import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_MAFF } from '@/lib/benchmarks/soil-ph'
+import { formatSoilPhRange, SOIL_PH_RANGES, SOIL_PH_SOURCE_CHIBA, SOIL_PH_SOURCE_GIFU, SOIL_PH_SOURCE_SAITAMA, TARO_PH_SOURCE_MIYAZAKI } from '@/lib/benchmarks/soil-ph'
 import { SOIL_NUTRIENT_SOURCE_MAFF, SOIL_PH_SOURCE_MIYAZAKI } from '@/lib/benchmarks/soil-nutrients'
 import { FROST_SOURCE_FUKUOKA, FROST_SOURCE_JMA } from '@/lib/proposals/frost'
 import { MILESTONE_SOURCE_CHIBA, MILESTONE_SOURCE_LINKS, milestoneFaqRows } from '@/lib/proposals/milestones'
@@ -52,8 +52,7 @@ export default function FaqAnswer({
       <>
         <p className="faq-section-text">
           画面の「10年平均」は、その農場の座標で、過去10年の同じ月日を平均した値です。
-          出どころは Open-Meteo です。中身は ERA5 などの再解析で、観測所・衛星・レーダーを数値モデルで統合した推計です。実測そのものではありません。
-          先の天気も同じ出どころで、表示しているのは気象庁の予報ではなく、海外の数値予報モデル（Open-Meteo）の計算結果です。大きくずれることがあります。
+          先の天気は予報モデルによる推計で、実際の天気と大きくずれることがあります。
         </p>
         <WeatherDataSource kind="mixed" />
         <p className="faq-section-text">
@@ -155,22 +154,16 @@ export default function FaqAnswer({
           さつまいもは、pHが低いことを理由に石灰を勧めません。
         </p>
         <p className="faq-section-note">
-          出典は、{SOIL_PH_SOURCE_MAFF.publisher}「{SOIL_PH_SOURCE_MAFF.name}」{SOIL_PH_SOURCE_MAFF.detail}です。
-          {' '}
-          <a href={SOIL_PH_SOURCE_MAFF.url} className="text-green-700 hover:underline">
-            {SOIL_PH_SOURCE_MAFF.url}
-          </a>
-          さつまいもだけは、{SOIL_PH_SOURCE_CHIBA.publisher}「{SOIL_PH_SOURCE_CHIBA.name}」（{SOIL_PH_SOURCE_CHIBA.year}）と、
-          {SOIL_PH_SOURCE_MIYAZAKI.publisher}「{SOIL_PH_SOURCE_MIYAZAKI.name}」（{SOIL_PH_SOURCE_MIYAZAKI.year}）{SOIL_PH_SOURCE_MIYAZAKI.detail}です。
-          どちらも暖かい地域の資料なので、全国の一般とは呼びません。
-          {' '}
-          <a href={SOIL_PH_SOURCE_CHIBA.url} className="text-green-700 hover:underline">
-            {SOIL_PH_SOURCE_CHIBA.url}
-          </a>
-          {' '}
-          <a href={SOIL_PH_SOURCE_MIYAZAKI.url} className="text-green-700 hover:underline">
-            {SOIL_PH_SOURCE_MIYAZAKI.url}
-          </a>
+          出典は、岐阜県「<a href={SOIL_PH_SOURCE_GIFU.url} className="faq-link">{SOIL_PH_SOURCE_GIFU.name}</a>」（平成17年9月）の「作物別最適pH領域一覧」（p.38、農林水産省「都道府県施肥基準等」に掲載）です。
+          同じ値が埼玉県「<a href={SOIL_PH_SOURCE_SAITAMA} className="faq-link">主要農作物施肥基準</a>」表23（出典は農文協『農業技術大系』）にもあります。
+        </p>
+        <p className="faq-section-note">
+          さといもは、埼玉県の表23と宮崎県「<a href={TARO_PH_SOURCE_MIYAZAKI} className="faq-link">主要作物の施肥基準</a>」（平成11年3月）野菜「20．さといも」（p.28）によります。
+        </p>
+        <p className="faq-section-note">
+          さつまいもは、{SOIL_PH_SOURCE_CHIBA.publisher}「<a href={SOIL_PH_SOURCE_CHIBA.url} className="faq-link">{SOIL_PH_SOURCE_CHIBA.name}</a>」（{SOIL_PH_SOURCE_CHIBA.year}）と、
+          {SOIL_PH_SOURCE_MIYAZAKI.publisher}「<a href={SOIL_PH_SOURCE_MIYAZAKI.url} className="faq-link">{SOIL_PH_SOURCE_MIYAZAKI.name}</a>」（{SOIL_PH_SOURCE_MIYAZAKI.year}）{SOIL_PH_SOURCE_MIYAZAKI.detail}です。
+          どちらも暖かい地域の資料です。
         </p>
         <p className="faq-section-note">
           地域・土壌型により変わります。都道府県の施肥基準がある場合はそちらを優先してください。
@@ -191,7 +184,7 @@ export default function FaqAnswer({
           東京都「土壌診断基準」（平成31年3月）です。
           {' '}
           <a href={SOIL_NUTRIENT_SOURCE_MAFF.url} className="text-green-700 hover:underline">
-            {SOIL_NUTRIENT_SOURCE_MAFF.url}
+            地力増進基本指針の資料
           </a>
         </p>
         <p className="faq-section-note">

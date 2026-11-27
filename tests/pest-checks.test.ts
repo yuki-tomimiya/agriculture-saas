@@ -99,8 +99,8 @@ test('畑で見た日をさかのぼって記録しても、再質問の間隔�
   assert.ok(on('2026-12-08', { ...check, present: false }))
 })
 
-test('32組に選択名・目印があり、採用した出典にURLがある', () => {
-  assert.equal(pests.length, 32)
+test('33組に選択名・目印があり、採用した出典にURLがある', () => {
+  assert.equal(pests.length, 33)
   assert.equal(new Set(pests.map(pest => pest.cropKind)).size, 21)
   for (const pest of pests) {
     assert.ok(pest.searchCrop && pest.searchPest && pest.marker)

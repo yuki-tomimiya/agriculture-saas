@@ -1431,5 +1431,80 @@
       }
     ],
     "seasons": []
+  },
+  {
+    "key": "taro:phytophthora-blight",
+    "cropKind": "taro",
+    "name": "疫病",
+    "question": "さといもに疫病は出ていませんか？",
+    "marker": "葉に褐色から暗褐色の丸や楕円の斑点ができ、輪の模様が見えることもあります。葉柄に黒褐色のしみができ、そこから折れて葉が垂れます。畑の周りと、中ほどから下の葉を見てください。",
+    "appearance": {
+      "publisher": "千葉県農林総合研究センター",
+      "title": "サトイモ疫病の防除対策",
+      "year": "2022",
+      "page": "フィールドノート（HTML）",
+      "url": "https://www.pref.chiba.lg.jp/ninaite/network/field-r4/rojiya-2022-05.html"
+    },
+    "searchCrop": "さといも",
+    "searchPest": "疫病",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "千葉県の資料では、健全な種いもを使い、畑の排水をよくします。発病した茎葉は畑の外へ持ち出します。収穫後は耕して残さの分解を進め、畑の周りに自然に生えたいもを除きます。",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "病害虫防除指針 野菜（41）さといも",
+            "year": "年表示なし（URLはr8）",
+            "page": "さといも−2（PDF2枚目）",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010341.pdf"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "45",
+        "text": "宮崎県の資料では、種いもを選んで水でよく洗い、水に浮いたいもは使いません。溝などで排水路を作り、除草して湿気をためません。",
+        "sources": [
+          {
+            "publisher": "宮崎県",
+            "title": "これだけは必ず実施 サトイモ疫病対策マニュアル（2024年版）",
+            "year": "2024",
+            "page": "(2)・(3)（PDF3・4枚目）",
+            "url": "https://hinatamafin.pref.miyazaki.lg.jp/material/files/group/39/satoimoekibyoutaisakumanyuaru.pdf"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "46",
+        "text": "鹿児島県の資料では、発病した茎葉は早めに摘み取って畑の外へ持ち出し、水がたまらないようにします。",
+        "sources": [
+          {
+            "publisher": "鹿児島県病害虫防除所",
+            "title": "令和2年度技術情報第9号（サトイモの疫病）",
+            "year": "2020",
+            "page": "PDF1枚目 6(2)(3)",
+            "url": "https://www.pref.kagoshima.jp/ag13/kiad/boujosho/documents/111399_20240220235153-1.pdf"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "38",
+        "text": "愛媛県の資料では、発病した葉は早めに取り除いて畑の外へ持ち出します。",
+        "sources": [
+          {
+            "publisher": "愛媛県病害虫防除所",
+            "title": "病害虫防除技術情報（第2号）サトイモ疫病の早期発見と防除の徹底について",
+            "year": "2019",
+            "page": "PDF1枚目 4(2)",
+            "url": "https://www.pref.ehime.jp/uploaded/attachment/26947.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
   }
 ]

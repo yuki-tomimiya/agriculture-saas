@@ -31,7 +31,8 @@ test('かぼちゃとさといもは助言の対象で積算は使わず、さ�
     assert.equal(adviceNames({ cropKind: 'other', name }).recordOnly, true)
   }
   for (const name of ['さといも', 'サトイモ', '里芋']) {
-    assert.equal(matchedSoilPh(name), null)
+    const ph = matchedSoilPh(name)
+    assert.deepEqual([ph?.min, ph?.max, ph?.adviseLow], [6, 6.5, true])
     const text = nationalYieldCopy(name, null, { qty: 0, unit: 'kg', areaM2: null })?.text ?? ''
     assert.match(text, /1,280/)
     assert.doesNotMatch(text, /2,250|かんしょ|さつまいも/)
@@ -67,21 +68,21 @@ test('かぼちゃの窓の両端と収穫後の除外、植える条件とpHは
 
 test('秋田のハスモンヨトウだけ8・9月に聞き、ほかの県は順に聞く', () => {
   const crop = { cropKind: 'taro', farmId: 'farm', growingSite: 'open', plantingDay: '2025-01-01' }
-  const skipDryRot = new Set(['taro:dry-rot'])
+  const otherTaroPests = new Set(['taro:dry-rot', 'taro:phytophthora-blight'])
   for (let month = 1; month <= 12; month++) {
     const today = `2026-${String(month).padStart(2, '0')}-15`
-    const local = selectPestQuestion({ ...crop, prefectureCode: '05' }, today, [], [], skipDryRot)
+    const local = selectPestQuestion({ ...crop, prefectureCode: '05' }, today, [], [], otherTaroPests)
     assert.equal(local?.pest.key, [8, 9].includes(month) ? 'taro:common-cutworm' : undefined)
     if (local) assert.match(local.season?.label ?? '', /秋田県.*8月から9月/)
     for (const prefectureCode of ['09', '13', '12']) {
-      const other = selectPestQuestion({ ...crop, prefectureCode }, today, [], [], skipDryRot)
+      const other = selectPestQuestion({ ...crop, prefectureCode }, today, [], [], otherTaroPests)
       assert.equal(other?.rank, 3)
       assert.equal(other.season, undefined)
     }
   }
   assert.deepEqual(pests.filter(p => p.cropKind === 'pumpkin').map(p => p.name), ['うどんこ病', '疫病'])
-  assert.deepEqual(pests.filter(p => p.cropKind === 'taro').map(p => p.name), ['ハスモンヨトウ', '乾腐病'])
-  for (const pest of pests.filter(p => p.cropKind === 'pumpkin' || p.cropKind === 'taro')) assert.equal(pest.appearance, null)
+  assert.deepEqual(pests.filter(p => p.cropKind === 'taro').map(p => p.name), ['ハスモンヨトウ', '乾腐病', '疫病'])
+  for (const pest of pests.filter(p => (p.cropKind === 'pumpkin' || p.cropKind === 'taro') && p.key !== 'taro:phytophthora-blight')) assert.equal(pest.appearance, null)
   for (const pest of pests.filter(p => p.cropKind === 'pumpkin')) assert.deepEqual(pest.seasons, [])
   assert.equal(findPest('pumpkin:powdery-mildew')?.measures[0].code, '05')
   assert.equal(findPest('taro:common-cutworm')?.measures[0].code, '46')
