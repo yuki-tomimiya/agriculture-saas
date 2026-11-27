@@ -84,7 +84,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | 病害虫の見回り | モデルは `PestCheck`、保存と編集は `app/api/crops/[id]/pest-checks/route.ts`。品目別データと指針の入口は `data/pest-checks.json`・`data/pest-defense-guides.json`。問いかけの時期と選択は `lib/pests/selection.ts`、助言取得は `lib/pests/service.ts`、表示は `app/dashboard/ai-proposal/PestQuestion.tsx` と `components/CropPestChecks.tsx`（台帳 F3〜F9・I15） |
 | 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」・農薬の記録・今日の提案の病害虫の回答後（台帳 F1） |
 | 農薬の収穫日・回数 | `lib/pesticide-safety.ts`、`components/PesticideUsage.tsx`、`components/PesticideUsageField.tsx`、`app/pesticides/`、`app/crops/[id]/page.tsx`、`app/harvests/new/`（台帳 F2）。計算の確認は `tests/pesticide-safety.test.ts` |
-| 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`、`lib/gdd.ts`。終了日の共通処理は `lib/insights/harvest-gdd-basis.ts` の `cropHeatEndDate`。目安は `lib/benchmarks/gdd-methods.ts`（台帳 B1c〜B1f） |
+| 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`、`components/GDDChart.tsx`（割合と比較対象の表示）、`lib/gdd.ts`。収穫の見分けの言葉は `lib/benchmarks/gdd-methods.ts` の `harvestJudgment`。終了日の共通処理は `lib/insights/harvest-gdd-basis.ts` の `cropHeatEndDate`。目安は `lib/benchmarks/gdd-methods.ts`（台帳 B1c〜B1f） |
 | カレンダー昨年 | `components/WorkCalendar.tsx` |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 土壌図の取り込み・検索 | `scripts/soil-import.ts`（`npm run soil:import`）、`scripts/soil-verify.ts`（`npm run soil:verify`）、`lib/soil-map/lookup.ts`。設計は Obsidian の `調査/B-5_土の種類の設計のたたき台_2026-11-01.md` |
@@ -132,7 +132,7 @@ lib/  ai-proposal*.ts, insights/, benchmarks/, weather-forecast.ts, gdd.ts, auth
 
 - 未ログイン: `getCurrentUser()` → `redirect('/auth/signin')`
 - APIのセッションからの本人確認: `lib/user-id-cookie.ts` の `readUserIdCookie()`（`lib/auth-session.ts`で検証）
-- 起動: `npm run dev` または `アプリを起動.bat`（`http://127.0.0.1:3000`）。LANから確認するときは `npm run dev:lan`
+- 起動: `npm run dev` または `アプリを起動.bat`（`http://127.0.0.1:3000`）。LANから確認するときは `npm run dev:lan`（変更の操作は送信元の確かめで止まるので、`TILLTOL_ORIGIN` に開く URL を入れる）
 - テスト: `npm test`（`tests/` 内の `.test.ts`・`.test.tsx`）。コードの確認: `npm run lint`（`eslint.config.mjs`）
 - 型・lint・テストを順に確認: `npm run check`
 - 今日の提案の固定出力を更新: `npm run test:update-fixtures`
