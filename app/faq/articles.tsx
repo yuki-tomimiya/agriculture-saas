@@ -52,7 +52,7 @@ export default function FaqAnswer({
       <>
         <p className="faq-section-text">
           画面の「10年平均」は、その農場の座標で、過去10年の同じ月日を平均した値です。
-          先の天気は予報モデルによる推計で、実際の天気と大きくずれることがあります。
+          この値は観測所の実測そのものではありません。先の天気は気象庁が発表する予報ではなく、気象庁や ECMWF などの数値予報モデルの計算結果です。実際の天気と大きくずれることがあります。
         </p>
         <WeatherDataSource kind="mixed" />
         <p className="faq-section-text">

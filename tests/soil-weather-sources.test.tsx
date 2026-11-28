@@ -25,3 +25,9 @@ test('適正pHの出典と従来の品目、天気の種類に応じた帰属を
     }
   }
 })
+
+test('10年平均のFAQで実測との違いと先の天気の出どころを説明する', () => {
+  const html = renderWithRouter(<FaqAnswer slug="normals" />)
+  assert.match(html, /実測そのものではありません/)
+  assert.match(html, /気象庁が発表する予報ではなく.*数値予報モデルの計算結果/)
+})
