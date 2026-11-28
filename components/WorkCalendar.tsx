@@ -1,6 +1,10 @@
 import Link from 'next/link'
-import { prisma } from '@/lib/prisma'
-import { getTodayProposals } from '@/lib/ai-proposal'
+import { loadTodayConfirmations } from '@/lib/proposals/presentation'
+import { japanDateKey } from '@/lib/pesticide-safety'
+import { calendarDate, offsetDay, lastYearOverlay, shiftMonth } from '@/lib/calendar/dates'
+import { calendarRecords, loadOutlookMaterial } from '@/lib/calendar/read'
+import { outlookRows } from '@/lib/calendar/outlook'
+import CalendarOutlook from './CalendarOutlook'
 import { LAST_YEAR_SAME_DAY_WINDOW_DAYS } from '@/lib/proposals/constants'
 
 type DayEvents = {
@@ -25,32 +29,20 @@ const emptyDayEvents = (): DayEvents => ({
   lastYearLabels: [],
 })
 
-function toYmd(date: Date): string {
-  const y = date.getFullYear()
-  const m = String(date.getMonth() + 1).padStart(2, '0')
-  const d = String(date.getDate()).padStart(2, '0')
-  return `${y}-${m}-${d}`
-}
-
-function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
-  const d = new Date(year, month - 1 + delta, 1)
-  return { year: d.getFullYear(), month: d.getMonth() + 1 }
-}
-
 function getMonthCalendarDays(
   year: number,
   month: number,
   eventsByDate: Map<string, DayEvents>
 ): CalendarDay[] {
-  const first = new Date(year, month - 1, 1)
-  const last = new Date(year, month, 0)
-  const firstWeekday = first.getDay()
-  const daysInMonth = last.getDate()
+  const first = new Date(Date.UTC(year, month - 1, 1))
+  const last = new Date(Date.UTC(year, month, 0))
+  const firstWeekday = first.getUTCDay()
+  const daysInMonth = last.getUTCDate()
 
   const leadingBlanks = Array(firstWeekday).fill(null)
   const days = Array.from({ length: daysInMonth }, (_, i) => {
     const d = i + 1
-    const dateKey = toYmd(new Date(year, month - 1, d))
+    const dateKey = calendarDate(year, month, d)
     return {
       day: d,
       dateKey,
@@ -82,7 +74,7 @@ function CalendarDayCell({
   const hasLastYear = showLastYear && lastYearCount > 0
   const hasHighlight = hasProposals || hasRecords || hasLastYear
 
-  const todayKey = toYmd(new Date())
+  const todayKey = japanDateKey(new Date())
   const isToday = item.dateKey === todayKey
   const visibleRecords = recordLabels.slice(0, 2)
   const extraRecords = recordLabels.length - visibleRecords.length
@@ -214,8 +206,8 @@ export default async function WorkCalendar({
   variant?: WorkCalendarVariant
 }) {
   const today = new Date()
-  const todayYear = today.getFullYear()
-  const todayMonth = today.getMonth() + 1
+  const todayKey = japanDateKey(today)
+  const [todayYear, todayMonth] = todayKey.split('-').map(Number)
   const monthCount = months >= 6 ? 6 : months >= 3 ? 3 : 1
   const showProposals = variant !== 'history'
   const showLastYear = variant === 'upcoming'
@@ -227,45 +219,17 @@ export default async function WorkCalendar({
 
   const firstMonth = shiftMonth(anchorYear, anchorMonth, startOffset)
   const lastMonth = shiftMonth(firstMonth.year, firstMonth.month, monthCount - 1)
-  const rangeStart = new Date(firstMonth.year, firstMonth.month - 1, 1)
-  const rangeEnd = new Date(lastMonth.year, lastMonth.month, 0, 23, 59, 59, 999)
-
-  // 前年同月レンジ（表示月の「日」に重ねる）
-  const lastYearRangeStart = new Date(firstMonth.year - 1, firstMonth.month - 1, 1)
-  const lastYearRangeEnd = new Date(lastMonth.year - 1, lastMonth.month, 0, 23, 59, 59, 999)
-
-  const [workRecords, fertilizerRecords, proposals, lastYearWorks, lastYearFertilizers] =
-    await Promise.all([
-      prisma.workRecord.findMany({
-        where: { farm: { userId }, date: { gte: rangeStart, lte: rangeEnd } },
-        include: { crop: true },
-        orderBy: { date: 'asc' },
-      }),
-      prisma.fertilizerRecord.findMany({
-        where: { userId, appliedAt: { gte: rangeStart, lte: rangeEnd } },
-        orderBy: { appliedAt: 'asc' },
-      }),
-      showProposals ? getTodayProposals(userId) : Promise.resolve([]),
-      showLastYear
-        ? prisma.workRecord.findMany({
-            where: {
-              farm: { userId },
-              date: { gte: lastYearRangeStart, lte: lastYearRangeEnd },
-            },
-            include: { crop: true },
-            orderBy: { date: 'asc' },
-          })
-        : Promise.resolve([]),
-      showLastYear
-        ? prisma.fertilizerRecord.findMany({
-            where: {
-              userId,
-              appliedAt: { gte: lastYearRangeStart, lte: lastYearRangeEnd },
-            },
-            orderBy: { appliedAt: 'asc' },
-          })
-        : Promise.resolve([]),
-    ])
+  const rangeStart = calendarDate(firstMonth.year, firstMonth.month, 1)
+  const rangeEnd = calendarDate(lastMonth.year, lastMonth.month + 1, 0)
+  const previousStart = offsetDay(calendarDate(firstMonth.year - 1, firstMonth.month, 1), -LAST_YEAR_SAME_DAY_WINDOW_DAYS)
+  const previousEnd = offsetDay(calendarDate(lastMonth.year - 1, lastMonth.month + 1, 0), LAST_YEAR_SAME_DAY_WINDOW_DAYS)
+  const [records, previous, confirmations, material] = await Promise.all([
+    calendarRecords(userId, rangeStart, rangeEnd),
+    showLastYear ? calendarRecords(userId, previousStart, previousEnd) : [],
+    showProposals ? loadTodayConfirmations(userId, { now: today }) : null,
+    showProposals ? loadOutlookMaterial(userId, today) : null,
+  ])
+  const rows = material ? outlookRows(todayKey, rangeEnd, material.farms, material.crops, previous) : []
 
   const eventsByDate = new Map<string, DayEvents>()
 
@@ -277,76 +241,26 @@ export default async function WorkCalendar({
     return fresh
   }
 
-  for (const rec of workRecords) {
-    const key = toYmd(rec.date)
-    const day = getDay(key)
-    const crop = rec.crop?.name ? `（${rec.crop.name}）` : ''
-    const label = `${rec.taskType}${crop}`
-    if (!day.recordLabels.includes(label)) {
-      day.recordLabels.push(label)
-      day.recordCount += 1
+  for (const record of records) {
+    const day = getDay(record.date)
+    if (!day.recordLabels.includes(record.label)) {
+      day.recordLabels.push(record.label)
+      day.recordCount++
     }
   }
-  for (const rec of fertilizerRecords) {
-    const key = toYmd(rec.appliedAt)
-    const day = getDay(key)
-    const label = `施肥：${rec.productName}`
-    if (!day.recordLabels.includes(label)) {
-      day.recordLabels.push(label)
-      day.recordCount += 1
-    }
-  }
-  if (showProposals) {
-    for (const p of proposals) {
-      if (p.urgency !== 'today') continue
-      const key = toYmd(p.suggestedDate ?? today)
+  for (const record of previous) {
+    for (const key of lastYearOverlay(record.date)) {
       const day = getDay(key)
-      if (!day.proposalTitles.includes(p.title)) {
-        day.proposalTitles.push(p.title)
-        day.proposalCount += 1
+      if (!day.lastYearLabels.includes(record.label)) {
+        day.lastYearLabels.push(record.label)
+        day.lastYearCount++
       }
     }
   }
-
-  /** 昨年の記録を「今年の同じ月日±幅」のキーにマッピング */
-  const mapLastYearToThisYear = (date: Date): string[] => {
-    const keys: string[] = []
-    for (let offset = -LAST_YEAR_SAME_DAY_WINDOW_DAYS; offset <= LAST_YEAR_SAME_DAY_WINDOW_DAYS; offset++) {
-      const shifted = new Date(date)
-      shifted.setDate(shifted.getDate() + offset)
-      const thisYear = shifted.getFullYear() + 1
-      const month = shifted.getMonth()
-      const day = shifted.getDate()
-      const probe = new Date(thisYear, month, day)
-      if (probe.getMonth() !== month) continue
-      const key = toYmd(probe)
-      if (!keys.includes(key)) keys.push(key)
-    }
-    return keys
-  }
-
-  if (showLastYear) {
-    for (const rec of lastYearWorks) {
-      const crop = rec.crop?.name ? `（${rec.crop.name}）` : ''
-      const label = `${rec.taskType}${crop}`
-      for (const key of mapLastYearToThisYear(rec.date)) {
-        const day = getDay(key)
-        if (!day.lastYearLabels.includes(label)) {
-          day.lastYearLabels.push(label)
-          day.lastYearCount += 1
-        }
-      }
-    }
-    for (const rec of lastYearFertilizers) {
-      const label = `施肥：${rec.productName}`
-      for (const key of mapLastYearToThisYear(rec.appliedAt)) {
-        const day = getDay(key)
-        if (!day.lastYearLabels.includes(label)) {
-          day.lastYearLabels.push(label)
-          day.lastYearCount += 1
-        }
-      }
-    }
+  if (confirmations) {
+    const day = getDay(todayKey)
+    day.proposalCount = confirmations.count
+    day.proposalTitles = ['締切 ' + confirmations.deadlineCount + '件・作付けごとの確認 ' + confirmations.confirmationGroups.length + '件']
   }
 
   const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
@@ -387,6 +301,7 @@ export default async function WorkCalendar({
             ? '※ 実績バッジにマウスを乗せると内容の概要を表示します。日付クリックで作業記録を登録できます。'
             : '※ 「昨年」は前年の同じ日の前後2日の実績です。提案・実績は件数バッジのみ。詳細は過去の実績ページでも確認できます。'}
         </p>
+        {material && <CalendarOutlook rows={rows} hasCrops={material.crops.length > 0} />}
       </section>
     )
   }

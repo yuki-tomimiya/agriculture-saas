@@ -1,9 +1,6 @@
-import { concernChoiceLabels, concernLocations, concernMonthDay, concernSymptoms } from '@/lib/crops/field-concerns'
+import { firstFollowUpDay, lastFollowUpDay, concernChoiceLabels, concernLocations, concernMonthDay, concernSymptoms } from '@/lib/crops/field-concerns'
 import { japanDateKey } from '@/lib/pesticide-safety'
 import { prisma } from '@/lib/prisma'
-
-const firstFollowUpDay = 3
-const lastFollowUpDay = 7
 
 // 台帳 I27。日付の境界は日本時間。
 export function concernFollowUpWindow(now: Date) {

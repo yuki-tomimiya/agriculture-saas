@@ -1,3 +1,7 @@
+// 台帳 I27。見た日から数える。
+export const firstFollowUpDay = 3
+export const lastFollowUpDay = 7
+
 export const concernSelection = 'concern'
 export const concernLabel = '名前が分からない・気になること'
 export const concernNotesLimit = 500

@@ -5,6 +5,11 @@
 export const FORECAST_RAIN_HIGHLIGHT_PCT = 55
 export const FORECAST_WIND_HIGHLIGHT_MS = 10
 export const FORECAST_HEAVY_RAIN_MM = 20
+// 台帳 H3。直近の予報から取り上げる雨の日は1日。
+export function highlightedRainDay<T extends { precipitation: number | null }>(days: T[]) {
+  return days.slice(0, 5).find(day => day.precipitation != null && day.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT)
+}
+
 /** 明日からの予報の日数。取得には今日の分も含める（台帳 B7・D11）。 */
 export const FORECAST_LEAD_DAYS = 14
 

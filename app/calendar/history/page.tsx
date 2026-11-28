@@ -4,10 +4,8 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import WorkCalendar from '@/components/WorkCalendar'
 
-function shiftMonth(year: number, month: number, delta: number): { year: number; month: number } {
-  const d = new Date(year, month - 1 + delta, 1)
-  return { year: d.getFullYear(), month: d.getMonth() + 1 }
-}
+import { japanDateKey } from '@/lib/pesticide-safety'
+import { shiftMonth } from '@/lib/calendar/dates'
 
 function parseYearMonth(
   yearParam: string | undefined,
@@ -30,16 +28,16 @@ export default async function CalendarHistoryPage({
   if (!user) redirect('/auth/signin')
   const sp = (await searchParams) ?? {}
 
-  const today = new Date()
+  const [year, month] = japanDateKey(new Date()).split('-').map(Number)
   // デフォルト: 「先月を含む過去3か月」の先頭（3か月前）
-  const defaultStart = shiftMonth(today.getFullYear(), today.getMonth() + 1, -3)
+  const defaultStart = shiftMonth(year, month, -3)
   const start = parseYearMonth(sp.year, sp.month, defaultStart)
   const prev = shiftMonth(start.year, start.month, -1)
   const next = shiftMonth(start.year, start.month, 1)
   const end = shiftMonth(start.year, start.month, 2)
 
   // 表示期間が「今月」に食い込まないよう、次へは制限（任意だが分かりやすい）
-  const currentMonthStart = { year: today.getFullYear(), month: today.getMonth() + 1 }
+  const currentMonthStart = { year, month }
   const nextWouldOverlapCurrent =
     end.year > currentMonthStart.year ||
     (end.year === currentMonthStart.year && end.month >= currentMonthStart.month)

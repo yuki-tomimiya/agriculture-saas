@@ -6,7 +6,7 @@ import { formatStageGeneralLine, resolveCropStage, type StageProgress } from '@/
 import { hasWeatherCoordinates } from '@/lib/weather-forecast'
 import { liveProposalWeather, type ProposalWeather } from '@/lib/proposals/weather'
 import { LAST_YEAR_SAME_DAY_WINDOW_DAYS } from '@/lib/proposals/constants'
-import { FORECAST_RAIN_HIGHLIGHT_PCT, FORECAST_WIND_HIGHLIGHT_MS } from '@/lib/weather-thresholds'
+import { highlightedRainDay, FORECAST_WIND_HIGHLIGHT_MS } from '@/lib/weather-thresholds'
 
 export type ProposalLayers = {
   personal: string | null
@@ -199,7 +199,7 @@ export async function buildRegionalLayer(point?: {
   let forecastLine: string | null = null
   if (forecast.length > 0) {
     const near = forecast.slice(0, 5)
-    const heavyRain = near.find(d => d.precipitation != null && d.precipitation >= FORECAST_RAIN_HIGHLIGHT_PCT)
+    const heavyRain = highlightedRainDay(forecast)
     if (heavyRain?.precipitation != null) {
       forecastLine = `数値予報モデルの計算では、${heavyRain.dayLabel}の降水確率は${heavyRain.precipitation.toFixed(0)}%です。`
     } else {

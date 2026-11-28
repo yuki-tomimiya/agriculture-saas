@@ -627,7 +627,7 @@ type MilestoneAskInput = {
   hiddenKeys?: string[]
 }
 
-export function* eligibleMilestoneAsks(input: MilestoneAskInput): Generator<MilestoneAsk, void> {
+function* unrecordedMilestones(input: MilestoneAskInput) {
   const hidden = new Set(input.hiddenKeys ?? [])
   const recorded = new Set(input.records.map((record) => record.key))
   for (const item of catalogFor(input.cropName, input.variety)) {
@@ -635,6 +635,17 @@ export function* eligibleMilestoneAsks(input: MilestoneAskInput): Generator<Mile
     if (item.ask === false) continue
     if (recorded.has(item.key) || hidden.has(item.key)) continue
     if (item.skipWhenHarvest && input.hasHarvest) continue
+    yield item
+  }
+}
+
+export function milestoneAskStarts(input: MilestoneAskInput) {
+  return [...unrecordedMilestones(input)].flatMap(item => item.window.kind === 'days'
+    ? [{ key: item.key, term: item.term, days: item.window.from }] : [])
+}
+
+export function* eligibleMilestoneAsks(input: MilestoneAskInput): Generator<MilestoneAsk, void> {
+  for (const item of unrecordedMilestones(input)) {
     if (windowPlace(item.window, input) !== 'inside') continue
     yield {
       key: item.key,
