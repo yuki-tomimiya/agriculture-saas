@@ -49,7 +49,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | `/crops` | 作物管理・栽培中 |
 | `/crops/archive` | 過去の作付け（収穫済み・完了） |
 | `/crops/[id]/retrospective` | 作付け終了時の振り返り1枚 |
-| `/calendar` | 作業カレンダー（これから・昨年オーバーレイ） |
+| `/calendar` | 作業カレンダー（農場別の見通し・日別の印・実績） |
 | `/calendar/history` | 過去の実績（パンくず: カレンダー / 過去の実績） |
 | `/weather` | 気象ナビ |
 
@@ -63,7 +63,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 |------|------|
 | ログインと送信元の確認 | `Session`（`prisma/schema.prisma`）、発行・失効は `lib/auth-session.ts`。画面の入口は `lib/auth.ts` の `getCurrentUser`、APIの入口は `lib/user-id-cookie.ts` の `readUserIdCookie`。ログアウトは `app/api/auth/logout/route.ts` と `components/Navbar.tsx`。送信元は `proxy.ts` → `lib/request-origin.ts`（設定名 `TILLTOL_ORIGIN`）、新規登録の検証は `lib/auth-validation.ts`（台帳 I25・I26）。確認は `tests/auth-session.test.tsx`・`tests/request-origin.test.ts`・`tests/auth-migration.test.ts` |
 | 今日の提案 | `lib/proposals/`（採点・ステージ・節目・「今はしない」・終了確認。台帳 I2・I17）、`app/dashboard/ai-proposal/page.tsx`（取得）、同じフォルダの `MorningProposals.tsx`（画面と回答の配置）、`app/dashboard/page.tsx`（件数）、`app/api/proposals/dismiss/` |
-| 提案の組み立て | `lib/proposals/scoring.ts`（候補）、`lib/proposals/presentation.ts` の `loadTodayConfirmations(userId, { now, weather })`（選択とグループ化）。気象の取得口は `lib/proposals/weather.ts`。カレンダーは `lib/ai-proposal.ts` の `getTodayProposals` |
+| 提案の組み立て | `lib/proposals/scoring.ts`（候補）、`lib/proposals/presentation.ts` の `loadTodayConfirmations(userId, { now, weather })`（選択とグループ化）。気象の取得口は `lib/proposals/weather.ts`。カレンダーの今日の件数も同じ取得口を使う |
 | 異変のその後 | 今日の提案への取得は `lib/proposals/concern-follow-up.ts`（台帳 I27）、回答は `app/dashboard/ai-proposal/ConcernFollowUpAnswer.tsx` と異変APIの `[concernId]/follow-up/`、作付け詳細の表示は `components/CropPestChecks.tsx` |
 | 提案の答え合わせ | `tests/today-proposals.test.ts` と `tests/fixtures/today-proposals/`。3つの形は `scripts/proposal-check-scenarios.ts` |
 | 平年値・初霜・見込みの幅 | `lib/weather-normals.ts`, `lib/weather-frost.ts`, `lib/jma/`（観測所一覧 `data/jma-stations.json`、日別気温は `JmaDailyTemp`）、`lib/insights/harvest-date-window.ts`（台帳 B7）, `lib/proposals/frost.ts`（さつまいもの霜の締切・春の霜の終わり。台帳 D9） |
@@ -87,7 +87,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」・農薬の記録・今日の提案の病害虫の回答後（台帳 F1） |
 | 農薬の収穫日・回数 | `lib/pesticide-safety.ts`、`components/PesticideUsage.tsx`、`components/PesticideUsageField.tsx`、`app/pesticides/`、`app/crops/[id]/page.tsx`、`app/harvests/new/`（台帳 F2）。計算の確認は `tests/pesticide-safety.test.ts` |
 | 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`、`components/GDDChart.tsx`（割合と比較対象の表示）、`lib/gdd.ts`。収穫の見分けの言葉は `lib/benchmarks/gdd-methods.ts` の `harvestJudgment`。終了日の共通処理は `lib/insights/harvest-gdd-basis.ts` の `cropHeatEndDate`。目安は `lib/benchmarks/gdd-methods.ts`（台帳 B1c〜B1f） |
-| カレンダー昨年 | `components/WorkCalendar.tsx` |
+| カレンダー | `components/WorkCalendar.tsx`（マス・農場選択）、`components/CalendarOutlook.tsx`（見通し一覧）、`lib/calendar/read.ts`（材料の取得）、`lib/calendar/outlook.ts`（行の組み立て）、`lib/calendar/dates.ts`（日付と前年の重ね。台帳 I7・I28） |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 土壌図の取り込み・検索 | `scripts/soil-import.ts`（`npm run soil:import`）、`scripts/soil-verify.ts`（`npm run soil:verify`）、`lib/soil-map/lookup.ts`。設計は Obsidian の `調査/B-5_土の種類の設計のたたき台_2026-11-01.md` |
 | 農場ごとの土 | `prisma/schema.prisma` の `FarmSoil`、`lib/farm-soil/`（保存・訂正・有効な土の解決）、農場の登録・更新API、`app/api/farms/[id]/soil/route.ts`、`scripts/soil-refresh.ts`（`npm run soil:refresh`） |
