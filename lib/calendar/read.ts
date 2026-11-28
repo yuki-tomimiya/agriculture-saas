@@ -10,8 +10,10 @@ import { pickHarvestBasis, loadHarvestSamples } from '@/lib/insights/harvest-gdd
 import { gddStartDate } from '@/lib/benchmarks/gdd-methods'
 import { concernChoiceLabels, concernLocations, concernSymptoms } from '@/lib/crops/field-concerns'
 import { FROST_ARCHIVE_YEARS } from '@/lib/weather-frost'
+import { findPest } from '@/lib/pests/catalog'
+import { milestoneTerm } from '@/lib/proposals/milestones'
 import { offsetDay } from './dates'
-import type { CalendarRecord, CropOutlook, FarmOutlook } from './outlook'
+import type { CalendarRecord, CropOutlook, FarmOutlook, RecordEntry } from './outlook'
 
 export async function calendarRecords(userId: string, first: string, last: string): Promise<CalendarRecord[]> {
   const dates = { gte: new Date(first + 'T00:00:00+09:00'), lt: new Date(offsetDay(last, 1) + 'T00:00:00+09:00') }
@@ -27,6 +29,77 @@ export async function calendarRecords(userId: string, first: string, last: strin
     ...work.map(r => ({ id: 'work-' + r.id, farmId: r.farmId, farmName: r.farm.name, cropName: r.crop?.name, date: japanDateKey(r.date), label: r.taskType + (r.crop ? '（' + r.crop.name + '）' : '') })),
     ...fertilizer.map(r => ({ id: 'fertilizer-' + r.id, farmId: r.farmId ?? r.crop?.farmId ?? null, farmName: r.farm?.name ?? r.crop?.farm?.name, cropName: r.crop?.name, date: japanDateKey(r.appliedAt), label: '施肥：' + r.productName })),
   ]
+}
+
+const cropSubject = { select: { id: true, name: true, farmId: true, farm: { select: { name: true } } } } as const
+type CropSubject = { id: string; name: string; farmId: string | null; farm: { name: string } | null } | null
+const subjectOf = (crop: CropSubject, farm?: { id: string | null; name?: string | null }) => ({
+  farmId: farm?.id ?? crop?.farmId ?? null, farmName: farm?.name ?? crop?.farm?.name ?? undefined,
+  cropName: crop?.name, cropId: crop?.id ?? null,
+})
+const withCrop = (text: string, crop: CropSubject) => text + (crop ? '（' + crop.name + '）' : '')
+
+/** カレンダーに点で出す自分の記録（109）。作業・施肥／農薬・収穫／畑で見たこと（気になること・病害虫を見かけた・節目） */
+export async function calendarEntries(userId: string, first: string, last: string): Promise<RecordEntry[]> {
+  const dates = { gte: new Date(first + 'T00:00:00+09:00'), lt: new Date(offsetDay(last, 1) + 'T00:00:00+09:00') }
+  const crop = getCropWhere(userId).where
+  const [work, fertilizer, pesticide, harvest, concern, pest, milestone] = await Promise.all([
+    prisma.workRecord.findMany({ where: { farm: { userId }, date: dates }, select: {
+      id: true, date: true, taskType: true, farmId: true, farm: { select: { name: true } }, crop: cropSubject } }),
+    prisma.fertilizerRecord.findMany({ where: { userId, appliedAt: dates }, select: {
+      id: true, appliedAt: true, productName: true, farmId: true, farm: { select: { name: true } }, crop: cropSubject } }),
+    prisma.pesticideRecord.findMany({ where: { userId, appliedAt: dates }, select: {
+      id: true, appliedAt: true, productName: true, farmId: true, farm: { select: { name: true } }, crop: cropSubject } }),
+    prisma.harvest.findMany({ where: { crop, date: dates }, select: { id: true, date: true, crop: cropSubject } }),
+    prisma.fieldConcern.findMany({ where: { crop, observedAt: dates }, select: { id: true, observedAt: true, locations: true, symptoms: true, crop: cropSubject } }),
+    prisma.pestCheck.findMany({ where: { crop, present: true, observedAt: dates }, select: { id: true, observedAt: true, pestKey: true, crop: cropSubject } }),
+    prisma.cropMilestone.findMany({ where: { crop, observedAt: dates }, select: { id: true, observedAt: true, key: true, crop: cropSubject } }),
+  ])
+  const farmOf = (r: { farmId: string | null; farm: { name: string } | null }) => r.farmId ? { id: r.farmId, name: r.farm?.name } : undefined
+  const entries: RecordEntry[] = [
+    ...work.map(r => ({ ...subjectOf(r.crop, { id: r.farmId, name: r.farm.name }), id: 'work-' + r.id, date: japanDateKey(r.date), kind: 'work' as const,
+      title: withCrop(r.taskType, r.crop), term: r.taskType, note: '作業の記録', href: '/work-records/' + r.id })),
+    ...fertilizer.map(r => ({ ...subjectOf(r.crop, farmOf(r)), id: 'fertilizer-' + r.id, date: japanDateKey(r.appliedAt), kind: 'work' as const,
+      title: '施肥：' + r.productName, term: '施肥', note: '施肥の記録', href: '/fertilizers/' + r.id })),
+    ...pesticide.map(r => ({ ...subjectOf(r.crop, farmOf(r)), id: 'pesticide-' + r.id, date: japanDateKey(r.appliedAt), kind: 'spray' as const,
+      title: '農薬：' + r.productName, term: '農薬', note: '農薬の記録', href: '/pesticides/' + r.id })),
+    ...harvest.map(r => ({ ...subjectOf(r.crop), id: 'harvest-' + r.id, date: japanDateKey(r.date), kind: 'spray' as const,
+      title: withCrop('収穫', r.crop), term: '収穫', note: '収穫の記録', href: '/harvests/' + r.id })),
+    ...concern.map(r => {
+      const words = [...concernChoiceLabels(concernLocations, r.locations), ...concernChoiceLabels(concernSymptoms, r.symptoms)]
+      const title = '気になること' + (words.length ? '（' + words.join('・') + '）' : '')
+      return { ...subjectOf(r.crop), id: 'field-' + r.id, date: japanDateKey(r.observedAt), kind: 'field' as const,
+        title, term: title, note: '畑で見たことの記録', href: '/crops/' + r.crop.id }
+    }),
+    ...pest.map(r => {
+      const name = findPest(r.pestKey)?.name ?? r.pestKey
+      return { ...subjectOf(r.crop), id: 'pest-' + r.id, date: japanDateKey(r.observedAt), kind: 'field' as const,
+        title: name + 'を見かけた', term: name, note: '畑で見たことの記録', href: '/crops/' + r.crop.id }
+    }),
+    ...milestone.map(r => {
+      const term = milestoneTerm(r.key) ?? '節目'
+      return { ...subjectOf(r.crop), id: 'milestone-' + r.id, date: japanDateKey(r.observedAt), kind: 'field' as const,
+        title: '節目：' + term, term, note: '節目の記録', href: '/crops/' + r.crop.id }
+    }),
+  ]
+  return entries.sort((a, b) => a.date.localeCompare(b.date) || a.id.localeCompare(b.id))
+}
+
+/** 記録のある最も古い日（日本時間）。農場を選んでいれば、その農場の記録だけ。記録が無ければ null（台帳 I28） */
+export async function oldestRecordDay(userId: string, farmId?: string): Promise<string | null> {
+  const crop = getCropWhere(userId, farmId ? { farmId } : undefined).where
+  const byFarm = farmId ? { OR: [{ farmId }, { farmId: null, crop: { farmId } }] } : {}
+  const firsts = await Promise.all([
+    prisma.workRecord.findFirst({ where: { farm: { userId }, ...(farmId ? { farmId } : {}) }, orderBy: { date: 'asc' }, select: { date: true } }).then(r => r?.date),
+    prisma.fertilizerRecord.findFirst({ where: { userId, ...byFarm }, orderBy: { appliedAt: 'asc' }, select: { appliedAt: true } }).then(r => r?.appliedAt),
+    prisma.pesticideRecord.findFirst({ where: { userId, ...byFarm }, orderBy: { appliedAt: 'asc' }, select: { appliedAt: true } }).then(r => r?.appliedAt),
+    prisma.harvest.findFirst({ where: { crop }, orderBy: { date: 'asc' }, select: { date: true } }).then(r => r?.date),
+    prisma.fieldConcern.findFirst({ where: { crop }, orderBy: { observedAt: 'asc' }, select: { observedAt: true } }).then(r => r?.observedAt),
+    prisma.pestCheck.findFirst({ where: { crop, present: true }, orderBy: { observedAt: 'asc' }, select: { observedAt: true } }).then(r => r?.observedAt),
+    prisma.cropMilestone.findFirst({ where: { crop }, orderBy: { observedAt: 'asc' }, select: { observedAt: true } }).then(r => r?.observedAt),
+  ])
+  const days = firsts.filter((d): d is Date => d != null).map(japanDateKey).sort()
+  return days[0] ?? null
 }
 
 /** 霜の行の2行目の出典の一言。観測所は名前と年数、ほかは農場の座標の推計 */

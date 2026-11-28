@@ -24,9 +24,6 @@ export default async function CalendarPage({ searchParams }: { searchParams?: Pr
             </p>
           </div>
           <div className="insights-header-actions">
-            <Link href="/calendar/history" className="btn btn-outline farms-add-button">
-              過去の実績
-            </Link>
             <Link href="/dashboard/ai-proposal" className="btn btn-primary farms-add-button">
               今日の作業を提案
             </Link>
@@ -34,7 +31,7 @@ export default async function CalendarPage({ searchParams }: { searchParams?: Pr
         </div>
 
         <div className="calendar-page-content">
-          <WorkCalendar months={3} userId={user.id} variant="upcoming" farmId={params.farm} month={params.month} day={params.day} />
+          <WorkCalendar userId={user.id} farmId={params.farm} month={params.month} day={params.day} />
         </div>
       </main>
     </div>

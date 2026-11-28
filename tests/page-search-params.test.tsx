@@ -74,25 +74,21 @@ test('画面がURLの条件を受け取る', async t => {
     })
   }
 
-  t.mock.timers.enable({ apis: ['Date'], now: new Date(2026, 10, 16, 12) })
-  await t.test('/calendar/history がカレンダーへ渡す開始月', async () => {
-    type CalendarContainer = React.ReactElement<{ children: React.ReactElement }>
-    type Main = React.ReactElement<{ children: [React.ReactNode, React.ReactNode, CalendarContainer] }>
-    const calendarProps = (element: React.ReactElement) => {
-      const [, main] = (element.props as { children: [React.ReactNode, Main] }).children
-      const [, , calendarContainer] = main.props.children
-      return calendarContainer.props.children.props
+  await t.test('前の /calendar/history は、カレンダーのその月へ送る（109）', async () => {
+    const redirectedTo = async (searchParams?: { year?: string; month?: string }) => {
+      try {
+        await CalendarHistoryPage(searchParams ? { searchParams: Promise.resolve(searchParams) } : {})
+      } catch (error) {
+        const digest = String((error as { digest?: string }).digest)
+        assert.match(digest, /^NEXT_REDIRECT/)
+        return digest.split(';')[2]
+      }
+      assert.fail('redirect されなかった')
     }
-    const defaults = await withRequestCookies(cookies, () => CalendarHistoryPage({}))
-    assert.deepEqual(calendarProps(defaults), {
-      months: 3, userId, variant: 'history', startYear: 2026, startMonth: 8,
-    })
-    const december = await withRequestCookies(cookies, () => CalendarHistoryPage({
-      searchParams: Promise.resolve({ year: '2025', month: '12' }),
-    }))
-    assert.deepEqual(calendarProps(december), {
-      months: 3, userId, variant: 'history', startYear: 2025, startMonth: 12,
-    })
+    assert.equal(await redirectedTo({ year: '2026', month: '8' }), '/calendar?month=2026-08')
+    assert.equal(await redirectedTo({ year: '2025', month: '12' }), '/calendar?month=2025-12')
+    assert.equal(await redirectedTo({ year: '2026', month: '13' }), '/calendar')
+    assert.equal(await redirectedTo(), '/calendar')
   })
 
   const formQuery = { cropId: 'crop-b', farmId: 'farm-b', date: '2026-09-01' }

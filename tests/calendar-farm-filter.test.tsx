@@ -21,7 +21,7 @@ test('農場の絞り込みが、マスの点・選んだ日の欄・実績・�
   // 場所・様子の言葉が無い気になることの記録
   await db.fieldConcern.create({ data: { cropId: 'a', observedAt: new Date('2026-11-24T00:00:00+09:00'), locations: '', symptoms: '' } })
   const render = async (props: { farmId?: string; month?: string; day?: string } = {}) =>
-    renderWithRouter(await WorkCalendar({ userId: 'owner', months: 3, ...props }))
+    renderWithRouter(await WorkCalendar({ userId: 'owner', ...props }))
   const panelOf = (html: string) => html.slice(html.indexOf('calendar-day-panel'))
 
   const all = await render()

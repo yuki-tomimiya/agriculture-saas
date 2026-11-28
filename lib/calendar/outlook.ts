@@ -7,14 +7,16 @@ import { pests } from '@/lib/pests/catalog'
 import { FROST_RISK_MAX_C } from '@/lib/weather-frost'
 import { FORECAST_LEAD_DAYS, highlightedRainDay } from '@/lib/weather-thresholds'
 import type { ForecastDay } from '@/lib/weather-forecast'
-import type { CalendarKind } from './day-panel'
+import type { CalendarKind, RecordKind } from './day-panel'
 
 type Source = 'station' | 'archive' | 'forecast' | 'mixed'
 type Subject = { farmId: string | null; farmName?: string; cropName?: string }
-/** title は欄の1行目、layer と note は2行目（層と出典の一言）、text は行の中で開く長い文 */
+/** title は欄の1行目、layer と note は2行目（層と出典の一言）、text は行の中で開く長い文。
+ * 記録の行だけ、月のまとめに使う cropId と term（「追肥」「収穫」など短い名前）を持つ */
 export type OutlookRow = Subject & {
   id: string; start: string; end: string; mark: string; kind: CalendarKind
   title: string; text: string; layer: string; note?: string; href: string; source?: Source
+  cropId?: string | null; term?: string
 }
 export type FarmOutlook = {
   id: string; name: string; prefectureCode: string | null
@@ -30,6 +32,10 @@ export type CropOutlook = {
   window: { start: string; end: string; text: string } | null
 }
 export type CalendarRecord = Subject & { id: string; date: string; label: string }
+/** カレンダーに点で出す自分の記録（作業・施肥／農薬・収穫／畑で見たこと）。title は欄の1行目、note は記録の種類 */
+export type RecordEntry = Subject & {
+  id: string; date: string; kind: RecordKind; title: string; term: string; note: string; cropId: string | null; href: string
+}
 
 const slashDay = (day: string) => Number(day.slice(5, 7)) + '/' + Number(day.slice(8, 10))
 const monthDay = (day: string) => Number(day.slice(5, 7)) + '月' + Number(day.slice(8, 10)) + '日'
@@ -115,15 +121,15 @@ export function outlookRows(today: string, through: string, farms: FarmOutlook[]
     const keys = lastYearOverlay(record.date).filter(k => k >= today && k <= through)
     if (keys.length) add(record, { id: 'previous-' + record.id, start: keys[0], end: keys[keys.length - 1], mark: '昨年', kind: 'lastYear',
       title: '昨年の記録：' + record.label, text: '昨年の記録：' + record.label, layer: 'あなた', note: '昨年' + monthDay(record.date) + 'の記録',
-      href: '/calendar/history?year=' + record.date.slice(0,4) + '&month=' + Number(record.date.slice(5,7)) })
+      // 押すと昨年のその日の記録が欄に出る
+      href: '/calendar?month=' + record.date.slice(0, 7) + '&day=' + record.date })
   }
   return rows.sort((a,b) => a.start.localeCompare(b.start) || a.id.localeCompare(b.id))
 }
 
-/** その日の実績（作業・施肥）。表示する月の中なら、今日より前の日も出す */
-export function recordRows(records: CalendarRecord[]): OutlookRow[] {
-  return records.map(record => ({
-    ...record, start: record.date, end: record.date, mark: '実績', kind: 'mine', title: record.label, text: record.label,
-    layer: 'あなた', note: record.id.startsWith('fertilizer-') ? '施肥の記録' : '作業の記録', href: '/work-records',
+/** 自分の記録の行。今日より前の日も、表示する月の中なら出す */
+export function recordRows(entries: RecordEntry[]): OutlookRow[] {
+  return entries.map(({ date, ...entry }) => ({
+    ...entry, start: date, end: date, mark: '記録', text: entry.title, layer: 'あなた',
   }))
 }

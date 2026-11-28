@@ -6,7 +6,7 @@ import { lastYearOverlay } from '@/lib/calendar/dates'
 import {
   calendarHref, dotDays, dotsByDay, panelSources, panelWeek, readCalendarView, rowsOnDay, shiftView, type CalendarView,
 } from '@/lib/calendar/day-panel'
-import { concernTitle, outlookRows, recordRows, type CropOutlook, type FarmOutlook, type OutlookRow } from '@/lib/calendar/outlook'
+import { concernTitle, outlookRows, recordRows, type CropOutlook, type FarmOutlook, type OutlookRow, type RecordEntry } from '@/lib/calendar/outlook'
 import { harvestDatesByCrop, japanDateKey } from '@/lib/pesticide-safety'
 import { organizeConfirmations } from '@/lib/proposals/presentation'
 import type { ForecastDay } from '@/lib/weather-forecast'
@@ -24,6 +24,9 @@ const view = (rows: OutlookRow[], initialView: CalendarView, extra: Partial<Para
   renderWithRouter(<CalendarMonthView rows={rows} today={today} lastMonth={lastMonth} initialView={initialView} farms={[]} farmId={null}
     proposalCount={0} hasCrops {...extra} />)
 const panelOf = (html: string) => html.slice(html.indexOf('calendar-day-panel'))
+const entry = (date: string, title: string, extra: Partial<RecordEntry> = {}): RecordEntry => ({
+  id: 'work-' + date + title, farmId: 'f', farmName: '秋田の畑', date, kind: 'work', title, term: title, note: '作業の記録',
+  cropId: null, href: '/work-records/x', ...extra })
 
 test('日本時間の28日から、節目は明日以降の最初の1日、農薬と気になることのその後は記録どおり', () => {
   assert.equal(japanDateKey(new Date('2026-11-27T15:30Z')), today)
@@ -77,7 +80,8 @@ test('種類ごとの点：農薬・予報の霜・聞き始め・昨年', () =>
   assert.equal(rows.find(r => r.mark === '霜' && r.source === 'forecast')?.kind, 'weather')
   assert.equal(kindOf('聞き始め'), 'harvest')
   assert.equal(kindOf('昨年'), 'lastYear')
-  assert.equal(recordRows([{ id: 'work-1', farmId: 'f', date: '2026-11-20', label: '手入れ' }])[0].kind, 'mine')
+  // その日の実績（作業・施肥）は「作業・施肥」の点（109）
+  assert.equal(recordRows([entry('2026-11-20', '手入れ')])[0].kind, 'work')
   const dots = dotsByDay(rows)
   assert.deepEqual(dots.get('2026-11-27'), { mine: 1 })
   assert.deepEqual(dots.get('2026-12-02'), { mine: 1, lastYear: 1 })
@@ -87,7 +91,10 @@ test('種類ごとの点：農薬・予報の霜・聞き始め・昨年', () =>
   const html = view(rows, { month: '2026-12', day: null })
   assert.match(html, /aria-label="12月2日、あなたの記録から1件、昨年1件"/)
   assert.match(html, /aria-label="12月1日、あなたの記録から1件、昨年1件"/)
-  for (const label of ['霜・天気', '収穫・聞き始め', 'あなたの記録から', '昨年']) assert.match(html, new RegExp('</span>' + label + '</li>'))
+  // 凡例は、その月に出ている種類だけ（109）。12月に霜・天気は無く、11月30日の予報の霜は11月の凡例に出る
+  const legendOf = (markup: string) => [...(markup.match(/<ul class="calendar-legend">([\s\S]*?)<\/ul>/)?.[1] ?? '').matchAll(/<\/span>([^<]+)<\/li>/g)].map(m => m[1])
+  assert.deepEqual(legendOf(html), ['収穫・聞き始め', 'あなたの記録から', '昨年'])
+  assert.deepEqual(legendOf(view(rows, { month: '2026-11', day: null })), ['霜・天気', '昨年'])
 })
 
 test('昨年の点と欄は、表示する3か月の範囲まで（30日先で切らない）', () => {
@@ -111,7 +118,10 @@ test('幅のあるものは始まりと終わりの日だけに点、間の日�
   const concern = rows.find(r => r.id === 'concern-i')!
   assert.deepEqual([concern.start, concern.end], ['2026-11-27', '2026-12-01'])
   assert.deepEqual(dotDays(concern), ['2026-11-27', '2026-12-01'])
-  assert.deepEqual([...dotsByDay(rows).keys()].sort(), ['2026-11-27', '2026-12-01'])
+  // 今日より前の日は記録の点だけ（109）なので、画面では今日より前の始まりの日（11月27日）に点を打たない
+  assert.deepEqual(dotDays(concern, today), ['2026-12-01'])
+  assert.deepEqual([...dotsByDay(rows, today).keys()].sort(), ['2026-12-01'])
+  assert.deepEqual(rowsOnDay(rows, '2026-11-27', today), [])
   assert.deepEqual(rowsOnDay(rows, '2026-11-30').map(r => r.id), ['concern-i'])
   const html = panelOf(view(rows, { month: '2026-11', day: '2026-11-30' }))
   assert.match(html, /11月30日（月）/)
@@ -120,8 +130,7 @@ test('幅のあるものは始まりと終わりの日だけに点、間の日�
 })
 
 test('開いたときは今日から7日、日を選ぶとその日だけ、URL に日付が残る', () => {
-  const rows = recordRows(['2026-11-20', '2026-11-28', '2026-12-02', '2026-12-04', '2026-12-05'].map(date =>
-    ({ id: 'work-' + date, farmId: 'f', farmName: '秋田の畑', date, label: '手入れ' + date })))
+  const rows = recordRows(['2026-11-20', '2026-11-28', '2026-12-02', '2026-12-04', '2026-12-05'].map(date => entry(date, '手入れ' + date)))
   assert.deepEqual(panelWeek(rows, today).map(g => g.day), ['2026-11-28', '2026-12-02', '2026-12-04'])
   const opened = panelOf(view(rows, readCalendarView({}, today, lastMonth)))
   assert.match(opened, /<h2 class="calendar-panel-heading"[^>]*>今日から7日<\/h2>/)
@@ -140,7 +149,7 @@ test('開いたときは今日から7日、日を選ぶとその日だけ、URL 
   assert.match(panel, /手入れ2026-12-02/)
   assert.doesNotMatch(panel, /手入れ2026-12-04|手入れ2026-11-28/)
   assert.match(panel, /今日から7日に戻る/)
-  assert.match(html, /aria-pressed="true" aria-label="12月2日、あなたの記録から1件"/)
+  assert.match(html, /aria-pressed="true" aria-label="12月2日、作業・施肥1件"/)
   // 今月より前の日・範囲の外の日・ありえない日は読まない
   assert.deepEqual(readCalendarView({ day: '2027-02-01' }, today, lastMonth), { month: '2026-11', day: null })
   assert.deepEqual(readCalendarView({ day: '2026-12-32', month: '2026-10' }, today, lastMonth), { month: '2026-11', day: null })
@@ -180,7 +189,9 @@ test('月は今月から見通しの範囲の終わりの月まで送れ、「�
   assert.deepEqual(shiftView({ month: '2026-12', day: '2026-12-02' }, 1, today, lastMonth), { month: '2027-01', day: '2026-12-02' })
   assert.equal(shiftView({ month: '2027-01', day: null }, 1, today, lastMonth), null)
   const first = view([], start)
-  assert.match(first, /<a[^>]*href="\/calendar\/history"[^>]*>‹ 過去の実績<\/a>/)
+  // 記録が無ければ今月より前へは送らない（109。前の「過去の実績」へのリンクはやめた）
+  assert.match(first, /disabled="" aria-label="前の月（これより前の記録はありません）"/)
+  assert.doesNotMatch(first, /calendar\/history/)
   assert.match(first, /2026年11月/)
   const last = view([], { month: '2027-01', day: null })
   assert.match(last, /disabled="" aria-label="次の月（見通しはこの月まで）"/)

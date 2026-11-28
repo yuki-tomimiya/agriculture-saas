@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { CompactWeatherDataSource, JmaDataSource } from './WeatherDataSource'
 import {
-  DOT_KINDS, calendarHref, cellLabel, dayHeading, dotsByDay, monthCells, monthDayLabel, panelSources, panelWeek,
-  rowsOnDay, seasonLines, shiftView, type CalendarView,
+  calendarHref, cellLabel, dayHeading, dotsByDay, kindsInMonth, monthCells, monthDayLabel, monthSummary, monthSummaryHeading,
+  panelSources, panelWeek, rowsOnDay, seasonLines, shiftView, type CalendarView,
 } from '@/lib/calendar/day-panel'
 import type { OutlookRow } from '@/lib/calendar/outlook'
 
@@ -28,12 +28,16 @@ function PanelRow({ row }: { row: OutlookRow }) {
 }
 
 export default function CalendarMonthView({
-  rows, today, lastMonth, initialView, farms, farmId, proposalCount, hasCrops,
+  rows, today, firstMonth = today.slice(0, 7), lastMonth, loadedPastMonths = [], initialView, farms, farmId, proposalCount, hasCrops,
 }: {
   rows: OutlookRow[]
   today: string
+  /** 記録のある最も古い月 'YYYY-MM'（記録が無ければ今月。台帳 I28） */
+  firstMonth?: string
   /** 見通しの範囲（台帳 I28）の終わりの月 'YYYY-MM' */
   lastMonth: string
+  /** 記録を読み込んである今月より前の月。ほかの今月より前の月へは URL で読み直す */
+  loadedPastMonths?: string[]
   initialView: CalendarView
   farms: { id: string; name: string }[]
   farmId: string | null
@@ -46,16 +50,27 @@ export default function CalendarMonthView({
     window.history.replaceState(null, '', calendarHref(next, today, farmId))
   }
   const thisMonth = today.slice(0, 7)
+  const isPastMonth = view.month < thisMonth
   const [year, month] = view.month.split('-').map(Number)
-  const previous = shiftView(view, -1, today, lastMonth)
-  const next = shiftView(view, 1, today, lastMonth)
-  const dots = dotsByDay(rows)
+  const previous = shiftView(view, -1, today, lastMonth, firstMonth)
+  const next = shiftView(view, 1, today, lastMonth, firstMonth)
+  const dots = dotsByDay(rows, today)
+  const legend = kindsInMonth(dots, view.month)
   const seasons = seasonLines(rows, view.month)
-  const dayRows = view.day ? rowsOnDay(rows, view.day) : []
-  const week = view.day ? [] : panelWeek(rows, today)
+  const dayRows = view.day ? rowsOnDay(rows, view.day, today) : []
+  const pastDay = view.day != null && view.day < today
+  const summary = !view.day && isPastMonth ? monthSummary(rows, view.month, farms.length > 1) : null
+  const week = view.day || summary ? [] : panelWeek(rows, today)
   const shown = view.day ? dayRows : week.flatMap(group => group.rows)
   const sources = panelSources(shown)
-  const showsProposals = proposalCount > 0 && (!view.day || view.day === today)
+  const showsProposals = proposalCount > 0 && (view.day ? view.day === today : !isPastMonth)
+  // 読み込んである月へは画面の中で送り、ほかの今月より前の月へは URL で読み直す
+  const step = (target: CalendarView | null, label: string, symbol: string, none: string) => {
+    if (!target) return <button type="button" className="calendar-month-step" disabled aria-label={none}>{symbol}</button>
+    if (target.month < thisMonth && !loadedPastMonths.includes(target.month))
+      return <Link href={calendarHref(target, today, farmId)} scroll={false} className="calendar-month-step" aria-label={label}>{symbol}</Link>
+    return <button type="button" className="calendar-month-step" onClick={() => update(target)} aria-label={label}>{symbol}</button>
+  }
 
   return <div className="calendar-month-wrap">
     {farms.length > 1 && <form action="/calendar" method="get" className="calendar-farm-filter">
@@ -70,12 +85,9 @@ export default function CalendarMonthView({
     <div className="calendar-month-layout">
       <section className="calendar-month" aria-labelledby="calendar-month-heading">
         <div className="calendar-month-nav">
-          {previous
-            ? <button type="button" className="calendar-month-step" onClick={() => update(previous)} aria-label="前の月">‹</button>
-            : <Link href="/calendar/history" className="calendar-month-step calendar-month-step--history">‹ 過去の実績</Link>}
+          {step(previous, '前の月', '‹', '前の月（これより前の記録はありません）')}
           <h2 className="calendar-month-title" id="calendar-month-heading" aria-live="polite">{year}年{month}月</h2>
-          <button type="button" className="calendar-month-step" onClick={() => next && update(next)} disabled={!next}
-            aria-label={next ? '次の月' : '次の月（見通しはこの月まで）'}>›</button>
+          {step(next, '次の月', '›', '次の月（見通しはこの月まで）')}
           <button type="button" className="btn btn-outline calendar-today-button" onClick={() => update({ month: thisMonth, day: null })}>今日</button>
         </div>
         {seasons.length > 0 && <ul className="calendar-season-lines">{seasons.map(row =>
@@ -91,33 +103,45 @@ export default function CalendarMonthView({
             const counts = dots.get(day)
             const selected = view.day === day
             return <button type="button" key={day} aria-pressed={selected} aria-label={cellLabel(day, counts, today)}
-              className={'calendar-cell' + (day === today ? ' calendar-cell--today' : '') + (selected ? ' calendar-cell--selected' : '')}
+              className={'calendar-cell' + (day === today ? ' calendar-cell--today' : '') + (day < today ? ' calendar-cell--past' : '') + (selected ? ' calendar-cell--selected' : '')}
               onClick={() => update({ ...view, day: selected ? null : day })}>
               <span className="calendar-cell-day">{Number(day.slice(8, 10))}</span>
               {day === today && <span className="calendar-cell-today">今日</span>}
               <span className="calendar-cell-dots" aria-hidden="true">
-                {DOT_KINDS.filter(({ kind }) => counts?.[kind]).map(({ kind }) => <span key={kind} className={'calendar-dot calendar-dot--' + kind} />)}
+                {legend.filter(({ kind }) => counts?.[kind]).map(({ kind }) => <span key={kind} className={'calendar-dot calendar-dot--' + kind} />)}
               </span>
             </button>
           })}
         </div>
-        <ul className="calendar-legend">
-          {DOT_KINDS.map(({ kind, label }) => <li key={kind}><span className={'calendar-dot calendar-dot--' + kind} aria-hidden="true" />{label}</li>)}
-        </ul>
-        <p className="dashboard-calendar-note">昨年の印は、前年の同じ日の前後2日の作業・施肥です。</p>
+        {legend.length > 0 && <ul className="calendar-legend">
+          {legend.map(({ kind, label }) => <li key={kind}><span className={'calendar-dot calendar-dot--' + kind} aria-hidden="true" />{label}</li>)}
+        </ul>}
+        {legend.some(({ kind }) => kind === 'lastYear') && <p className="dashboard-calendar-note">昨年の印は、前年の同じ日の前後2日の作業・施肥です。</p>}
       </section>
       <section className="calendar-day-panel" aria-labelledby="calendar-panel-heading">
-        <h2 className="calendar-panel-heading" id="calendar-panel-heading" aria-live="polite">{view.day ? dayHeading(view.day) : '今日から7日'}</h2>
+        <h2 className="calendar-panel-heading" id="calendar-panel-heading" aria-live="polite">
+          {view.day ? dayHeading(view.day, today) : summary ? monthSummaryHeading(view.month, today) : '今日から7日'}
+        </h2>
         {showsProposals && <p className="calendar-panel-proposals"><Link href="/dashboard/ai-proposal">今日の提案 {proposalCount}件</Link></p>}
         {view.day
           ? dayRows.length ? <ul className="calendar-panel-rows">{dayRows.map(row => <PanelRow key={row.id} row={row} />)}</ul>
-            : <p className="calendar-panel-empty">この日に、見通しや記録はありません。</p>
-          : week.length ? week.map(group => <div key={group.day} className="calendar-panel-group">
-            <h3 className="calendar-panel-day">{dayHeading(group.day)}</h3>
-            <ul className="calendar-panel-rows">{group.rows.map(row => <PanelRow key={row.id} row={row} />)}</ul>
-          </div>)
-            : <p className="calendar-panel-empty">この7日に、見通しや記録はありません。日を選ぶと、その日のことが出ます。</p>}
-        {view.day && <button type="button" className="calendar-panel-back" onClick={() => update({ ...view, day: null })}>今日から7日に戻る</button>}
+            : <p className="calendar-panel-empty">{pastDay ? 'この日の記録はありません。' : 'この日に、見通しや記録はありません。'}</p>
+          : summary
+            ? <>
+              {summary.length ? <ul className="calendar-panel-rows">{summary.map(group => <li key={group.key} className="calendar-panel-row">
+                {group.href ? <Link href={group.href} className="calendar-panel-title">{group.title}</Link> : <span className="calendar-panel-title">{group.title}</span>}
+                <p className="calendar-panel-summary">{group.line}</p>
+              </li>)}</ul> : <p className="calendar-panel-empty">この月の記録はありません。</p>}
+              <p className="calendar-panel-hint">日を選ぶと、その日の記録が出ます</p>
+            </>
+            : week.length ? week.map(group => <div key={group.day} className="calendar-panel-group">
+              <h3 className="calendar-panel-day">{dayHeading(group.day, today)}</h3>
+              <ul className="calendar-panel-rows">{group.rows.map(row => <PanelRow key={row.id} row={row} />)}</ul>
+            </div>)
+              : <p className="calendar-panel-empty">この7日に、見通しや記録はありません。日を選ぶと、その日のことが出ます。</p>}
+        {view.day && <button type="button" className="calendar-panel-back" onClick={() => update({ ...view, day: null })}>
+          {isPastMonth ? monthSummaryHeading(view.month, today) + 'に戻る' : '今日から7日に戻る'}
+        </button>}
         {sources.openMeteo && <CompactWeatherDataSource />}
         {sources.jma && <JmaDataSource />}
         {!hasCrops && <p className="calendar-panel-empty"><Link className="underline" href="/crops/new">作付けを登録</Link>すると、収穫の見込みや聞く時期がここに出ます。</p>}

@@ -570,6 +570,11 @@ function catalogFor(cropName: string, variety?: string | null): MilestoneDef[] {
   return MILESTONES.filter((item) => item.match(cropName, variety))
 }
 
+/** 記録した節目の短い名前（カレンダーの記録の行）。見つからないキーは null */
+export function milestoneTerm(key: string): string | null {
+  return MILESTONES.find((item) => item.key === key)?.term ?? null
+}
+
 export function daysSinceDate(from: Date, today: Date): number {
   const start = new Date(from)
   start.setHours(0, 0, 0, 0)
