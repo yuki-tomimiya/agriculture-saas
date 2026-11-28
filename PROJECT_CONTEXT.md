@@ -49,7 +49,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | `/crops` | 作物管理・栽培中 |
 | `/crops/archive` | 過去の作付け（収穫済み・完了） |
 | `/crops/[id]/retrospective` | 作付け終了時の振り返り1枚 |
-| `/calendar` | 作業カレンダー（農場別の見通し・日別の印・実績） |
+| `/calendar` | 作業カレンダー（1か月のマスと選んだ日の欄。農場別の見通し・実績・昨年） |
 | `/calendar/history` | 過去の実績（パンくず: カレンダー / 過去の実績） |
 | `/weather` | 気象ナビ |
 
@@ -87,7 +87,7 @@ Next.js 16（App Router） / React 19 / TypeScript / Tailwind + `app/globals.css
 | 発生予察 | `data/pest-forecast-offices.json`、`lib/pest-forecast.ts`。FAQ「防除のタイミングは？」・農薬の記録・今日の提案の病害虫の回答後（台帳 F1） |
 | 農薬の収穫日・回数 | `lib/pesticide-safety.ts`、`components/PesticideUsage.tsx`、`components/PesticideUsageField.tsx`、`app/pesticides/`、`app/crops/[id]/page.tsx`、`app/harvests/new/`（台帳 F2）。計算の確認は `tests/pesticide-safety.test.ts` |
 | 生育ナビ | `app/gdd/`（入口）、`app/gdd/[cropId]/`、`app/gdd/past/`、`components/GDDCropList.tsx`、`components/GDDChart.tsx`（割合と比較対象の表示）、`lib/gdd.ts`。収穫の見分けの言葉は `lib/benchmarks/gdd-methods.ts` の `harvestJudgment`。終了日の共通処理は `lib/insights/harvest-gdd-basis.ts` の `cropHeatEndDate`。目安は `lib/benchmarks/gdd-methods.ts`（台帳 B1c〜B1f） |
-| カレンダー | `components/WorkCalendar.tsx`（マス・農場選択）、`components/CalendarOutlook.tsx`（見通し一覧）、`lib/calendar/read.ts`（材料の取得）、`lib/calendar/outlook.ts`（行の組み立て）、`lib/calendar/dates.ts`（日付と前年の重ね。台帳 I7・I28） |
+| カレンダー | `components/WorkCalendar.tsx`（材料を集めて渡す・過去の実績のマス）、`components/CalendarMonthView.tsx`（1か月のマス・選んだ日の欄・農場選択）、`lib/calendar/read.ts`（材料の取得）、`lib/calendar/outlook.ts`（行の組み立て）、`lib/calendar/day-panel.ts`（点の種類と日・欄の行・URL の引数）、`lib/calendar/dates.ts`（日付と前年の重ね。台帳 I7・I28） |
 | 土壌診断 | `app/soil/`, `app/api/soil-diagnoses/`, `lib/soil-diagnosis.ts` |
 | 土壌図の取り込み・検索 | `scripts/soil-import.ts`（`npm run soil:import`）、`scripts/soil-verify.ts`（`npm run soil:verify`）、`lib/soil-map/lookup.ts`。設計は Obsidian の `調査/B-5_土の種類の設計のたたき台_2026-11-01.md` |
 | 農場ごとの土 | `prisma/schema.prisma` の `FarmSoil`、`lib/farm-soil/`（保存・訂正・有効な土の解決）、農場の登録・更新API、`app/api/farms/[id]/soil/route.ts`、`scripts/soil-refresh.ts`（`npm run soil:refresh`） |
