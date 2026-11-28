@@ -20,6 +20,10 @@ export const MILESTONE_SOURCE_CHIBA = {
 }
 
 export const MILESTONE_SOURCE_LINKS: { label: string; url: string }[] = [
+  { label: '秋田県「野菜栽培技術指針」さやいんげん p.167・168', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-20.pdf' },
+  { label: '鹿児島県「有機百培」さやいんげん p.72', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143824-1.pdf' },
+  { label: '秋田県「野菜栽培技術指針」かぶ p.283・284', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-7.pdf' },
+  { label: '鹿児島県「有機百培」かぶ p.62', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143757-1.pdf' },
   { label: '秋田県「野菜栽培技術指針」カボチャ p.103', url: 'https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-4.pdf' },
   { label: '鹿児島県「有機百培」かぼちゃ p.75〜76', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143824-1.pdf' },
   { label: '鹿児島県「有機百培」はくさい p.93〜94', url: 'https://www.pref.kagoshima.jp/ag04/sangyo-rodo/nogyo/gizyutu/kankyo/yuuki/documents/71177_20190315143851-1.pdf' },
@@ -198,6 +202,13 @@ const LETTUCE_HARVEST = '外葉が外へ開き、球の重さが400〜500g前後
 const NEGI_DIG = '暖かい時期は20〜30日、寒い時期は30〜40日を目安に試し掘りし、白い部分が25〜30cm以上になったか確かめてから収穫します。'
 /** 葉菜の窓と出典の区分は台帳C6（葉菜5品目の行）。表示文は他品目と同じ形。 */
 const LEAF_WINDOW = `作型・季節によって日数が異なる。${WINDOW_USE}`
+const BEAN_SOURCES = '秋田県「野菜栽培技術指針」さやいんげん p.167・168／鹿児島県「有機百培」さやいんげん p.72'
+const BEAN_WATER = '開花と莢がふくらむ時期は、水を切らさないようにします。'
+const BEAN_PICK = '種がふくらむ前の若い莢を、遅れないようにとります。'
+const TURNIP_SOURCES = '秋田県「野菜栽培技術指針」かぶ p.283・284／鹿児島県「有機百培」かぶ p.62'
+const TURNIP_PULL = '秋田県の資料では、太ったものから2〜3回に分けて抜きます。適期は5〜10日と短く、遅れるとス入りや割れが増えます。'
+/** さやいんげん（つるなし）と小かぶの窓は、植えた日（まいた日）から数える。苗で登録しても同じ日数で聞く（台帳 C6） */
+const SOWN_WINDOW = `苗で植えても同じ日数で聞く。${WINDOW_USE}`
 const CARROT_HARVEST = '太ったものから収穫します。収穫が遅れると裂根しやすくなります。秋田県の資料では、立っていた葉が半分以上開き、下の葉が地面をはうころです。鹿児島県の資料では、1本の平均の重さ150〜200gが目安です。'
 
 /**
@@ -206,6 +217,41 @@ const CARROT_HARVEST = '太ったものから収穫します。収穫が遅れ�
  * 試し掘りは資料の収穫目安の下限（さつまいもは2,400℃日）の85%以上。
  */
 const MILESTONES: MilestoneDef[] = [
+  {
+    key: 'bean-flower', cropLabel: 'さやいんげん',
+    match: (name, variety) => nameIncludes(name, variety, ['さやいんげん', 'いんげん', 'インゲン']),
+    question: '花が咲き始めましたか？', term: '開花の始まり', yesLabel: '咲き始めた',
+    ifYes: `${BEAN_WATER}秋田県の資料では、開花の始めに追肥します。`,
+    conditional: `花が咲き始めていれば、${BEAN_WATER}秋田県の資料では、開花の始めに追肥します。`,
+    recordedLine: (days) => `開花の始まりから${Math.max(0, days)}日です。${BEAN_WATER}`,
+    sourceLabel: BEAN_SOURCES, howTo: [],
+    window: { kind: 'days', from: 30, to: 50 },
+    windowNote: `まいた日から30〜50日（秋田・鹿児島の資料から設定。${SOWN_WINDOW}）`,
+  },
+  {
+    key: 'bean-harvest-start', cropLabel: 'さやいんげん',
+    match: (name, variety) => nameIncludes(name, variety, ['さやいんげん', 'いんげん', 'インゲン']),
+    question: '若い莢が13〜14cmほどになりましたか？', term: '収穫の始まり', yesLabel: 'なった',
+    ifYes: `${BEAN_PICK}秋田県の資料では、収穫は毎日行い、暑い時期は朝夕の涼しい時間にとります。`,
+    conditional: `若い莢が13〜14cmほどになっていれば、${BEAN_PICK}`,
+    recordedLine: (days) => `収穫の始まりから${Math.max(0, days)}日です。${BEAN_PICK}`,
+    sourceLabel: BEAN_SOURCES, howTo: [],
+    window: { kind: 'days', from: 40, to: 75 },
+    windowNote: `まいた日から40〜75日（秋田・鹿児島の資料から設定。${SOWN_WINDOW}）`,
+    skipWhenHarvest: true,
+  },
+  {
+    key: 'turnip-harvest-start', cropLabel: '小かぶ',
+    match: (name, variety) => nameIncludes(name, variety, ['小かぶ', 'こかぶ', 'コカブ']),
+    question: '根の直径が5cmほどになりましたか？', term: '収穫の始まり', yesLabel: 'なった',
+    ifYes: `収穫の時期です。${TURNIP_PULL}`,
+    conditional: `根の直径が5cmほどになっていれば、収穫の時期です。${TURNIP_PULL}`,
+    recordedLine: (days) => `収穫の始まりから${Math.max(0, days)}日です。${TURNIP_PULL}`,
+    sourceLabel: TURNIP_SOURCES, howTo: [],
+    window: { kind: 'days', from: 30, to: 60 },
+    windowNote: `まいた日から30〜60日（秋田・鹿児島の資料から設定。${SOWN_WINDOW}）`,
+    skipWhenHarvest: true,
+  },
   {
     key: 'pumpkin-stalk-cracks', cropLabel: 'かぼちゃ',
     match: (name, variety) => nameIncludes(name, variety, ['かぼちゃ', 'カボチャ', '南瓜']),

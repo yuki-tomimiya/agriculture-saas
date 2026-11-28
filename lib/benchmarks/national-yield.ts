@@ -25,6 +25,9 @@ type YieldRow = {
 }
 
 const ROWS: readonly YieldRow[] = [
+  // 令和6年産・表1 の令和6年産の列。さやいんげん118行・かぶ23行（台帳 G2）。かぶは大きさを分けない統計なので小かぶにも使う。
+  { keywords: ['さやいんげん', 'いんげん', 'インゲン'], label: 'さやいんげん', single: 691 },
+  { keywords: ['小かぶ', 'こかぶ', 'コカブ'], label: 'かぶ', single: 2560 },
   // 令和6年産・表1 Sheet１のR列。かぼちゃ102行・さといも38行（台帳 G2）。
   { keywords: ['かぼちゃ', 'カボチャ', '南瓜'], label: 'かぼちゃ', single: 1210 },
   { keywords: ['さといも', 'サトイモ', '里芋'], label: 'さといも', single: 1280 },

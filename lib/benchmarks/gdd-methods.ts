@@ -181,6 +181,8 @@ export const GDD_FAQ_ROWS: {
 ]
 
 export const GDD_NONE_CROPS = [
+  'さやいんげん',
+  '小かぶ',
   'かぼちゃ',
   'さといも',
   'はくさい',
@@ -199,6 +201,8 @@ export const GDD_NONE_CROPS = [
 ] as const
 
 const JUDGMENTS: { keys: string[]; words: string[]; cue: string }[] = [
+  { keys: ['bean-bush'], words: ['さやいんげん', 'いんげん', 'インゲン'], cue: '莢の長さ' },
+  { keys: ['turnip-small'], words: ['小かぶ', 'こかぶ', 'コカブ'], cue: '根の太さ' },
   { keys: ['pumpkin'], words: ['かぼちゃ', 'カボチャ', '南瓜'], cue: 'なり首のひび' },
   { keys: ['taro'], words: ['さといも', 'サトイモ', '里芋'], cue: 'いもの太り' },
   { keys: ['chinese-cabbage'], words: ['はくさい', 'ハクサイ', '白菜'], cue: '球の固さ' },

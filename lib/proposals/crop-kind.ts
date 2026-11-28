@@ -27,9 +27,10 @@ const ONCE = new Set([
   'ホウレンソウ',
   'コマツナ',
   'ネギ',
+  '小かぶ',
 ])
 
-const CONTINUOUS = new Set(['トマト', 'キュウリ', 'ナス', 'ピーマン類', 'イチゴ'])
+const CONTINUOUS = new Set(['トマト', 'キュウリ', 'ナス', 'ピーマン類', 'イチゴ', 'さやいんげん'])
 
 export type CropHarvestKind = 'once' | 'continuous' | 'unspecified'
 

@@ -1506,5 +1506,138 @@
       }
     ],
     "seasons": []
+  },
+  {
+    "key": "bean-bush:anthracnose",
+    "cropKind": "bean-bush",
+    "name": "炭疽病",
+    "question": "さやいんげんに炭疽病は出ていませんか？",
+    "marker": "莢にくぼんだ褐色の病斑ができます。雨が多いと増えます。",
+    "appearance": null,
+    "searchCrop": "さやいんげん",
+    "searchPest": "炭疽病",
+    "measures": [
+      {
+        "scope": "general",
+        "text": "病気の無い種子を使います。",
+        "sources": [
+          {
+            "publisher": "秋田県",
+            "title": "野菜栽培技術指針 サヤインゲン",
+            "year": "2007",
+            "page": "p.167〜168（PDF8〜9枚目）",
+            "url": "https://www.maff.go.jp/j/seisan/kankyo/hozen_type/h_sehi_kizyun/attach/pdf/aki3-20.pdf"
+          },
+          {
+            "publisher": "佐賀県",
+            "title": "佐賀県病害虫総合防除計画（令和8年度版病害虫防除のてびき）インゲンの病害虫",
+            "year": "令和8年度版",
+            "page": "p.245〜246（PDF61〜62枚目）",
+            "url": "https://www.pref.saga.lg.jp/kiji003101846/3_101846_up_e8p71grn.pdf#page=61"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "41",
+        "text": "佐賀県の資料では、連作を避け、収穫後の被害茎葉は畑の外へ持ち出します。",
+        "sources": [
+          {
+            "publisher": "佐賀県",
+            "title": "佐賀県病害虫総合防除計画（令和8年度版病害虫防除のてびき）インゲンの病害虫",
+            "year": "令和8年度版",
+            "page": "p.245〜246（PDF61〜62枚目）",
+            "url": "https://www.pref.saga.lg.jp/kiji003101846/3_101846_up_e8p71grn.pdf#page=61"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "bean-bush:halo-blight",
+    "cropKind": "bean-bush",
+    "name": "かさ枯病",
+    "question": "さやいんげんにかさ枯病は出ていませんか？",
+    "marker": "秋田県の資料では、下葉から赤褐色の点のような病斑ができ、やがてまわりが黄白色にぼやけて、かさのような形になります。",
+    "appearance": null,
+    "searchCrop": "さやいんげん",
+    "searchPest": "かさ枯病",
+    "measures": [],
+    "seasons": []
+  },
+  {
+    "key": "turnip-small:clubroot",
+    "cropKind": "turnip-small",
+    "name": "根こぶ病",
+    "question": "小かぶに根こぶ病は出ていませんか？",
+    "marker": "島根県の資料では、根に大小のこぶができ、晴れた日に株がしおれ、朝夕に戻ることもあります。湿った酸性の土や、地温が高いと出やすくなります。",
+    "appearance": null,
+    "searchCrop": "かぶ",
+    "searchPest": "根こぶ病",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "37",
+        "text": "香川県の資料では、アブラナ科以外の作物と3年以上の輪作をし、畑の排水をよくします。発病した株は根ごと取り除きます。",
+        "sources": [
+          {
+            "publisher": "香川県農業試験場病害虫防除所",
+            "title": "主要農作物病害虫・雑草防除指針（12）かぶ",
+            "year": "版年の表示なし",
+            "page": "PDF1枚目",
+            "url": "https://www.pref.kagawa.lg.jp/documents/56836/3-6-12_kabu.pdf"
+          }
+        ]
+      },
+      {
+        "scope": "prefecture",
+        "code": "12",
+        "text": "千葉県の資料では、アブラナ科以外の作物と輪作し、伝染源になる畑の中のアブラナ科の雑草も除きます。",
+        "sources": [
+          {
+            "publisher": "千葉県",
+            "title": "病害虫防除指針 野菜（16）こかぶ",
+            "year": "年表示なし（URLはr8）",
+            "page": "こかぶ−2〜4（PDF2〜4枚目）",
+            "url": "https://www.pref.chiba.lg.jp/annou/shokubo/documents/r8shishin010316.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
+  },
+  {
+    "key": "turnip-small:flea-beetle",
+    "cropKind": "turnip-small",
+    "name": "キスジノミハムシ",
+    "question": "小かぶにキスジノミハムシは出ていませんか？",
+    "marker": "葉に小さな丸い穴、根表面に食害痕",
+    "appearance": {
+      "publisher": "岐阜県",
+      "title": "ダイコン キスジノミハムシについて",
+      "year": "表示なし",
+      "page": "PDF 1枚目",
+      "url": "https://www.pref.gifu.lg.jp/uploaded/attachment/302934.pdf"
+    },
+    "searchCrop": "かぶ",
+    "searchPest": "キスジノミハムシ",
+    "measures": [
+      {
+        "scope": "prefecture",
+        "code": "37",
+        "text": "香川県の資料では、まいてから間引きが終わるまで防虫ネット（0.8mm目合以下）をかけ、アブラナ科の連作を避けます。",
+        "sources": [
+          {
+            "publisher": "香川県農業試験場病害虫防除所",
+            "title": "主要農作物病害虫・雑草防除指針（12）かぶ",
+            "year": "版年の表示なし",
+            "page": "PDF1枚目",
+            "url": "https://www.pref.kagawa.lg.jp/documents/56836/3-6-12_kabu.pdf"
+          }
+        ]
+      }
+    ],
+    "seasons": []
   }
 ]

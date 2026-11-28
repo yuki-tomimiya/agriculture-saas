@@ -19,6 +19,14 @@ export type CropBenchmark = {
 
 export const CROP_BENCHMARKS: CropBenchmark[] = [
   {
+    keywords: ['さやいんげん', 'サヤインゲン', 'いんげん', 'インゲン', '菜豆'], displayName: 'さやいんげん',
+    yieldHint: '', monthlyWorkHints: {}, generalTips: [],
+  },
+  {
+    keywords: ['小かぶ', 'こかぶ', 'コカブ', 'かぶ', 'カブ', '蕪'], displayName: '小かぶ',
+    yieldHint: '', monthlyWorkHints: {}, generalTips: [],
+  },
+  {
     keywords: ['かぼちゃ', 'カボチャ', '南瓜'], displayName: 'かぼちゃ',
     yieldHint: '', monthlyWorkHints: {}, generalTips: [],
   },

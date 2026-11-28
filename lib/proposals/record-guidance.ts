@@ -4,11 +4,11 @@ import { harvestDatesByCrop, japanDateKey } from '@/lib/pesticide-safety'
 import { prisma } from '@/lib/prisma'
 import { FROST_FORECAST_TRIGGER, FROST_SEASON_TRIGGER } from '@/lib/proposals/frost'
 
-const feedingMilestones = new Set(['flower-3rd', 'first-fruit', 'cabbage-heading', 'negi-final-hilling', 'sprout', 'bud'])
+const feedingMilestones = new Set(['flower-3rd', 'first-fruit', 'cabbage-heading', 'negi-final-hilling', 'sprout', 'bud', 'bean-flower'])
 const harvestFeedingMilestones = new Set(['first-fruit', 'side-shoot', 'pepper-feed'])
 const harvestMilestones = new Set([
   'yellowing', 'test-dig', 'cabbage-firm', 'onion-lodging', 'lettuce-outer-leaves',
-  'spinach-height', 'komatsuna-height', 'negi-final-hilling',
+  'spinach-height', 'komatsuna-height', 'negi-final-hilling', 'bean-harvest-start', 'turnip-harvest-start',
 ])
 
 export function latestFertilizerDates(records: { cropId: string | null; appliedAt: Date }[]) {

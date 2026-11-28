@@ -9,6 +9,7 @@ import {
   COVER_OPTIONS,
   cropKindByKey,
   plantingDateLabel,
+  RECORD_ONLY_NOTE,
 } from '@/lib/crops/conditions'
 import { CROP_KINDS } from '@/lib/crops/conditions'
 import { cropSaveHref } from '@/lib/crops/navigation'
@@ -203,6 +204,8 @@ export default function CropForm({
                   </option>
                 ))}
               </select>
+              {/* つるあり・中大かぶなど、選んだ品目が記録だけと分かるように */}
+              {kind?.recordOnly && kind.key !== 'other' && <p className="text-sm text-gray-600 mt-1">{RECORD_ONLY_NOTE}</p>}
             </div>
 
             <div className="auth-field">

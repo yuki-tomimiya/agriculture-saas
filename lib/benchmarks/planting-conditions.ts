@@ -18,6 +18,18 @@ export type PlantingCondition = {
 
 const CONDITIONS: PlantingCondition[] = [
   {
+    kindKey: 'bean-bush',
+    lateFrostAdvice: true,
+    text: '霜に弱く、軽い霜でも枯れます。秋田県の資料では、晩霜のおそれがなくなってからまきます（秋田では4月下旬〜5月上旬）。鹿児島県の資料では、発芽の適温は23〜25℃で、10〜12℃以下では発芽しません。',
+    scopeLabel: '一般（まく時期は秋田県、発芽の温度は鹿児島県）',
+  },
+  {
+    kindKey: 'turnip-small',
+    // 発芽の地温の上の端は北（15〜20℃）と南で違うので、合わせずに県名つき（台帳 D10）
+    text: '秋田県の資料では、発芽は地温15〜20℃がよく、30℃以上で大きく下がります（夏まきは稲わらなどで覆います）。鹿児島県の資料では、春まきは低温（0〜13℃）で花芽ができ、とう立ちしやすくなります。',
+    scopeLabel: '秋田県・鹿児島県',
+  },
+  {
     kindKey: 'pumpkin', plantingMethod: 'transplant',
     text: '本葉3〜4枚の苗を植えます。鹿児島県の資料では、育てて35日ほどの苗です。',
     scopeLabel: '一般（育苗の日数は鹿児島県）',

@@ -32,6 +32,9 @@ export const SOIL_PH_RANGES: readonly SoilPhRange[] = [
   // 台帳 E1。さといもは埼玉県の表23と宮崎県「20．さといも」による。
   { name: 'さといも', keywords: ['さといも', 'サトイモ', '里芋'], min: 6.0, max: 6.5, adviseLow: true, source: 'saitama-miyazaki' },
   { name: 'かぼちゃ', keywords: ['かぼちゃ', 'カボチャ', '南瓜'], min: 6.0, max: 6.5, adviseLow: true, source: 'gifu' },
+  // 台帳 E1。岐阜県 p.38 の果菜（インゲン）・根菜（コカブ）と埼玉県 表23 p.31
+  { name: 'さやいんげん', keywords: ['さやいんげん', 'いんげん', 'インゲン'], min: 6.0, max: 6.5, adviseLow: true, source: 'gifu' },
+  { name: '小かぶ', keywords: ['小かぶ', 'こかぶ', 'コカブ'], min: 5.5, max: 6.5, adviseLow: true, source: 'gifu' },
   { name: 'はくさい', keywords: ['はくさい', 'ハクサイ', '白菜'], min: 6.0, max: 6.5, adviseLow: true, source: 'gifu' },
   { name: 'にんじん', keywords: ['にんじん', 'ニンジン', '人参'], min: 5.5, max: 6.5, adviseLow: true, source: 'gifu' },
   { name: 'ホウレンソウ', keywords: ['ホウレンソウ', 'ほうれん草', 'ほうれんそう'], min: 6.5, max: 7.0, adviseLow: true, source: 'gifu' },

@@ -20,6 +20,11 @@ export const CROP_KINDS: CropKindDef[] = [
   { key: 'carrot', label: 'にんじん', recordOnly: false, benchmarkName: 'にんじん' },
   { key: 'pumpkin', label: 'かぼちゃ', recordOnly: false, benchmarkName: 'かぼちゃ' },
   { key: 'taro', label: 'さといも', recordOnly: false, benchmarkName: 'さといも' },
+  // 日数・合図・pH の資料はつるなし（わい性）と小かぶだけ。つるあり・中大かぶは最初から分けて記録だけ（台帳 G8）
+  { key: 'bean-bush', label: 'さやいんげん（つるなし）', recordOnly: false, benchmarkName: 'さやいんげん' },
+  { key: 'bean-pole', label: 'さやいんげん（つるあり）', recordOnly: true, benchmarkName: null },
+  { key: 'turnip-small', label: '小かぶ', recordOnly: false, benchmarkName: '小かぶ' },
+  { key: 'turnip-large', label: 'かぶ（中・大）', recordOnly: true, benchmarkName: null },
   { key: 'daikon', label: 'ダイコン', recordOnly: false, benchmarkName: 'ダイコン' },
   { key: 'onion', label: '玉ねぎ', recordOnly: false, benchmarkName: '玉ねぎ' },
   { key: 'potato', label: 'ジャガイモ', recordOnly: false, benchmarkName: 'ジャガイモ' },
