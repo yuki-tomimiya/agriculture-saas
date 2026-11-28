@@ -4,8 +4,9 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import WorkCalendar from '@/components/WorkCalendar'
 
-export default async function CalendarPage({ searchParams }: { searchParams?: Promise<{ farm?: string }> }) {
+export default async function CalendarPage({ searchParams }: { searchParams?: Promise<{ farm?: string; month?: string; day?: string }> }) {
   const user = await getCurrentUser()
+  const params = (await searchParams) ?? {}
 
   if (!user) {
     redirect('/auth/signin')
@@ -33,7 +34,7 @@ export default async function CalendarPage({ searchParams }: { searchParams?: Pr
         </div>
 
         <div className="calendar-page-content">
-          <WorkCalendar months={3} userId={user.id} variant="upcoming" farmId={(await searchParams)?.farm} />
+          <WorkCalendar months={3} userId={user.id} variant="upcoming" farmId={params.farm} month={params.month} day={params.day} />
         </div>
       </main>
     </div>

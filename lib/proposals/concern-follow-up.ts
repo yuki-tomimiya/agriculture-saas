@@ -24,7 +24,7 @@ export async function loadConcernFollowUps(userId: string, now: Date) {
       ...concernChoiceLabels(concernLocations, row.locations),
       ...concernChoiceLabels(concernSymptoms, row.symptoms),
     ]
-    const summary = labels.length ? '（' + labels.slice(0, 3).join('・') + (labels.length > 3 ? ' ほか）' : '）') : '異変'
+    const summary = labels.length ? '（' + labels.slice(0, 3).join('・') + (labels.length > 3 ? ' ほか）' : '）') : '気になること'
     return {
       id: row.id, cropId: row.cropId, observedDay,
       title: `${concernMonthDay(observedDay)}に記録した${summary}は、広がっていますか？`,

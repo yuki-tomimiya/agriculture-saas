@@ -8,6 +8,8 @@ import { readFarmAutumnFrost, readFarmSpringFrost, autumnFirstFrostSentence, spr
 import { formatHarvestWindow, forecastAvgByYmd, projectHarvestWindow, ymdKey } from '@/lib/insights/harvest-date-window'
 import { pickHarvestBasis, loadHarvestSamples } from '@/lib/insights/harvest-gdd-basis'
 import { gddStartDate } from '@/lib/benchmarks/gdd-methods'
+import { concernChoiceLabels, concernLocations, concernSymptoms } from '@/lib/crops/field-concerns'
+import { FROST_ARCHIVE_YEARS } from '@/lib/weather-frost'
 import { offsetDay } from './dates'
 import type { CalendarRecord, CropOutlook, FarmOutlook } from './outlook'
 
@@ -27,13 +29,19 @@ export async function calendarRecords(userId: string, first: string, last: strin
   ]
 }
 
+/** 霜の行の2行目の出典の一言。観測所は名前と年数、ほかは農場の座標の推計 */
+function frostNote(stationName: string | null, usableYears: number | null) {
+  if (usableYears == null || !stationName) return '過去' + FROST_ARCHIVE_YEARS + '年の推計'
+  return stationName + '観測所の' + (usableYears < FROST_ARCHIVE_YEARS ? '記録のそろった' + usableYears + '年' : '過去' + FROST_ARCHIVE_YEARS + '年')
+}
+
 export async function loadOutlookMaterial(userId: string, now: Date) {
   const [farmData, cropData, sprays] = await Promise.all([
     prisma.farm.findMany({ where: { userId }, select: { id: true, name: true, prefectureCode: true, latitude: true, longitude: true }, orderBy: { name: 'asc' } }),
     prisma.crop.findMany({ where: getCropWhere(userId).where, select: {
       id: true, name: true, farmId: true, cropKind: true, variety: true, growingSite: true, plantingMethod: true, plantingDate: true, status: true,
       milestones: { select: { key: true, observedAt: true } }, _count: { select: { harvests: true } },
-      fieldConcerns: { where: { followUpResult: null }, select: { id: true, observedAt: true } },
+      fieldConcerns: { where: { followUpResult: null }, select: { id: true, observedAt: true, locations: true, symptoms: true } },
     } }),
     prisma.pesticideRecord.findMany({ where: { userId, daysBeforeHarvest: { not: null } }, select: { cropId: true, appliedAt: true, daysBeforeHarvest: true } }),
   ])
@@ -53,12 +61,14 @@ export async function loadOutlookMaterial(userId: string, now: Date) {
       const source = autumn.source === 'station' ? 'station' : 'archive'
       const distance = autumn.source === 'station' && autumn.distanceKm != null ? '。' + stationDistanceLabel(autumn.distanceKm, autumn.elevationDiffM) + (autumn.near ? '' : '離れているので目安です') : ''
       const text = autumnFirstFrostSentence(autumn) + distance
-      frost.push({ ...autumn.summary.earliest, label: '初霜が最も早かった日', source, text }, { ...autumn.summary.mean, label: '初霜の平均', source, text })
+      const note = frostNote(autumn.stationName, autumn.source === 'station' ? autumn.usableYears : null)
+      frost.push({ ...autumn.summary.earliest, label: '初霜が最も早かった日', source, text, note }, { ...autumn.summary.mean, label: '初霜の平均の日', source, text, note })
     }
     if (spring?.summary) {
       const source = spring.source === 'station' ? 'station' : 'archive'
       const text = springFrostSentence(spring, { withStationDistance: true })
-      frost.push({ ...spring.summary.mean, label: '終霜の平均', source, text }, { ...spring.summary.latest, label: '終霜が最も遅かった日', source, text })
+      const note = frostNote(spring.stationName, spring.source === 'station' ? spring.usableYears : null)
+      frost.push({ ...spring.summary.mean, label: '終霜の平均の日', source, text, note }, { ...spring.summary.latest, label: '終霜が最も遅かった日', source, text, note })
     }
     return { ...farm, point, frost, forecast }
   }))
@@ -84,7 +94,8 @@ export async function loadOutlookMaterial(userId: string, now: Date) {
       }
     }
     return { ...crop, planted: crop.plantingDate && japanDateKey(crop.plantingDate), growing, hasHarvest: crop._count.harvests > 0,
-      concerns: crop.fieldConcerns.map(c => ({ id: c.id, observed: japanDateKey(c.observedAt), answered: false })),
+      concerns: crop.fieldConcerns.map(c => ({ id: c.id, observed: japanDateKey(c.observedAt), answered: false,
+        labels: [...concernChoiceLabels(concernLocations, c.locations), ...concernChoiceLabels(concernSymptoms, c.symptoms)] })),
       harvestFrom: harvestFrom.get(crop.id), window }
   }))
   return { farms, crops }
