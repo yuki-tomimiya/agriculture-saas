@@ -3,11 +3,13 @@ import { loadTodayConfirmations } from '@/lib/proposals/presentation'
 import { japanDateKey } from '@/lib/pesticide-safety'
 import { calendarDate, offsetDay, lastYearOverlay, shiftMonth } from '@/lib/calendar/dates'
 import { calendarRecords, loadOutlookMaterial } from '@/lib/calendar/read'
-import { outlookRows } from '@/lib/calendar/outlook'
+import CalendarGridDisclosure from './CalendarGridDisclosure'
+import { outlookRows, type OutlookRow } from '@/lib/calendar/outlook'
 import CalendarOutlook from './CalendarOutlook'
 import { LAST_YEAR_SAME_DAY_WINDOW_DAYS } from '@/lib/proposals/constants'
 
 type DayEvents = {
+  marks: OutlookRow[]
   proposalCount: number
   proposalTitles: string[]
   recordCount: number
@@ -16,11 +18,12 @@ type DayEvents = {
   lastYearLabels: string[]
 }
 
-type CalendarDay = null | { day: number; dateKey: string; events: DayEvents }
+type CalendarDay = null | { day: number; dateKey: string; isToday: boolean; events: DayEvents }
 
 export type WorkCalendarVariant = 'upcoming' | 'history'
 
 const emptyDayEvents = (): DayEvents => ({
+  marks: [],
   proposalCount: 0,
   proposalTitles: [],
   recordCount: 0,
@@ -32,7 +35,8 @@ const emptyDayEvents = (): DayEvents => ({
 function getMonthCalendarDays(
   year: number,
   month: number,
-  eventsByDate: Map<string, DayEvents>
+  eventsByDate: Map<string, DayEvents>,
+  todayKey: string,
 ): CalendarDay[] {
   const first = new Date(Date.UTC(year, month - 1, 1))
   const last = new Date(Date.UTC(year, month, 0))
@@ -46,6 +50,7 @@ function getMonthCalendarDays(
     return {
       day: d,
       dateKey,
+      isToday: dateKey === todayKey,
       events: eventsByDate.get(dateKey) ?? emptyDayEvents(),
     }
   })
@@ -72,10 +77,10 @@ function CalendarDayCell({
   const hasProposals = showProposals && proposalCount > 0
   const hasRecords = recordCount > 0
   const hasLastYear = showLastYear && lastYearCount > 0
-  const hasHighlight = hasProposals || hasRecords || hasLastYear
+  const marks = item.events.marks
+  const hasHighlight = hasProposals || hasRecords || hasLastYear || marks.length > 0
 
-  const todayKey = japanDateKey(new Date())
-  const isToday = item.dateKey === todayKey
+  const isToday = item.isToday
   const visibleRecords = recordLabels.slice(0, 2)
   const extraRecords = recordLabels.length - visibleRecords.length
 
@@ -84,9 +89,11 @@ function CalendarDayCell({
       className={`dashboard-calendar-cell${hasHighlight ? ' dashboard-calendar-cell--highlight' : ''}${isToday ? ' dashboard-calendar-cell--today' : ''}`}
     >
       <span className="dashboard-calendar-day">
-        {item.day}
+        {marks.length ? <a className="calendar-day-link" href={'#outlook-' + marks[0].id} aria-label={item.dateKey + 'の見通し'}>{item.day}</a> : item.day}
         {isToday ? <span className="dashboard-calendar-today-mark">今日</span> : null}
       </span>
+      {marks.filter((row, index) => row.mark !== '昨年' && marks.findIndex(r => r.mark === row.mark) === index).map(row =>
+        <a key={row.id} href={'#outlook-' + row.id} className={row.mark === '収穫の見込み' ? 'calendar-harvest-band' : 'calendar-short-mark'} title={row.text}>{row.mark}</a>)}
       {hasProposals && (
         <Link
           href="/dashboard/ai-proposal"
@@ -126,6 +133,7 @@ function CalendarDayCell({
 }
 
 function MonthBlock({
+  monthly = [],
   year,
   month,
   calendarDays,
@@ -135,6 +143,7 @@ function MonthBlock({
 }: {
   year: number
   month: number
+  monthly?: OutlookRow[]
   calendarDays: CalendarDay[]
   title?: string
   showProposals: boolean
@@ -161,6 +170,7 @@ function MonthBlock({
           )}
         </div>
       </div>
+      {monthly.map(row => <a className="calendar-season-link" key={row.id} href={'#outlook-' + row.id}>{row.text}</a>)}
       <div className="dashboard-calendar-weekdays">
         <div className="dashboard-calendar-weekday dashboard-calendar-weekday--sun">日</div>
         <div className="dashboard-calendar-weekday">月</div>
@@ -195,7 +205,9 @@ export default async function WorkCalendar({
   startYear,
   startMonth,
   variant = 'upcoming',
+  farmId,
 }: {
+  farmId?: string
   months?: number
   userId: string
   /** 表示開始の年（未指定なら今日の月を起点） */
@@ -229,7 +241,10 @@ export default async function WorkCalendar({
     showProposals ? loadTodayConfirmations(userId, { now: today }) : null,
     showProposals ? loadOutlookMaterial(userId, today) : null,
   ])
-  const rows = material ? outlookRows(todayKey, rangeEnd, material.farms, material.crops, previous) : []
+  const activeFarm = material?.farms.find(f => f.id === farmId)?.id
+  const farmMatches = (record: { farmId: string | null }) => !activeFarm || record.farmId === activeFarm
+  const crops = material?.crops.filter(farmMatches) ?? []
+  const rows = material ? outlookRows(todayKey, rangeEnd, material.farms.filter(f => !activeFarm || f.id === activeFarm), crops, previous.filter(farmMatches)) : []
 
   const eventsByDate = new Map<string, DayEvents>()
 
@@ -241,14 +256,14 @@ export default async function WorkCalendar({
     return fresh
   }
 
-  for (const record of records) {
+  for (const record of records.filter(farmMatches)) {
     const day = getDay(record.date)
     if (!day.recordLabels.includes(record.label)) {
       day.recordLabels.push(record.label)
       day.recordCount++
     }
   }
-  for (const record of previous) {
+  for (const record of previous.filter(farmMatches)) {
     for (const key of lastYearOverlay(record.date)) {
       const day = getDay(key)
       if (!day.lastYearLabels.includes(record.label)) {
@@ -259,8 +274,22 @@ export default async function WorkCalendar({
   }
   if (confirmations) {
     const day = getDay(todayKey)
-    day.proposalCount = confirmations.count
-    day.proposalTitles = ['締切 ' + confirmations.deadlineCount + '件・作付けごとの確認 ' + confirmations.confirmationGroups.length + '件']
+    const ids = new Set(crops.map(c => c.id))
+    const deadlineCount = activeFarm
+      ? confirmations.taskGroups.filter(group => group.some(t => t.relatedFarmId === activeFarm)).length
+        + confirmations.deadlineGroups.filter(group => group.some(r => ids.has(r.crop.cropId))).length
+      : confirmations.deadlineCount
+    const confirmationCount = activeFarm
+      ? confirmations.confirmationGroups.filter(group => group.some(r => ids.has(r.crop.cropId))).length
+      : confirmations.confirmationGroups.length
+    day.proposalCount = deadlineCount + confirmationCount
+    day.proposalTitles = ['締切 ' + deadlineCount + '件・作付けごとの確認 ' + confirmationCount + '件']
+  }
+  for (const row of rows) {
+    if (row.mark === '県の月') continue
+    for (let day = row.start > todayKey ? row.start : todayKey; day <= row.end && day <= rangeEnd; day = offsetDay(day, 1)) {
+      getDay(day).marks.push(row)
+    }
   }
 
   const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
@@ -273,40 +302,42 @@ export default async function WorkCalendar({
     }
 
     const gridClass = count === 6 ? 'work-calendar-six-months' : 'work-calendar-three-months'
-    const sectionTitle = variant === 'history' ? '過去の実績' : 'カレンダー'
-    const sectionSub =
-      variant === 'history'
-        ? '過去の作業記録・施肥をカレンダーで確認できます。月を移動して期間を変えられます。'
-        : '今月・来月・再来月の提案と実績です。薄い「昨年」は前年の同じ日の前後2日の作業・施肥です。もっと前は「過去の実績」から。'
-
-    return (
-      <section className="dashboard-card">
-        <h2 className="dashboard-section-title">{sectionTitle}</h2>
-        <p className="dashboard-section-sub">{sectionSub}</p>
+    const grid = (
         <div className={gridClass}>
           {monthConfigs.map(({ year, month }) => (
             <MonthBlock
               key={`${year}-${month}`}
               year={year}
               month={month}
-              calendarDays={getMonthCalendarDays(year, month, eventsByDate)}
+              monthly={rows.filter(row => row.mark === '県の月' && row.start === calendarDate(year, month, 1))}
+              calendarDays={getMonthCalendarDays(year, month, eventsByDate, todayKey)}
               title={`${year}年 ${monthNames[month - 1]}`}
               showProposals={showProposals}
               showLastYear={showLastYear}
             />
           ))}
         </div>
-        <p className="dashboard-calendar-note">
-          {variant === 'history'
-            ? '※ 実績バッジにマウスを乗せると内容の概要を表示します。日付クリックで作業記録を登録できます。'
-            : '※ 「昨年」は前年の同じ日の前後2日の実績です。提案・実績は件数バッジのみ。詳細は過去の実績ページでも確認できます。'}
-        </p>
-        {material && <CalendarOutlook rows={rows} hasCrops={material.crops.length > 0} />}
+    )
+    return (
+      <section className="dashboard-card">
+        {variant === 'history' ? grid : <>
+          {material && material.farms.length > 1 && <form action="/calendar" method="get" className="calendar-farm-filter">
+            <label>農場 <select name="farm" defaultValue={activeFarm ?? ''}>
+              <option value="">すべての農場</option>
+              {material.farms.map(f => <option value={f.id} key={f.id}>{f.name}</option>)}
+            </select></label>
+            <button type="submit" className="btn btn-outline">絞り込む</button>
+          </form>}
+          <div className="calendar-outlook-layout">
+            <CalendarOutlook rows={rows} hasCrops={crops.length > 0} />
+            <CalendarGridDisclosure>{grid}<p className="dashboard-calendar-note">昨年の印は、前年の同じ日の前後2日の作業・施肥です。</p></CalendarGridDisclosure>
+          </div>
+        </>}
       </section>
     )
   }
 
-  const calendarDays = getMonthCalendarDays(todayYear, todayMonth, eventsByDate)
+  const calendarDays = getMonthCalendarDays(todayYear, todayMonth, eventsByDate, todayKey)
   const proposalDays = calendarDays.filter((item) => item !== null && item.events.proposalCount > 0).length
   const recordDays = calendarDays.filter((item) => item !== null && item.events.recordCount > 0).length
   const lastYearDays = calendarDays.filter((item) => item !== null && item.events.lastYearCount > 0).length

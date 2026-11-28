@@ -1101,6 +1101,24 @@
   color: #dc2626;
 }
 /* カレンダー */
+.calendar-outlook-layout { display: flex; flex-direction: column; }
+.calendar-grid-disclosure { order: -1; min-width: 0; }
+.calendar-grid-disclosure .calendar-grid-toggle { display: none; }
+.calendar-farm-filter { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: 1rem; }
+.calendar-farm-filter select { max-width: 100%; border: 1px solid #9ca3af; padding: .4rem; border-radius: .3rem; }
+.calendar-day-link::after { content: ''; position: absolute; inset: 0; }
+.dashboard-calendar-cell { position: relative; }
+.dashboard-calendar-cell > a { position: relative; }
+.calendar-short-mark, .calendar-harvest-band, .calendar-season-link { font-size: .72rem; color: #16553d; text-decoration: underline; }
+.calendar-harvest-band { background: #d1fae5; border-block: 1px solid #4d947a; margin-inline: -.25rem; padding-inline: .25rem; width: calc(100% + .5rem + 1px); }
+.calendar-season-link { display: block; padding: .25rem; }
+@media (max-width: 639px) {
+  .calendar-grid-disclosure { order: 1; margin-top: 1rem; }
+  .calendar-grid-disclosure .calendar-grid-toggle { display: inline-flex; }
+  #calendar-months[data-expanded="false"] { display: none; }
+  .calendar-farm-filter label { min-width: 0; max-width: 100%; }
+}
+
 .work-calendar-three-months {
   display: flex;
   flex-direction: column;

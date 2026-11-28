@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Sidebar from '@/components/Sidebar'
 import WorkCalendar from '@/components/WorkCalendar'
 
-export default async function CalendarPage() {
+export default async function CalendarPage({ searchParams }: { searchParams?: Promise<{ farm?: string }> }) {
   const user = await getCurrentUser()
 
   if (!user) {
@@ -19,7 +19,7 @@ export default async function CalendarPage() {
           <div className="farms-header-text">
             <h1 className="farms-title">カレンダー</h1>
             <p className="farms-subtitle">
-              提案・実績と、前年同日の作業を重ねて確認できます
+              この先3か月の見通しと、畑の記録を確認できます
             </p>
           </div>
           <div className="insights-header-actions">
@@ -33,7 +33,7 @@ export default async function CalendarPage() {
         </div>
 
         <div className="calendar-page-content">
-          <WorkCalendar months={3} userId={user.id} variant="upcoming" />
+          <WorkCalendar months={3} userId={user.id} variant="upcoming" farmId={(await searchParams)?.farm} />
         </div>
       </main>
     </div>
