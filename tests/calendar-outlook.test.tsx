@@ -54,7 +54,7 @@ test('空の農場の霜・収穫の幅・県の月・直近の雨と昨年の�
   const rows = outlookRows(today, through, [{ ...farm, forecast }], [taro, { ...cabbage, window: win }], previous)
   assert.deepEqual(rows.filter(r => r.mark === '収穫の見込み').map(r => [r.start,r.end]), [[win.start,win.end]])
   assert.equal(rows.filter(r => r.mark === '雨').length, 1)
-  assert.deepEqual(rows.filter(r => r.mark === '昨年').map(r => [r.start,r.end]), [['2026-11-29','2026-12-03']])
+  assert.deepEqual(rows.filter(r => r.mark === '昨年').map(r => [r.start,r.end]), [['2026-11-29','2026-12-03'], ['2026-12-29','2027-01-02']])
   assert.ok(lastYearOverlay('2025-12-31').includes('2027-01-02'))
   assert.equal(rows.some(r => r.mark === '県の月'), false)
   const august = outlookRows('2026-08-10','2026-10-31',[farm],[taro],[])
@@ -88,6 +88,22 @@ test('種類ごとの点：農薬・予報の霜・聞き始め・昨年', () =>
   assert.match(html, /aria-label="12月2日、あなたの記録から1件、昨年1件"/)
   assert.match(html, /aria-label="12月1日、あなたの記録から1件、昨年1件"/)
   for (const label of ['霜・天気', '収穫・聞き始め', 'あなたの記録から', '昨年']) assert.match(html, new RegExp('</span>' + label + '</li>'))
+})
+
+test('昨年の点と欄は、表示する3か月の範囲まで（30日先で切らない）', () => {
+  const previous = [{ id: 'j', farmId: 'f', farmName: '秋田の畑', date: '2026-01-05', label: '施肥' }]
+  const rows = outlookRows(today, through, [farm], [cabbage], previous)
+  const lastYear = rows.filter(r => r.kind === 'lastYear')
+  assert.deepEqual(lastYear.map(r => [r.start, r.end]), [['2027-01-03', '2027-01-07']])
+  assert.deepEqual(dotDays(lastYear[0]), ['2027-01-03', '2027-01-04', '2027-01-05', '2027-01-06', '2027-01-07'])
+  const dots = dotsByDay(rows)
+  for (const day of ['2027-01-03', '2027-01-05', '2027-01-07']) assert.equal(dots.get(day)?.lastYear, 1)
+  assert.equal(dots.get('2027-01-08')?.lastYear, undefined)
+  const html = view(rows, { month: '2027-01', day: '2027-01-05' })
+  assert.match(html, /aria-label="1月5日、昨年1件"/)
+  assert.match(panelOf(html), /1月5日（火）[\s\S]*昨年の記録：施肥[\s\S]*あなた（昨年1月5日の記録）/)
+  // 範囲の外（表示の3か月の末日より先）には出さない
+  assert.deepEqual(outlookRows(today, through, [farm], [cabbage], [{ ...previous[0], date: '2026-02-05' }]).filter(r => r.kind === 'lastYear'), [])
 })
 
 test('幅のあるものは始まりと終わりの日だけに点、間の日を選んでも欄に出す', () => {

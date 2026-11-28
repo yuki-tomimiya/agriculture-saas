@@ -111,7 +111,8 @@ export function outlookRows(today: string, through: string, farms: FarmOutlook[]
     }
   }
   if (crops.length) for (const record of previous) {
-    const keys = lastYearOverlay(record.date).filter(k => k >= today && k <= through && k <= offsetDay(today, 30))
+    // 昨年の重ねも、ほかの見通しと同じく表示する3か月の末日まで（台帳 I28）
+    const keys = lastYearOverlay(record.date).filter(k => k >= today && k <= through)
     if (keys.length) add(record, { id: 'previous-' + record.id, start: keys[0], end: keys[keys.length - 1], mark: '昨年', kind: 'lastYear',
       title: '昨年の記録：' + record.label, text: '昨年の記録：' + record.label, layer: 'あなた', note: '昨年' + monthDay(record.date) + 'の記録',
       href: '/calendar/history?year=' + record.date.slice(0,4) + '&month=' + Number(record.date.slice(5,7)) })
